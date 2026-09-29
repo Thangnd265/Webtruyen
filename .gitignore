@@ -20,6 +20,11 @@ audiobooks/
 *.m4b
 *.mp3
 *.wav
+*.safetensors
+*.parquet
+finetune/dataset/
+finetune/output/
+voices/
 /mnt/gdrive/
 
 # Editor directories
