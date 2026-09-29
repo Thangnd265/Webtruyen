@@ -244,10 +244,22 @@ def stream_audio(
             v_clean = re.sub(r"[^a-zA-Z0-9_\-]", "", voice.lower())
             p_clean = re.sub(r"[^a-zA-Z0-9_\-+]", "", pitch) if pitch else ""
             aliases = [v_clean]
-            if "female" in v_clean or "nu" in v_clean or "hoaimy" in v_clean:
-                aliases.extend(["female", "nu", "vi-vn-hoaimyneural"])
+            if v_clean in ["thienminh", "default"]:
+                aliases.extend(["thienminh", "chapter_001", "male"])
+            elif v_clean in ["trucly", "female", "nu"]:
+                aliases.extend(["trucly", "female", "nu"])
+            elif v_clean in ["haidang", "male", "nam"]:
+                aliases.extend(["haidang", "male", "nam"])
+            elif v_clean in ["quynhanh"]:
+                aliases.extend(["quynhanh", "trucly", "female"])
+            elif v_clean in ["thaison"]:
+                aliases.extend(["thaison", "haidang", "male"])
+            elif v_clean in ["myduyen"]:
+                aliases.extend(["myduyen", "trucly", "female"])
+            elif "female" in v_clean or "nu" in v_clean or "hoaimy" in v_clean:
+                aliases.extend(["trucly", "female", "nu"])
             elif "male" in v_clean or "nam" in v_clean:
-                aliases.extend(["male", "nam", "vi-vn-namminhneural"])
+                aliases.extend(["thienminh", "haidang", "male", "nam"])
 
             pitch_variants = [p_clean, p_clean.lower(), p_clean.upper(), p_clean.replace("hz", "Hz")] if p_clean else []
             for a in dict.fromkeys(aliases):

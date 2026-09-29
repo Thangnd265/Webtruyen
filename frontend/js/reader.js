@@ -15,8 +15,8 @@ const state = {
   speed: 1.0,
   sleepTimerMinutes: 0,
   sleepTimeoutId: null,
-  voice: 'female',
-  pitch: '0Hz',
+  voice: 'thienminh',
+  pitch: '',
   readingSettings: {
     font: 'sans',
     fontSize: 18,
@@ -164,7 +164,8 @@ async function loadChapter(index) {
 }
 
 function loadAudioTrack(baseUrl) {
-  const url = `${baseUrl}?voice=${encodeURIComponent(state.voice)}&pitch=${encodeURIComponent(state.pitch)}`;
+  const pitchParam = state.pitch ? `&pitch=${encodeURIComponent(state.pitch)}` : '';
+  const url = `${baseUrl}?voice=${encodeURIComponent(state.voice)}${pitchParam}`;
   audio.src = url;
   audio.playbackRate = state.speed;
   audio.load();
@@ -427,9 +428,8 @@ function setupSpeedAndTimer() {
     document.querySelectorAll('.voice-preset-card').forEach((card) => {
       card.addEventListener('click', () => {
         const v = card.dataset.voice;
-        const p = card.dataset.pitch;
         state.voice = v;
-        state.pitch = p;
+        state.pitch = '';
         if (voiceBtn) voiceBtn.innerHTML = `🎙️ ${card.dataset.label || 'Giọng đọc'} ▾`;
         voiceModal.classList.add('hidden');
 

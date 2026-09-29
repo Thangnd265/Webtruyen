@@ -199,7 +199,7 @@
 
             <!-- Voice Switcher -->
             <button id="btn-voice" type="button" class="px-3 py-1.5 rounded-full border transition-colors font-medium flex items-center gap-1" style="border-color:var(--border);color:var(--text-primary)">
-              🎙️ Nữ (Hoài My) ▾
+              🎙️ Thiện Minh (VieNeu-TTS) ▾
             </button>
           </div>
         </div>
@@ -269,50 +269,50 @@
   <div id="voice-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
     <div class="w-full max-w-md rounded-2xl p-6 shadow-2xl border" style="background-color:var(--bg-surface);border-color:var(--border)">
       <div class="flex items-center justify-between mb-4 pb-2 border-b" style="border-color:var(--border)">
-        <h3 class="font-bold text-base" style="color:var(--text-primary)">🎙️ Chọn Giọng Đọc & Sắc Thái</h3>
+        <h3 class="font-bold text-base" style="color:var(--text-primary)">🎙️ Chọn Giọng Đọc VieNeu-TTS v3</h3>
         <button id="voice-modal-close" class="p-1 rounded-full hover:bg-white/10 text-neutral-400">✕</button>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="female" data-pitch="0Hz" data-label="Nữ (Chuẩn)">
+        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="thienminh" data-label="Thiện Minh">
+          <span class="text-xl">🎙️</span>
+          <div>
+            <div class="text-xs font-bold" style="color:var(--text-primary)">Thiện Minh (Chuẩn)</div>
+            <div class="text-[11px]" style="color:var(--text-secondary)">Nam · Bắc · Phong cách kể chuyện</div>
+          </div>
+        </button>
+        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="trucly" data-label="Trúc Ly">
           <span class="text-xl">🌸</span>
           <div>
-            <div class="text-xs font-bold" style="color:var(--text-primary)">Nữ Tiêu Chuẩn</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Hoài My • Truyền cảm</div>
+            <div class="text-xs font-bold" style="color:var(--text-primary)">Trúc Ly</div>
+            <div class="text-[11px]" style="color:var(--text-secondary)">Nữ · Bắc · Tự nhiên, trong trẻo</div>
           </div>
         </button>
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="female" data-pitch="+10Hz" data-label="Thiếu nữ">
+        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="quynhanh" data-label="Quỳnh Anh">
           <span class="text-xl">✨</span>
           <div>
-            <div class="text-xs font-bold" style="color:var(--text-primary)">Thiếu Nữ Trẻ</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Hoài My (+10Hz)</div>
+            <div class="text-xs font-bold" style="color:var(--text-primary)">Quỳnh Anh</div>
+            <div class="text-[11px]" style="color:var(--text-secondary)">Nữ · Bắc · Phong cách đọc truyện</div>
           </div>
         </button>
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="female" data-pitch="-10Hz" data-label="Nữ trầm">
-          <span class="text-xl">🌙</span>
+        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="haidang" data-label="Hải Đăng">
+          <span class="text-xl">🌊</span>
           <div>
-            <div class="text-xs font-bold" style="color:var(--text-primary)">Nữ Trầm Lắng</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Hoài My (-10Hz)</div>
+            <div class="text-xs font-bold" style="color:var(--text-primary)">Hải Đăng</div>
+            <div class="text-[11px]" style="color:var(--text-secondary)">Nam · Bắc · Trầm ấm tự nhiên</div>
           </div>
         </button>
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="male" data-pitch="0Hz" data-label="Nam (Chuẩn)">
+        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="thaison" data-label="Thái Sơn">
           <span class="text-xl">⚔️</span>
           <div>
-            <div class="text-xs font-bold" style="color:var(--text-primary)">Nam Tiêu Chuẩn</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Nam Minh • Rõ ràng</div>
+            <div class="text-xs font-bold" style="color:var(--text-primary)">Thái Sơn</div>
+            <div class="text-[11px]" style="color:var(--text-secondary)">Nam · Nam Bộ · Kể chuyện hào hùng</div>
           </div>
         </button>
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="male" data-pitch="-10Hz" data-label="Nam hào hùng">
-          <span class="text-xl">🛡️</span>
+        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="myduyen" data-label="Mỹ Duyên">
+          <span class="text-xl">🌙</span>
           <div>
-            <div class="text-xs font-bold" style="color:var(--text-primary)">Nam Kiếm Hiệp</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Nam Minh (-10Hz)</div>
-          </div>
-        </button>
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="male" data-pitch="-20Hz" data-label="Lão gia">
-          <span class="text-xl">📜</span>
-          <div>
-            <div class="text-xs font-bold" style="color:var(--text-primary)">Lão Gia / Trung Niên</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Nam Minh (-20Hz)</div>
+            <div class="text-xs font-bold" style="color:var(--text-primary)">Mỹ Duyên</div>
+            <div class="text-[11px]" style="color:var(--text-secondary)">Nữ · Nam Bộ · Đọc truyện dịu dàng</div>
           </div>
         </button>
       </div>
