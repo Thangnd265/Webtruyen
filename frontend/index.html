@@ -3,34 +3,383 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>[ Tiểu Thuyết Mạng ] - Đọc & Nghe truyện online</title>
-  <meta name="description" content="Nền tảng đọc truyện và nghe audio online hàng đầu">
+  <title>Audio Web - Đọc & Nghe Truyện Audio</title>
+  <meta name="description" content="Nền tảng đọc truyện và nghe audio online đồng bộ thời gian thực">
   <link rel="stylesheet" href="/css/tieuthuyetmang.css">
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
   <script src="/plugins/themes/theme-engine.js"></script>
+  <style>
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Giao diện chuẩn phong cách tieuthuyetmang.com */
+    .featured-card {
+      width: 210px !important;
+      min-width: 210px !important;
+      max-width: 210px !important;
+      flex-shrink: 0 !important;
+    }
+    .featured-cover-box {
+      width: 100% !important;
+      height: 270px !important;
+      position: relative !important;
+      overflow: hidden !important;
+      border-radius: 12px 12px 0 0 !important;
+      background-color: #121212 !important;
+    }
+    .featured-cover-box img {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      display: block !important;
+      transition: transform 0.3s ease !important;
+    }
+    .featured-card:hover .featured-cover-box img {
+      transform: scale(1.05) !important;
+    }
+
+    .recent-grid {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      gap: 16px !important;
+    }
+    @media (min-width: 768px) {
+      .recent-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+    }
+    .recent-card {
+      background-color: var(--bg-surface) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 12px !important;
+      padding: 14px !important;
+      display: flex !important;
+      gap: 14px !important;
+      align-items: center !important;
+      transition: all 0.2s ease !important;
+      cursor: pointer !important;
+    }
+    .recent-card:hover {
+      border-color: var(--accent) !important;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2) !important;
+    }
+    .recent-thumb {
+      width: 70px !important;
+      height: 98px !important;
+      border-radius: 8px !important;
+      object-fit: cover !important;
+      flex-shrink: 0 !important;
+      background-color: #171717 !important;
+      border: 1px solid var(--border) !important;
+    }
+
+    /* Grid Truyện Mới Cập Nhật (Chuẩn dạng lưới 2 cột tieuthuyetmang.com) */
+    .latest-grid {
+      display: grid !important;
+      grid-template-columns: 1fr !important;
+      gap: 16px !important;
+    }
+    @media (min-width: 768px) {
+      .latest-grid {
+        grid-template-columns: repeat(2, 1fr) !important;
+        gap: 20px !important;
+      }
+    }
+    .latest-card {
+      background-color: var(--bg-surface) !important;
+      border: 1px solid var(--border) !important;
+      border-radius: 14px !important;
+      padding: 16px !important;
+      display: flex !important;
+      gap: 16px !important;
+      transition: all 0.25s ease !important;
+      cursor: pointer !important;
+      position: relative !important;
+    }
+    .latest-card:hover {
+      border-color: var(--accent) !important;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25) !important;
+      transform: translateY(-2px) !important;
+    }
+    .latest-cover-wrap {
+      width: 115px !important;
+      height: 165px !important;
+      border-radius: 10px !important;
+      overflow: hidden !important;
+      position: relative !important;
+      flex-shrink: 0 !important;
+      background-color: #151515 !important;
+      border: 1px solid var(--border) !important;
+    }
+    .latest-cover-wrap img {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      transition: transform 0.3s ease !important;
+    }
+    .latest-card:hover .latest-cover-wrap img {
+      transform: scale(1.06) !important;
+    }
+    .badge-new {
+      position: absolute !important;
+      top: 6px !important;
+      left: 6px !important;
+      background-color: #10b981 !important;
+      color: #ffffff !important;
+      font-size: 10px !important;
+      font-weight: 700 !important;
+      padding: 2px 6px !important;
+      border-radius: 4px !important;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4) !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 2px !important;
+      z-index: 5 !important;
+    }
+
+    /* Hero Banner Slider Styles (Thanh gạt chuẩn tieuthuyetmang.com) */
+    .hero-slider-section {
+      position: relative;
+      width: 100%;
+      height: 430px;
+      overflow: hidden;
+      background-color: #070709;
+      user-select: none;
+    }
+    @media (max-width: 768px) {
+      .hero-slider-section {
+        height: 330px;
+      }
+    }
+    @media (max-width: 480px) {
+      .hero-slider-section {
+        height: 280px;
+      }
+    }
+    .hero-track {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      transition: transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+      will-change: transform;
+    }
+    .hero-slide {
+      flex: 0 0 100%;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      overflow: hidden;
+    }
+    .hero-slide-bg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      filter: brightness(0.55) contrast(1.15);
+      transform: scale(1.02);
+      transition: transform 6s ease-out;
+    }
+    .hero-slide:hover .hero-slide-bg {
+      transform: scale(1.08);
+    }
+    .hero-slide-overlay {
+      position: absolute !important;
+      inset: 0 !important;
+      background: linear-gradient(180deg, rgba(0,0,0,0.45) 0%, rgba(0,0,0,0.65) 45%, rgba(0,0,0,0.92) 100%) !important;
+      pointer-events: none !important;
+    }
+    .hero-slide-content {
+      position: relative !important;
+      z-index: 10 !important;
+      max-width: 980px !important;
+      margin: 0 auto !important;
+      padding: 0 24px !important;
+      text-align: center !important;
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+    }
+    .hero-badge {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      padding: 6px 16px !important;
+      border-radius: 9999px !important;
+      font-size: 13px !important;
+      font-weight: 800 !important;
+      color: #fbbf24 !important; /* Gold */
+      background: rgba(15, 15, 18, 0.85) !important;
+      border: 1px solid rgba(251, 191, 36, 0.5) !important;
+      backdrop-filter: blur(8px) !important;
+      -webkit-backdrop-filter: blur(8px) !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.6) !important;
+      letter-spacing: 0.03em !important;
+      margin-bottom: 12px !important;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+    }
+    .hero-slide-title {
+      font-weight: 900 !important;
+      color: #ffffff !important;
+      text-shadow: 0 4px 20px rgba(0, 0, 0, 0.98), 0 2px 6px rgba(0, 0, 0, 0.9) !important;
+      letter-spacing: -0.02em !important;
+      line-height: 1.25 !important;
+      font-size: 1.85rem !important;
+      max-width: 920px !important;
+      margin: 0 auto !important;
+      transition: color 0.2s ease !important;
+    }
+    @media (min-width: 640px) {
+      .hero-slide-title { font-size: 2.45rem !important; }
+    }
+    @media (min-width: 1024px) {
+      .hero-slide-title { font-size: 2.95rem !important; }
+    }
+    .hero-meta-row {
+      display: inline-flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      flex-wrap: wrap !important;
+      gap: 10px 14px !important;
+      margin-top: 14px !important;
+      padding: 6px 20px !important;
+      border-radius: 9999px !important;
+      background: rgba(15, 15, 18, 0.8) !important;
+      border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      backdrop-filter: blur(8px) !important;
+      -webkit-backdrop-filter: blur(8px) !important;
+      color: #f1f5f9 !important;
+      font-size: 13.5px !important;
+      font-weight: 500 !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55) !important;
+      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+    }
+    .hero-meta-row strong {
+      color: #ffffff !important;
+      font-weight: 700 !important;
+    }
+    .hero-meta-divider {
+      color: rgba(255, 255, 255, 0.4) !important;
+    }
+    .hero-badge-audio {
+      color: #38bdf8 !important; /* Sky blue */
+      font-weight: 700 !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+    }
+    .hero-play-btn {
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      padding: 9px 26px !important;
+      border-radius: 9999px !important;
+      font-weight: 700 !important;
+      font-size: 13.5px !important;
+      color: #ffffff !important;
+      background-color: var(--accent) !important;
+      box-shadow: 0 4px 20px rgba(249, 115, 22, 0.45) !important;
+      transition: all 0.2s ease !important;
+      text-decoration: none !important;
+    }
+    .hero-play-btn:hover {
+      transform: scale(1.06) !important;
+      box-shadow: 0 6px 24px rgba(249, 115, 22, 0.65) !important;
+    }
+    .hero-nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      z-index: 30;
+      width: 44px;
+      height: 44px;
+      border-radius: 9999px;
+      background-color: rgba(255, 255, 255, 0.18);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+    .hero-nav-btn:hover {
+      background-color: rgba(255, 255, 255, 0.35);
+      border-color: rgba(255, 255, 255, 0.6);
+      transform: translateY(-50%) scale(1.1);
+    }
+    .hero-nav-btn:active {
+      transform: translateY(-50%) scale(0.92);
+    }
+    .hero-nav-prev { left: 24px; }
+    .hero-nav-next { right: 24px; }
+    @media (max-width: 640px) {
+      .hero-nav-prev { left: 10px; }
+      .hero-nav-next { right: 10px; }
+      .hero-nav-btn { width: 36px; height: 36px; }
+    }
+    .hero-dots-wrap {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hero-dot-item {
+      width: 8px;
+      height: 8px;
+      border-radius: 9999px;
+      background-color: rgba(255, 255, 255, 0.4);
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      transition: all 0.35s ease;
+    }
+    .hero-dot-item:hover {
+      background-color: rgba(255, 255, 255, 0.8);
+    }
+    .hero-dot-item.active {
+      width: 28px;
+      background-color: #ffffff;
+      box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+    }
+  </style>
 </head>
 <body class="font-sans min-h-screen flex flex-col" style="background-color:var(--bg-primary);color:var(--text-primary)">
 
-  <!-- Exact Header from tieuthuyetmang.com -->
+  <!-- Header -->
   <header class="sticky top-0 z-50 w-full border-b bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80" style="border-color:var(--border);background-color:var(--bg-surface)">
     <div class="container mx-auto flex h-16 items-center justify-between px-4">
       <a class="flex items-center gap-2 font-bold text-xl" href="/" style="color:var(--accent);padding-right:15px">
-        [ Tiểu Thuyết Mạng ✦ ]
+        🎧 Audio Web
       </a>
       <nav class="hidden md:flex items-center gap-6">
         <a class="hover:opacity-80 transition-opacity text-sm font-semibold" href="/" style="color:var(--accent)">
           Trang chủ
         </a>
-        <a class="hover:opacity-80 transition-opacity text-sm font-medium" href="/#audio-section" style="color:var(--text-primary)">
-          Truyện audio
+        <a class="hover:opacity-80 transition-opacity text-sm font-medium" href="/#featured-section" style="color:var(--text-primary)">
+          Đề cử
         </a>
-        <a class="hover:opacity-80 transition-opacity text-sm font-medium" href="/#ranking-section" style="color:var(--text-primary)">
-          Bảng xếp hạng
+        <a class="hover:opacity-80 transition-opacity text-sm font-medium" href="/#latest-section" style="color:var(--text-primary)">
+          Mới cập nhật
         </a>
-        <a class="btn-member text-sm" href="/reader.html?book=sample-story">
+        <a class="hover:opacity-80 transition-opacity text-sm font-medium" href="/#recent-section" style="color:var(--text-primary)">
+          Đang nghe
+        </a>
+        <a class="btn-member text-sm" href="/reader.html?slug=sample-story&chapter=chapter_001">
           Nghe Ngay
         </a>
       </nav>
@@ -62,149 +411,748 @@
     <!-- Mobile Nav Menu -->
     <div id="mobile-nav-menu" class="hidden md:hidden border-t px-4 py-3 space-y-2" style="border-color:var(--border);background-color:var(--bg-surface)">
       <a class="block py-2 text-sm font-semibold" href="/" style="color:var(--accent)">Trang chủ</a>
-      <a class="block py-2 text-sm font-medium" href="/#audio-section" style="color:var(--text-primary)">Truyện audio</a>
-      <a class="block py-2 text-sm font-medium" href="/#ranking-section" style="color:var(--text-primary)">Bảng xếp hạng</a>
-      <a class="block py-2 text-sm font-medium text-amber-500" href="/reader.html?book=sample-story">Nghe Truyện Mẫu</a>
+      <a class="block py-2 text-sm font-medium" href="/#featured-section" style="color:var(--text-primary)">Truyện đề cử</a>
+      <a class="block py-2 text-sm font-medium" href="/#latest-section" style="color:var(--text-primary)">Mới cập nhật</a>
+      <a class="block py-2 text-sm font-medium" href="/#recent-section" style="color:var(--text-primary)">Đang nghe</a>
+      <a class="block py-2 text-sm font-medium text-amber-500" href="/reader.html?slug=sample-story&chapter=chapter_001">Nghe Ngay</a>
     </div>
   </header>
 
-  <!-- Hero Banner Slider -->
-  <section class="relative h-[320px] sm:h-[420px] flex items-center justify-center overflow-hidden" style="background:linear-gradient(135deg, #0B1120 0%, #1E293B 50%, #2d3436 100%)">
-    <div class="absolute inset-0 opacity-60" style="background-image:radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.1) 0%, transparent 50%)"></div>
-    <div id="hero-bg" class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 transition-all duration-700" style="background-image:url(https://img.tieuthuyetmang.com/images/avatars/01KNTTFQ5CRR9Y9S9AZGM7CG4K.png)"></div>
-    <button id="hero-prev" aria-label="Trước" class="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/30 hover:bg-white/50 text-white flex items-center justify-center text-2xl transition-colors" type="button">‹</button>
-    <button id="hero-next" aria-label="Sau" class="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/30 hover:bg-white/50 text-white flex items-center justify-center text-2xl transition-colors" type="button">›</button>
-    <div class="relative z-[1] text-center text-white px-4 max-w-2xl">
-      <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3 bg-red-500/80 text-white shadow-lg">Nổi Bật Nhất</span>
-      <h1 id="hero-title" class="text-2xl sm:text-[36px] md:text-4xl font-bold mb-4 leading-tight transition-all duration-300">
-        Cho Cậu Học Ở Trường Quý Tộc, Vậy Mà Cậu Lại Đi Tán Gái Đại Tiểu Thư
-      </h1>
-      <a href="/reader.html?book=sample-story" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm text-white shadow-xl hover:scale-105 active:scale-95 transition-all" style="background-color:var(--accent)">
-        🎧 Thưởng Thức Ngay
-      </a>
-    </div>
-    <div id="hero-dots" class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-      <button class="h-2.5 rounded-full transition-all w-8 bg-white" type="button"></button>
-      <button class="h-2.5 rounded-full transition-all w-2.5 bg-white/40 hover:bg-white/60" type="button"></button>
-      <button class="h-2.5 rounded-full transition-all w-2.5 bg-white/40 hover:bg-white/60" type="button"></button>
-    </div>
-  </section>
-
-  <!-- Main Content Layout: Audio Stories Grid + Rankings Sidebar -->
-  <main class="flex-1 max-w-[1240px] w-full mx-auto px-4 py-8 sm:py-12" id="audio-section">
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+  <!-- 1. PHẦN TRUYỆN ĐỀ CỬ: THANH GẠT BANNER (Chuẩn tieuthuyetmang.com) -->
+  <section id="featured-section" class="hero-slider-section">
+    <!-- Slider Track -->
+    <div id="hero-slider-track" class="hero-track">
       
-      <!-- Left Column: Audio Stories Grid (2 cols on tablet/desktop) -->
-      <section class="lg:col-span-2">
-        <div class="flex items-center justify-between mb-6">
-          <div>
-            <h2 class="text-2xl font-bold flex items-center gap-2" style="color:var(--accent)">
-              🎧 Truyện Audio
-            </h2>
-            <p class="text-xs sm:text-sm mt-1" style="color:var(--text-secondary)">
-              Vừa đọc vừa nghe — trải nghiệm đồng bộ thời gian thực chuẩn Tiểu Thuyết Mạng
-            </p>
-          </div>
-          <span class="text-xs px-3 py-1 rounded-full font-semibold border" style="border-color:var(--border);color:var(--text-secondary)">
-            Đồng bộ Cloud
+      <!-- Slide 1 (Google Drive) -->
+      <div class="hero-slide" onclick="window.location.href='/reader.html?slug=sample-story&chapter=chapter_001'">
+        <img src="/images/banners/banner_sample-story.jpg" alt="Cho Cậu Học Ở Trường Quý Tộc" class="hero-slide-bg" />
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <span class="hero-badge">
+            🔥 HOT #1 • ĐỀ CỬ ĐẶC BIỆT
           </span>
-        </div>
-
-        <!-- Stories Grid -->
-        <div id="audio-books-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <!-- Will be rendered by home.js from /api/books -->
-          <div class="p-8 text-center text-sm" style="color:var(--text-secondary)">Đang nạp danh sách truyện...</div>
-        </div>
-      </section>
-
-      <!-- Right Column: Sidebar Rankings -->
-      <aside class="space-y-6" id="ranking-section">
-        <!-- Monthly Rankings -->
-        <div class="rounded-xl p-5 border shadow-sm" style="background-color:var(--bg-surface);border-color:var(--border)">
-          <div class="flex items-center justify-between mb-4 pb-2 border-b" style="border-color:var(--border)">
-            <h3 class="font-bold text-sm sm:text-base flex items-center gap-1.5" style="color:var(--text-primary)">
-              🏆 Bảng Xếp Hạng Tháng
-            </h3>
-            <span class="text-[11px]" style="color:var(--accent)">Xem thêm →</span>
+          <h2 class="hero-slide-title">
+            Cho Cậu Học Ở Trường Quý Tộc, Vậy Mà Cậu Lại Đi Tán Gái Đại Tiểu Thư
+          </h2>
+          <div class="hero-meta-row">
+            <span>Tác giả: <strong>Tác Giả Ẩn Danh</strong></span>
+            <span class="hero-meta-divider">•</span>
+            <span>180 chương</span>
+            <span class="hero-meta-divider">•</span>
+            <span class="hero-badge-audio">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" /></svg>
+              Audio Đồng Bộ
+            </span>
           </div>
-          <div id="monthly-rankings-list" class="space-y-1">
-            <!-- Rendered by home.js -->
+          <div class="mt-4">
+            <a href="/reader.html?slug=sample-story&chapter=chapter_001" class="hero-play-btn" onclick="event.stopPropagation()">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              <span>Nghe Ngay</span>
+            </a>
           </div>
-        </div>
-
-        <!-- Reader Ranking / VIP Donors -->
-        <div class="rounded-xl p-5 border shadow-sm" style="background-color:var(--bg-surface);border-color:var(--border)">
-          <div class="flex items-center justify-between mb-4 pb-2 border-b" style="border-color:var(--border)">
-            <h3 class="font-bold text-sm sm:text-base flex items-center gap-1.5 text-amber-400">
-              💎 Vinh Danh Phú Hào
-            </h3>
-            <span class="text-[11px]" style="color:var(--text-secondary)">Thành viên</span>
-          </div>
-          <div id="user-rankings-list" class="space-y-1">
-            <!-- Rendered by home.js -->
-          </div>
-        </div>
-      </aside>
-
-    </div>
-  </main>
-
-  <!-- Exact Footer from tieuthuyetmang.com -->
-  <footer class="mt-auto border-t" style="border-color:var(--border);background-color:var(--bg-surface);color:var(--text-primary)">
-    <div class="max-w-[1200px] mx-auto px-5 py-12">
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
-        <div>
-          <div class="flex items-center gap-2 mb-3">
-            <svg class="lucide lucide-book-open w-5 h-5" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="color:var(--accent)" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 7v14"></path>
-              <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path>
-            </svg>
-            <h3 class="font-bold text-base" style="color:var(--text-primary)">
-              Tiểu Thuyết Mạng
-            </h3>
-          </div>
-          <p class="text-sm leading-relaxed" style="color:var(--text-secondary)">
-            Nền tảng đọc truyện chữ & nghe audio đồng bộ hàng đầu. Kho tàng truyện đa dạng, cập nhật liên tục.
-          </p>
-        </div>
-        <div>
-          <h3 class="font-bold text-base mb-3" style="color:var(--text-primary)">Khám Phá</h3>
-          <ul class="space-y-2">
-            <li><a class="text-sm hover:underline" href="/" style="color:var(--text-secondary)">Trang Chủ</a></li>
-            <li><a class="text-sm hover:underline" href="/#ranking-section" style="color:var(--text-secondary)">Bảng Xếp Hạng</a></li>
-            <li><a class="text-sm hover:underline" href="/reader.html?book=sample-story" style="color:var(--text-secondary)">Truyện Audio Mẫu</a></li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="font-bold text-base mb-3" style="color:var(--text-primary)">Giao Diện & Plugin</h3>
-          <ul class="space-y-2">
-            <li><button onclick="window.themeEngine.apply('tieuthuyetmang-dark')" class="text-sm hover:underline text-left" style="color:var(--text-secondary)">Theme Dark Gốc</button></li>
-            <li><button onclick="window.themeEngine.apply('tieuthuyetmang-light')" class="text-sm hover:underline text-left" style="color:var(--text-secondary)">Theme Light Gốc</button></li>
-            <li><button onclick="window.themeEngine.apply('tieuthuyetmang-sepia')" class="text-sm hover:underline text-left" style="color:var(--text-secondary)">Theme Sepia</button></li>
-            <li><button onclick="window.themeEngine.apply('oled-pure-black')" class="text-sm hover:underline text-left" style="color:var(--text-secondary)">Theme OLED Black</button></li>
-          </ul>
-        </div>
-        <div>
-          <h3 class="font-bold text-base mb-3" style="color:var(--text-primary)">Đồng Bộ Thiết Bị</h3>
-          <p class="text-sm leading-relaxed mb-2" style="color:var(--text-secondary)">
-            Tự động đồng bộ tiến độ đọc 2 chiều với máy đọc sách Kindle KOReader qua Kosync Server.
-          </p>
         </div>
       </div>
-      <div class="pt-6 border-t flex flex-col sm:flex-row items-center justify-between text-xs" style="border-color:var(--border);color:var(--text-secondary)">
-        <p>© 2026 Tiểu Thuyết Mạng. Giao diện chuẩn xác 100% kết hợp kiến trúc Theme Plugin độc lập.</p>
-        <p class="mt-2 sm:mt-0">Hỗ trợ PWA & Offline Caching</p>
+
+      <!-- Slide 2 (Google Drive) -->
+      <div class="hero-slide" onclick="window.location.href='/reader.html?slug=do-giam-quai-vat&chapter=chapter_001'">
+        <img src="/images/banners/banner_do-giam-quai-vat.jpg" alt="Đồ Giám Quái Vật" class="hero-slide-bg" />
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <span class="hero-badge">
+            🔥 TOP #2 • TÂY HUYỄN HOT
+          </span>
+          <h2 class="hero-slide-title">
+            Đồ Giám Quái Vật: Bắt Đầu Từ Huyết Mạch Goblin
+          </h2>
+          <div class="hero-meta-row">
+            <span>Tác giả: <strong>Lâm Ẩn</strong></span>
+            <span class="hero-meta-divider">•</span>
+            <span>32 chương</span>
+            <span class="hero-meta-divider">•</span>
+            <span class="hero-badge-audio">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" /></svg>
+              Audio Đồng Bộ
+            </span>
+          </div>
+          <div class="mt-4">
+            <a href="/reader.html?slug=do-giam-quai-vat&chapter=chapter_001" class="hero-play-btn" onclick="event.stopPropagation()">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              <span>Nghe Ngay</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 3 (Google Drive) -->
+      <div class="hero-slide" onclick="window.location.href='/reader.html?slug=xuyen-khong-1970&chapter=chapter_001'">
+        <img src="/images/banners/banner_xuyen-khong-1970.jpg" alt="Xuyên Không 1970" class="hero-slide-bg" />
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <span class="hero-badge">
+            🔥 TOP #3 • ĐÔ THỊ TRÙNG SINH
+          </span>
+          <h2 class="hero-slide-title">
+            Xuyên Không 1970: Hành Trình Đổi Vận Của Một Tri Thức Trẻ
+          </h2>
+          <div class="hero-meta-row">
+            <span>Tác giả: <strong>Ngẫu Ngộ Nhai Giác</strong></span>
+            <span class="hero-meta-divider">•</span>
+            <span>325 chương</span>
+            <span class="hero-meta-divider">•</span>
+            <span class="hero-badge-audio">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" /></svg>
+              Audio Đồng Bộ
+            </span>
+          </div>
+          <div class="mt-4">
+            <a href="/reader.html?slug=xuyen-khong-1970&chapter=chapter_001" class="hero-play-btn" onclick="event.stopPropagation()">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              <span>Nghe Ngay</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 4 -->
+      <div class="hero-slide" onclick="window.location.href='/reader.html?slug=dai-phung-da-canh-nhan&chapter=chapter_001'">
+        <img src="/images/banners/banner_dai-phung-da-canh-nhan.jpg" alt="Đại Phụng Đả Canh Nhân" class="hero-slide-bg" />
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <span class="hero-badge">
+            ⭐ TIÊN HIỆP ĐỈNH CAO
+          </span>
+          <h2 class="hero-slide-title">
+            Đại Phụng Đả Canh Nhân
+          </h2>
+          <div class="hero-meta-row">
+            <span>Tác giả: <strong>Mại Báo Tiểu Lang Quân</strong></span>
+            <span class="hero-meta-divider">•</span>
+            <span>980 chương</span>
+            <span class="hero-meta-divider">•</span>
+            <span class="hero-badge-audio">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" /></svg>
+              Audio Đồng Bộ
+            </span>
+          </div>
+          <div class="mt-4">
+            <a href="/reader.html?slug=dai-phung-da-canh-nhan&chapter=chapter_001" class="hero-play-btn" onclick="event.stopPropagation()">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              <span>Nghe Ngay</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 5 -->
+      <div class="hero-slide" onclick="window.location.href='/reader.html?slug=ta-co-mot-than-bi-dong-ky&chapter=chapter_001'">
+        <img src="/images/banners/banner_ta-co-mot-than-bi-dong-ky.jpg" alt="Ta Có Một Thân Bị Động Kỹ" class="hero-slide-bg" />
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <span class="hero-badge">
+            ⭐ HÀI HƯỚC DỊ NĂNG
+          </span>
+          <h2 class="hero-slide-title">
+            Ta Có Một Thân Bị Động Kỹ
+          </h2>
+          <div class="hero-meta-row">
+            <span>Tác giả: <strong>A Cẩm Đang Cố Gắng</strong></span>
+            <span class="hero-meta-divider">•</span>
+            <span>1250 chương</span>
+            <span class="hero-meta-divider">•</span>
+            <span class="hero-badge-audio">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" /></svg>
+              Audio Đồng Bộ
+            </span>
+          </div>
+          <div class="mt-4">
+            <a href="/reader.html?slug=ta-co-mot-than-bi-dong-ky&chapter=chapter_001" class="hero-play-btn" onclick="event.stopPropagation()">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              <span>Nghe Ngay</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 6 -->
+      <div class="hero-slide" onclick="window.location.href='/reader.html?slug=than-thoai-ky-nguyen&chapter=chapter_001'">
+        <img src="/images/banners/banner_than-thoai-ky-nguyen.jpg" alt="Thần Thoại Kỷ Nguyên" class="hero-slide-bg" />
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <span class="hero-badge">
+            ⭐ HUYỀN HUYỄN DỊ GIỚI
+          </span>
+          <h2 class="hero-slide-title">
+            Thần Thoại Kỷ Nguyên
+          </h2>
+          <div class="hero-meta-row">
+            <span>Tác giả: <strong>Quần Manh Tụ Hội</strong></span>
+            <span class="hero-meta-divider">•</span>
+            <span>640 chương</span>
+            <span class="hero-meta-divider">•</span>
+            <span class="hero-badge-audio">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" /></svg>
+              Audio Đồng Bộ
+            </span>
+          </div>
+          <div class="mt-4">
+            <a href="/reader.html?slug=than-thoai-ky-nguyen&chapter=chapter_001" class="hero-play-btn" onclick="event.stopPropagation()">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              <span>Nghe Ngay</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Slide 7 -->
+      <div class="hero-slide" onclick="window.location.href='/reader.html?slug=van-co-de-nhat-than&chapter=chapter_001'">
+        <img src="/images/banners/banner_van-co-de-nhat-than.jpg" alt="Vạn Cổ Đệ Nhất Thần" class="hero-slide-bg" />
+        <div class="hero-slide-overlay"></div>
+        <div class="hero-slide-content">
+          <span class="hero-badge">
+            ⭐ ĐÔNG PHƯƠNG HUYỀN HUYỄN
+          </span>
+          <h2 class="hero-slide-title">
+            Vạn Cổ Đệ Nhất Thần
+          </h2>
+          <div class="hero-meta-row">
+            <span>Tác giả: <strong>Phong Thanh Dương</strong></span>
+            <span class="hero-meta-divider">•</span>
+            <span>1420 chương</span>
+            <span class="hero-meta-divider">•</span>
+            <span class="hero-badge-audio">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" /></svg>
+              Audio Đồng Bộ
+            </span>
+          </div>
+          <div class="mt-4">
+            <a href="/reader.html?slug=van-co-de-nhat-than&chapter=chapter_001" class="hero-play-btn" onclick="event.stopPropagation()">
+              <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              <span>Nghe Ngay</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Nút gạt sang trái (<) -->
+    <button id="hero-prev-btn" class="hero-nav-btn hero-nav-prev" title="Lướt sang trái">
+      <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+      </svg>
+    </button>
+
+    <!-- Nút gạt sang phải (>) -->
+    <button id="hero-next-btn" class="hero-nav-btn hero-nav-next" title="Lướt sang phải">
+      <svg class="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+      </svg>
+    </button>
+
+    <!-- Chấm tròn điều hướng (Indicator Dots: ● ● ● ● ● ● ▬) -->
+    <div id="hero-dots-container" class="hero-dots-wrap">
+      <button class="hero-dot-item active" data-index="0" aria-label="Slide 1"></button>
+      <button class="hero-dot-item" data-index="1" aria-label="Slide 2"></button>
+      <button class="hero-dot-item" data-index="2" aria-label="Slide 3"></button>
+      <button class="hero-dot-item" data-index="3" aria-label="Slide 4"></button>
+      <button class="hero-dot-item" data-index="4" aria-label="Slide 5"></button>
+      <button class="hero-dot-item" data-index="5" aria-label="Slide 6"></button>
+      <button class="hero-dot-item" data-index="6" aria-label="Slide 7"></button>
+    </div>
+
+  </section>
+
+  <!-- Main Content Layout (Phần nội dung chính) -->
+  <main class="flex-1 max-w-[1240px] w-full mx-auto px-4 py-8 sm:py-10 space-y-12">
+
+    <!-- 2. PHẦN TRUYỆN MỚI CẬP NHẬT: Lưới 2 cột (Chuẩn tieuthuyetmang.com) -->
+    <section id="latest-section">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b" style="border-color:var(--border)">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2" style="color:var(--accent)">
+            Truyện mới cập nhật
+          </h2>
+          <p class="text-xs sm:text-sm mt-0.5" style="color:var(--text-secondary)">
+            Khám phá truyện mới nhất cùng chúng tôi
+          </p>
+        </div>
+
+        <div class="flex items-center gap-3">
+          <!-- Phân trang < 1 / 2 > -->
+          <div class="flex items-center gap-1 text-xs font-medium" style="color:var(--text-secondary)">
+            <button id="latest-prev-btn" class="w-7 h-7 rounded border flex items-center justify-center transition-colors hover:bg-white/10 cursor-pointer" style="border-color:var(--border)" title="Trang trước">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+            </button>
+            <span id="latest-page-indicator" class="px-2 min-w-[45px] text-center">1 / 2</span>
+            <button id="latest-next-btn" class="w-7 h-7 rounded border flex items-center justify-center transition-colors hover:bg-white/10 cursor-pointer" style="border-color:var(--border)" title="Trang sau">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+          <!-- Xem tất cả -->
+          <a href="/#latest-section" id="latest-view-all" class="text-xs font-semibold flex items-center gap-1 hover:underline" style="color:var(--accent)">
+            <span>Xem tất cả</span>
+            <span>→</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Latest list container: Lưới 2 cột x 3 hàng = 6 truyện (Chuẩn tieuthuyetmang.com) -->
+      <div id="latest-books-list" class="latest-grid">
+        
+        <!-- Truyện 1 (Google Drive) -->
+        <article class="latest-card group" onclick="window.location.href='/reader.html?slug=sample-story&chapter=chapter_001'">
+          <div class="latest-cover-wrap">
+            <img src="/api/books/sample-story/cover" alt="Cho Cậu Học Ở Trường Quý Tộc" onerror="this.src='/api/books/sample-story/cover'" />
+            <span class="badge-new">
+              ✨ Mới
+            </span>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-sm sm:text-base line-clamp-2 leading-snug group-hover:text-[var(--accent)] transition-colors" style="color:var(--text-primary)">
+                Cho Cậu Học Ở Trường Quý Tộc, Vậy Mà Cậu Lại Đi Tán Gái Đại Tiểu Thư
+              </h3>
+              <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-[11px] sm:text-xs" style="color:var(--text-secondary)">
+                <span class="flex items-center gap-1 truncate max-w-[120px]">
+                  <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  Tác Giả Ẩn Danh
+                </span>
+                <span class="flex items-center gap-1 truncate max-w-[110px]">
+                  <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                  Đô Thị, Học Đường
+                </span>
+                <span class="flex items-center gap-1 font-medium text-amber-500">
+                  <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  Đang ra
+                </span>
+              </div>
+              <div class="flex items-center gap-2.5 mt-1 text-[11px] opacity-75" style="color:var(--text-secondary)">
+                <span>📖 180 chương</span>
+                <span>•</span>
+                <span>👁 18.5k</span>
+                <span>•</span>
+                <span>🕒 Vừa xong</span>
+              </div>
+              <p class="line-clamp-2 text-xs leading-relaxed mt-2" style="color:var(--text-secondary)">
+                Được gia đình gom góp cho theo học tại trường quý tộc hàng đầu, thế nhưng mục tiêu của cậu không phải danh vọng mà lại là chinh phục trái tim đại tiểu thư lạnh lùng kiêu sa...
+              </p>
+            </div>
+            <div class="mt-3">
+              <a href="/reader.html?slug=sample-story&chapter=chapter_001" class="px-3.5 py-1.5 rounded-full font-semibold text-white text-xs inline-flex items-center gap-1.5 shadow-sm transition-opacity hover:opacity-90" style="background-color:var(--accent)" onclick="event.stopPropagation()">
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                <span>Nghe Audio</span>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Truyện 2 (Google Drive) -->
+        <article class="latest-card group" onclick="window.location.href='/reader.html?slug=do-giam-quai-vat&chapter=chapter_001'">
+          <div class="latest-cover-wrap">
+            <img src="/api/books/do-giam-quai-vat/cover" alt="Đồ Giám Quái Vật" onerror="this.src='/api/books/do-giam-quai-vat/cover'" />
+            <span class="badge-new">
+              ✨ Mới
+            </span>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-sm sm:text-base line-clamp-2 leading-snug group-hover:text-[var(--accent)] transition-colors" style="color:var(--text-primary)">
+                Đồ Giám Quái Vật: Bắt Đầu Từ Huyết Mạch Goblin
+              </h3>
+              <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-[11px] sm:text-xs" style="color:var(--text-secondary)">
+                <span class="flex items-center gap-1 truncate max-w-[120px]">
+                  <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  Lâm Ẩn
+                </span>
+                <span class="flex items-center gap-1 truncate max-w-[110px]">
+                  <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                  Tây Huyễn, Ma Thú
+                </span>
+                <span class="flex items-center gap-1 font-medium text-amber-500">
+                  <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  Đang ra
+                </span>
+              </div>
+              <div class="flex items-center gap-2.5 mt-1 text-[11px] opacity-75" style="color:var(--text-secondary)">
+                <span>📖 32 chương</span>
+                <span>•</span>
+                <span>👁 14.2k</span>
+                <span>•</span>
+                <span>🕒 12 phút trước</span>
+              </div>
+              <p class="line-clamp-2 text-xs leading-relaxed mt-2" style="color:var(--text-secondary)">
+                Thế giới dị biến, quái vật hoành hành. Lâm Ẩn thức tỉnh Đồ Giám Quái Vật vô thượng, bắt đầu con đường tiến hóa nghịch thiên từ huyết mạch Goblin yếu ớt nhất...
+              </p>
+            </div>
+            <div class="mt-3">
+              <a href="/reader.html?slug=do-giam-quai-vat&chapter=chapter_001" class="px-3.5 py-1.5 rounded-full font-semibold text-white text-xs inline-flex items-center gap-1.5 shadow-sm transition-opacity hover:opacity-90" style="background-color:var(--accent)" onclick="event.stopPropagation()">
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                <span>Nghe Audio</span>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Truyện 3 (Google Drive) -->
+        <article class="latest-card group" onclick="window.location.href='/reader.html?slug=xuyen-khong-1970&chapter=chapter_001'">
+          <div class="latest-cover-wrap">
+            <img src="/api/books/xuyen-khong-1970/cover" alt="Xuyên Không 1970" onerror="this.src='/api/books/xuyen-khong-1970/cover'" />
+            <span class="badge-new">
+              ✨ Mới
+            </span>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-sm sm:text-base line-clamp-2 leading-snug group-hover:text-[var(--accent)] transition-colors" style="color:var(--text-primary)">
+                Xuyên Không 1970: Hành Trình Đổi Vận Của Một Tri Thức Trẻ
+              </h3>
+              <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-[11px] sm:text-xs" style="color:var(--text-secondary)">
+                <span class="flex items-center gap-1 truncate max-w-[120px]">
+                  <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  Ngẫu Ngộ Nhai Giác
+                </span>
+                <span class="flex items-center gap-1 truncate max-w-[110px]">
+                  <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                  Xuyên Không, Đô Thị
+                </span>
+                <span class="flex items-center gap-1 font-medium text-amber-500">
+                  <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  Đang ra
+                </span>
+              </div>
+              <div class="flex items-center gap-2.5 mt-1 text-[11px] opacity-75" style="color:var(--text-secondary)">
+                <span>📖 325 chương</span>
+                <span>•</span>
+                <span>👁 16.8k</span>
+                <span>•</span>
+                <span>🕒 45 phút trước</span>
+              </div>
+              <p class="line-clamp-2 text-xs leading-relaxed mt-2" style="color:var(--text-secondary)">
+                Trùng sinh về những năm 1970 đầy biến động, mang theo tri thức hiện đại cùng không gian bí ẩn, chàng thanh niên từng bước làm giàu, đổi vận bản thân và gia tộc...
+              </p>
+            </div>
+            <div class="mt-3">
+              <a href="/reader.html?slug=xuyen-khong-1970&chapter=chapter_001" class="px-3.5 py-1.5 rounded-full font-semibold text-white text-xs inline-flex items-center gap-1.5 shadow-sm transition-opacity hover:opacity-90" style="background-color:var(--accent)" onclick="event.stopPropagation()">
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                <span>Nghe Audio</span>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Truyện 4 -->
+        <article class="latest-card group" onclick="window.location.href='/reader.html?slug=dai-phung-da-canh-nhan&chapter=chapter_001'">
+          <div class="latest-cover-wrap">
+            <img src="/api/books/dai-phung-da-canh-nhan/cover" alt="Đại Phụng Đả Canh Nhân" onerror="this.src='/api/books/dai-phung-da-canh-nhan/cover'" />
+            <span class="badge-new">
+              ✨ Mới
+            </span>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-sm sm:text-base line-clamp-2 leading-snug group-hover:text-[var(--accent)] transition-colors" style="color:var(--text-primary)">
+                Đại Phụng Đả Canh Nhân
+              </h3>
+              <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-[11px] sm:text-xs" style="color:var(--text-secondary)">
+                <span class="flex items-center gap-1 truncate max-w-[120px]">
+                  <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  Mại Báo Tiểu Lang Quân
+                </span>
+                <span class="flex items-center gap-1 truncate max-w-[110px]">
+                  <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                  Tiên Hiệp, Trinh Thám
+                </span>
+                <span class="flex items-center gap-1 font-medium text-amber-500">
+                  <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  Đang ra
+                </span>
+              </div>
+              <div class="flex items-center gap-2.5 mt-1 text-[11px] opacity-75" style="color:var(--text-secondary)">
+                <span>📖 980 chương</span>
+                <span>•</span>
+                <span>👁 25.4k</span>
+                <span>•</span>
+                <span>🕒 2 giờ trước</span>
+              </div>
+              <p class="line-clamp-2 text-xs leading-relaxed mt-2" style="color:var(--text-secondary)">
+                Hứa Thất An xuyên không vào vương triều Đại Phụng, làm tuần tra viên ban đêm phá giải các kỳ án chấn động giang hồ và triều đình, trừ yêu diệt ma bảo vệ bách tính...
+              </p>
+            </div>
+            <div class="mt-3">
+              <a href="/reader.html?slug=dai-phung-da-canh-nhan&chapter=chapter_001" class="px-3.5 py-1.5 rounded-full font-semibold text-white text-xs inline-flex items-center gap-1.5 shadow-sm transition-opacity hover:opacity-90" style="background-color:var(--accent)" onclick="event.stopPropagation()">
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                <span>Nghe Audio</span>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Truyện 5 -->
+        <article class="latest-card group" onclick="window.location.href='/reader.html?slug=ta-co-mot-than-bi-dong-ky&chapter=chapter_001'">
+          <div class="latest-cover-wrap">
+            <img src="/api/books/ta-co-mot-than-bi-dong-ky/cover" alt="Ta Có Một Thân Bị Động Kỹ" onerror="this.src='/api/books/ta-co-mot-than-bi-dong-ky/cover'" />
+            <span class="badge-new">
+              ✨ Mới
+            </span>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-sm sm:text-base line-clamp-2 leading-snug group-hover:text-[var(--accent)] transition-colors" style="color:var(--text-primary)">
+                Ta Có Một Thân Bị Động Kỹ
+              </h3>
+              <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-[11px] sm:text-xs" style="color:var(--text-secondary)">
+                <span class="flex items-center gap-1 truncate max-w-[120px]">
+                  <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  A Cẩm Đang Cố Gắng
+                </span>
+                <span class="flex items-center gap-1 truncate max-w-[110px]">
+                  <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                  Hài Hước, Dị Năng
+                </span>
+                <span class="flex items-center gap-1 font-medium text-amber-500">
+                  <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  Đang ra
+                </span>
+              </div>
+              <div class="flex items-center gap-2.5 mt-1 text-[11px] opacity-75" style="color:var(--text-secondary)">
+                <span>📖 1250 chương</span>
+                <span>•</span>
+                <span>👁 19.3k</span>
+                <span>•</span>
+                <span>🕒 Hôm nay</span>
+              </div>
+              <p class="line-clamp-2 text-xs leading-relaxed mt-2" style="color:var(--text-secondary)">
+                Thế giới tu tiên hung hiểm, Từ Tiểu Thụ chỉ muốn khiêm tốn tu luyện nhưng mỗi lần bị đánh trúng lại kích hoạt một loại thần kỹ bị động nghịch thiên chấn động tam giới...
+              </p>
+            </div>
+            <div class="mt-3">
+              <a href="/reader.html?slug=ta-co-mot-than-bi-dong-ky&chapter=chapter_001" class="px-3.5 py-1.5 rounded-full font-semibold text-white text-xs inline-flex items-center gap-1.5 shadow-sm transition-opacity hover:opacity-90" style="background-color:var(--accent)" onclick="event.stopPropagation()">
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                <span>Nghe Audio</span>
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Truyện 6 -->
+        <article class="latest-card group" onclick="window.location.href='/reader.html?slug=than-thoai-ky-nguyen&chapter=chapter_001'">
+          <div class="latest-cover-wrap">
+            <img src="/api/books/than-thoai-ky-nguyen/cover" alt="Thần Thoại Kỷ Nguyên" onerror="this.src='/api/books/than-thoai-ky-nguyen/cover'" />
+            <span class="badge-new">
+              ✨ Mới
+            </span>
+          </div>
+          <div class="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              <h3 class="font-bold text-sm sm:text-base line-clamp-2 leading-snug group-hover:text-[var(--accent)] transition-colors" style="color:var(--text-primary)">
+                Thần Thoại Kỷ Nguyên
+              </h3>
+              <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 mt-1 text-[11px] sm:text-xs" style="color:var(--text-secondary)">
+                <span class="flex items-center gap-1 truncate max-w-[120px]">
+                  <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                  Quần Manh Tụ Hội
+                </span>
+                <span class="flex items-center gap-1 truncate max-w-[110px]">
+                  <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>
+                  Huyền Huyễn, Dị Giới
+                </span>
+                <span class="flex items-center gap-1 font-medium text-amber-500">
+                  <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                  Đang ra
+                </span>
+              </div>
+              <div class="flex items-center gap-2.5 mt-1 text-[11px] opacity-75" style="color:var(--text-secondary)">
+                <span>📖 640 chương</span>
+                <span>•</span>
+                <span>👁 13.9k</span>
+                <span>•</span>
+                <span>🕒 29/09/2026</span>
+              </div>
+              <p class="line-clamp-2 text-xs leading-relaxed mt-2" style="color:var(--text-secondary)">
+                Thời đại vũ trụ dị biến, linh khí hồi phục, nhân loại mở ra kỷ nguyên thần thoại mới với những chiến binh siêu phàm chiến đấu bảo vệ nền văn minh...
+              </p>
+            </div>
+            <div class="mt-3">
+              <a href="/reader.html?slug=than-thoai-ky-nguyen&chapter=chapter_001" class="px-3.5 py-1.5 rounded-full font-semibold text-white text-xs inline-flex items-center gap-1.5 shadow-sm transition-opacity hover:opacity-90" style="background-color:var(--accent)" onclick="event.stopPropagation()">
+                <svg class="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+                <span>Nghe Audio</span>
+              </a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- 3. PHẦN TRUYỆN ĐANG NGHE: Đúng 3 bộ đang nghe gần nhất -->
+    <section id="recent-section">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b" style="border-color:var(--border)">
+        <div class="flex items-center gap-2.5">
+          <span class="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-500/10 text-blue-500 text-lg">
+            🕒
+          </span>
+          <div>
+            <h2 class="text-xl sm:text-2xl font-bold flex items-center gap-2" style="color:var(--accent)">
+              Truyện Đang Nghe Gần Nhất
+            </h2>
+            <p class="text-xs sm:text-sm" style="color:var(--text-secondary)">
+              Lịch sử 3 bộ gần nhất — tiếp tục nghe ngay từ điểm dừng
+            </p>
+          </div>
+        </div>
+        <button id="clear-history-btn" class="text-xs px-3 py-1 rounded-md border transition-opacity hover:opacity-75" style="border-color:var(--border);color:var(--text-secondary)" title="Làm mới lịch sử">
+          Đặt lại lịch sử
+        </button>
+      </div>
+
+      <!-- Exactly 3 cards grid -->
+      <div id="recent-books-grid" class="recent-grid">
+        
+        <!-- Bộ 1 (Google Drive) -->
+        <article class="recent-card group"
+                 onclick="window.location.href='/reader.html?slug=sample-story&chapter=chapter_001'">
+          <img src="/api/books/sample-story/cover" alt="Cho Cậu Học Ở Trường Quý Tộc" class="recent-thumb group-hover:scale-105 transition-transform duration-300" onerror="this.src='/api/books/sample-story/cover'" />
+          <div class="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm sm:text-base font-bold line-clamp-1 group-hover:text-[var(--accent)] transition-colors" style="color:var(--text-primary)">
+                Cho Cậu Học Ở Trường Quý Tộc...
+              </h3>
+              <p class="text-xs flex items-center gap-1 mt-1 font-medium" style="color:var(--accent)">
+                <span>Đang nghe:</span>
+                <span class="truncate">Chương 1</span>
+              </p>
+            </div>
+            <div class="mt-2">
+              <div class="flex items-center justify-between text-[11px] mb-1" style="color:var(--text-secondary)">
+                <span>Tiến độ: <b>35%</b></span>
+                <span class="truncate">Vừa nghe hôm nay</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full overflow-hidden" style="background-color:rgba(128,128,128,0.2)">
+                <div class="h-full rounded-full transition-all duration-500" style="width:35%;background-color:var(--accent)"></div>
+              </div>
+            </div>
+            <div class="mt-2 pt-2 border-t flex items-center justify-between" style="border-color:var(--border)">
+              <span class="text-[11px] opacity-75 truncate" style="color:var(--text-secondary)">Tác Giả Ẩn Danh</span>
+              <a href="/reader.html?slug=sample-story&chapter=chapter_001" class="px-2.5 py-1 rounded-full text-xs font-semibold text-white flex items-center gap-1 shadow-sm transition-opacity hover:opacity-90" style="background-color:var(--accent)">
+                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                Tiếp tục
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Bộ 2 (Google Drive) -->
+        <article class="recent-card group"
+                 onclick="window.location.href='/reader.html?slug=do-giam-quai-vat&chapter=chapter_001'">
+          <img src="/api/books/do-giam-quai-vat/cover" alt="Đồ Giám Quái Vật" class="recent-thumb group-hover:scale-105 transition-transform duration-300" onerror="this.src='/api/books/do-giam-quai-vat/cover'" />
+          <div class="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm sm:text-base font-bold line-clamp-1 group-hover:text-[var(--accent)] transition-colors" style="color:var(--text-primary)">
+                Đồ Giám Quái Vật: Bắt Đầu...
+              </h3>
+              <p class="text-xs flex items-center gap-1 mt-1 font-medium" style="color:var(--accent)">
+                <span>Đang nghe:</span>
+                <span class="truncate">Chương 1</span>
+              </p>
+            </div>
+            <div class="mt-2">
+              <div class="flex items-center justify-between text-[11px] mb-1" style="color:var(--text-secondary)">
+                <span>Tiến độ: <b>60%</b></span>
+                <span class="truncate">Hôm nay</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full overflow-hidden" style="background-color:rgba(128,128,128,0.2)">
+                <div class="h-full rounded-full transition-all duration-500" style="width:60%;background-color:var(--accent)"></div>
+              </div>
+            </div>
+            <div class="mt-2 pt-2 border-t flex items-center justify-between" style="border-color:var(--border)">
+              <span class="text-[11px] opacity-75 truncate" style="color:var(--text-secondary)">Lâm Ẩn</span>
+              <a href="/reader.html?slug=do-giam-quai-vat&chapter=chapter_001" class="px-2.5 py-1 rounded-full text-xs font-semibold text-white flex items-center gap-1 shadow-sm transition-opacity hover:opacity-90" style="background-color:var(--accent)">
+                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                Tiếp tục
+              </a>
+            </div>
+          </div>
+        </article>
+
+        <!-- Bộ 3 (Google Drive) -->
+        <article class="recent-card group"
+                 onclick="window.location.href='/reader.html?slug=xuyen-khong-1970&chapter=chapter_001'">
+          <img src="/api/books/xuyen-khong-1970/cover" alt="Xuyên Không 1970" class="recent-thumb group-hover:scale-105 transition-transform duration-300" onerror="this.src='/api/books/xuyen-khong-1970/cover'" />
+          <div class="flex-1 min-w-0 flex flex-col justify-between">
+            <div>
+              <h3 class="text-sm sm:text-base font-bold line-clamp-1 group-hover:text-[var(--accent)] transition-colors" style="color:var(--text-primary)">
+                Xuyên Không 1970: Hành Trình...
+              </h3>
+              <p class="text-xs flex items-center gap-1 mt-1 font-medium" style="color:var(--accent)">
+                <span>Đang nghe:</span>
+                <span class="truncate">Chương 1</span>
+              </p>
+            </div>
+            <div class="mt-2">
+              <div class="flex items-center justify-between text-[11px] mb-1" style="color:var(--text-secondary)">
+                <span>Tiến độ: <b>15%</b></span>
+                <span class="truncate">Gần đây</span>
+              </div>
+              <div class="w-full h-1.5 rounded-full overflow-hidden" style="background-color:rgba(128,128,128,0.2)">
+                <div class="h-full rounded-full transition-all duration-500" style="width:15%;background-color:var(--accent)"></div>
+              </div>
+            </div>
+            <div class="mt-2 pt-2 border-t flex items-center justify-between" style="border-color:var(--border)">
+              <span class="text-[11px] opacity-75 truncate" style="color:var(--text-secondary)">Ngẫu Ngộ Nhai Giác</span>
+              <a href="/reader.html?slug=xuyen-khong-1970&chapter=chapter_001" class="px-2.5 py-1 rounded-full text-xs font-semibold text-white flex items-center gap-1 shadow-sm transition-opacity hover:opacity-90" style="background-color:var(--accent)">
+                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+                Tiếp tục
+              </a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer (Gọn gàng, tinh gọn) -->
+  <footer class="mt-auto border-t py-4 sm:py-5 text-xs" style="border-color:var(--border);background-color:var(--bg-surface);color:var(--text-secondary)">
+    <div class="max-w-[1240px] mx-auto px-4">
+      <div class="flex flex-col md:flex-row items-center justify-between gap-3 text-center md:text-left">
+        <!-- Logo & Giới thiệu ngắn -->
+        <div class="flex items-center gap-2">
+          <span class="font-bold text-sm" style="color:var(--accent)">🎧 Audio Web</span>
+          <span class="hidden sm:inline opacity-40">|</span>
+          <span class="opacity-80">Đọc truyện & nghe audio đồng bộ chất lượng cao</span>
+        </div>
+
+        <!-- Chuyển đổi Theme nhanh -->
+        <div class="flex flex-wrap items-center justify-center gap-1.5 text-[11px]">
+          <span class="opacity-60 mr-1">Giao diện:</span>
+          <button onclick="window.themeEngine.apply('tieuthuyetmang-dark')" class="px-2 py-0.5 rounded border hover:text-white transition-colors" style="border-color:var(--border)">Dark</button>
+          <button onclick="window.themeEngine.apply('tieuthuyetmang-light')" class="px-2 py-0.5 rounded border hover:text-white transition-colors" style="border-color:var(--border)">Light</button>
+          <button onclick="window.themeEngine.apply('tieuthuyetmang-sepia')" class="px-2 py-0.5 rounded border hover:text-white transition-colors" style="border-color:var(--border)">Sepia</button>
+          <button onclick="window.themeEngine.apply('oled-pure-black')" class="px-2 py-0.5 rounded border hover:text-white transition-colors" style="border-color:var(--border)">OLED</button>
+        </div>
+      </div>
+
+      <!-- Bản quyền & thông tin kết nối -->
+      <div class="mt-2.5 pt-2.5 border-t flex flex-col sm:flex-row items-center justify-between gap-1 text-[11px] opacity-75" style="border-color:var(--border)">
+        <p>© 2026 Audio Web • Hỗ trợ đồng bộ Kindle KOReader & PWA Offline</p>
+        <p>Bản quyền thuộc về Audio Web</p>
       </div>
     </div>
   </footer>
 
-  <script src="/js/navbar.js"></script>
-  <script src="/js/home.js"></script>
+  <script src="/js/navbar.js?v=2"></script>
+  <script src="/js/home.js?v=2"></script>
   <script>
-    // Khởi tạo Theme Plugin Engine
+    // Khởi tạo Theme Plugin Engine & Nạp trang chủ
     window.addEventListener('DOMContentLoaded', () => {
       if (window.themeEngine) window.themeEngine.init();
+      if (window.initHomePage) window.initHomePage();
     });
+    // Kích hoạt ngay nếu DOM đã sẵn sàng
+    if (document.readyState !== 'loading') {
+      if (window.initHomePage) window.initHomePage();
+    }
   </script>
 </body>
 </html>

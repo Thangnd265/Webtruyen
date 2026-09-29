@@ -1,0 +1,22 @@
+{
+  "title": "Xuyên Không 1970: Hành Trình Đổi Vận Của Một Tri Thức Trẻ",
+  "author": "Ngẫu Ngộ Nhai Giác",
+  "description": "Sau khi xuyên không, Giang Lâm rơi thẳng vào những năm tháng sục sôi ở một thôn quê Đông Bắc, mang theo tri thức thời đại mới...",
+  "slug": "xuyen-khong-1970",
+  "document_hash": "xuyen_khong_1970_hash_5678901234cdefab",
+  "cover_url": "/api/books/xuyen-khong-1970/cover",
+  "total_chapters": 325,
+  "genres": "Đô Thị, Xuyên Không, Lịch Sử",
+  "status": "Đang ra",
+  "views": "20.5k",
+  "rating": 4.5,
+  "updated_at": "28/09/2026",
+  "chapters": [
+    {
+      "id": "chapter_001",
+      "title": "Chương 1: Miền quê Đông Bắc",
+      "chapter_index": 1,
+      "audio_url": "/api/books/sample-story/audio/chapter_001"
+    }
+  ]
+}

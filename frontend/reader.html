@@ -3,30 +3,618 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>[ Tiểu Thuyết Mạng ] - Đọc & Nghe truyện online</title>
-  <meta name="description" content="Nền tảng đọc truyện và nghe audio online hàng đầu">
+  <title>Audio Web - Trình Phát & Đọc Truyện</title>
+  <meta name="description" content="Nền tảng đọc truyện và nghe audio online đồng bộ thời gian thực chuẩn tieuthuyetmang.com">
   <link rel="stylesheet" href="/css/tieuthuyetmang.css">
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
   <script src="/plugins/themes/theme-engine.js"></script>
-</head>
-<body class="font-sans min-h-screen flex flex-col" style="background-color:var(--bg-primary);color:var(--text-primary)">
+  <style>
+    /* Reset & Base Dark Style chuẩn tieuthuyetmang.com */
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
+    body {
+      background-color: #0b0b0e !important;
+      color: #f3f4f6 !important;
+      font-family: 'Nunito', system-ui, -apple-system, sans-serif !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      min-height: 100vh !important;
+      display: flex !important;
+      flex-direction: column !important;
+      user-select: none;
+      -webkit-font-smoothing: antialiased;
+    }
 
-  <!-- Exact Header from tieuthuyetmang.com -->
-  <header class="sticky top-0 z-50 w-full border-b bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80" style="border-color:var(--border);background-color:var(--bg-surface)">
+    header.reader-header {
+      background-color: #111115 !important;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+      position: sticky;
+      top: 0;
+      z-index: 45;
+      width: 100%;
+    }
+
+    .top-breadcrumb-bar {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px 20px 0;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .breadcrumb-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13.5px;
+      color: rgba(255, 255, 255, 0.65);
+      text-decoration: none;
+      transition: color 0.2s ease;
+      cursor: pointer;
+    }
+    .breadcrumb-link:hover {
+      color: #ffffff;
+    }
+
+    /* ========================================================
+       1. CHẾ ĐỘ CHỈ NGHE AUDIO (AUDIO ONLY VIEW - Ảnh 2)
+       ======================================================== */
+    #audio-only-view {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 10px 16px 95px;
+      width: 100%;
+      min-height: calc(100vh - 140px);
+    }
+
+    .vinyl-player-card {
+      width: 100%;
+      max-width: 460px;
+      background-color: #141418 !important;
+      border: 1px solid rgba(255, 255, 255, 0.08) !important;
+      border-radius: 26px !important;
+      padding: 36px 30px 32px !important;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65) !important;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      position: relative;
+    }
+
+    /* Đĩa than đĩa xoay vinyl */
+    .vinyl-disc-box {
+      width: 215px;
+      height: 215px;
+      border-radius: 50%;
+      background: radial-gradient(circle at center, #2b2b32 0%, #1a1a1f 35%, #0d0d10 65%, #050507 100%);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 26px;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 0 4px rgba(255, 255, 255, 0.05);
+    }
+    .vinyl-disc-box::before {
+      content: '';
+      position: absolute;
+      inset: 12px;
+      border-radius: 50%;
+      border: 1px dashed rgba(255, 255, 255, 0.08);
+      pointer-events: none;
+    }
+    .vinyl-disc-box::after {
+      content: '';
+      position: absolute;
+      inset: 28px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      pointer-events: none;
+    }
+
+    /* Trục trung tâm đĩa than màu đỏ/cam */
+    .vinyl-center-dot {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #e05d44 0%, #c2410c 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      font-weight: 800;
+      font-size: 22px;
+      border: 4px solid #141418;
+      box-shadow: 0 4px 14px rgba(224, 93, 68, 0.4);
+      z-index: 2;
+    }
+
+    /* Hiệu ứng xoay tròn */
+    .audio-disc-spin {
+      animation: spinVinyl 12s linear infinite;
+    }
+    .audio-disc-spin.paused {
+      animation-play-state: paused;
+    }
+    @keyframes spinVinyl {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    /* Tiêu đề chương & Tên truyện */
+    .vinyl-ep-title {
+      font-size: 19px !important;
+      font-weight: 800 !important;
+      color: #ffffff !important;
+      margin: 0 0 6px 0 !important;
+      letter-spacing: -0.01em;
+      max-width: 95%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .vinyl-story-title {
+      font-size: 13px !important;
+      color: rgba(255, 255, 255, 0.55) !important;
+      margin: 0 0 24px 0 !important;
+      max-width: 90%;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Thanh tiến trình thời gian Scrubber */
+    .vinyl-scrubber-container {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 22px;
+    }
+    .vinyl-time-text {
+      font-size: 12px !important;
+      color: rgba(255, 255, 255, 0.55) !important;
+      font-family: monospace;
+      min-width: 44px;
+    }
+    .vinyl-scrubber-bar {
+      flex: 1;
+      height: 4px;
+      -webkit-appearance: none;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 9999px;
+      outline: none;
+      cursor: pointer;
+      position: relative;
+    }
+    .vinyl-scrubber-bar::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      width: 13px;
+      height: 13px;
+      border-radius: 50%;
+      background: #e05d44;
+      cursor: pointer;
+      box-shadow: 0 0 8px rgba(224, 93, 68, 0.8);
+      transition: transform 0.1s ease;
+    }
+    .vinyl-scrubber-bar::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+    }
+
+    /* Hàng phím điều khiển Play/Pause/Seek */
+    .vinyl-ctrl-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      margin-bottom: 24px;
+      width: 100%;
+    }
+    .vinyl-step-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.85);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 6px;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .vinyl-step-btn:hover {
+      color: #ffffff;
+      transform: scale(1.1);
+    }
+    .vinyl-skip-btn {
+      background: none;
+      border: none;
+      color: #e05d44;
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .vinyl-skip-btn:hover {
+      transform: scale(1.12);
+    }
+    .vinyl-main-play-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 50%;
+      background-color: #e05d44 !important;
+      color: #ffffff !important;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(224, 93, 68, 0.45) !important;
+      transition: all 0.2s ease;
+    }
+    .vinyl-main-play-btn:hover {
+      transform: scale(1.08);
+      background-color: #ea580c !important;
+    }
+    .vinyl-main-play-btn:active {
+      transform: scale(0.95);
+    }
+
+    /* Hàng nút tuỳ chọn phụ */
+    .vinyl-aux-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      width: 100%;
+    }
+    .vinyl-aux-pill {
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      background: transparent;
+      color: #f3f4f6;
+      border-radius: 9999px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .vinyl-aux-pill:hover {
+      border-color: rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.06);
+    }
+    .vinyl-aux-pill.active {
+      border-color: #e05d44;
+      color: #e05d44;
+    }
+
+    /* Thanh đáy cố định ở chế độ chỉ nghe (Ảnh 2) */
+    .audio-mode-bottom-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 72px;
+      background-color: #0b0b0e;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      z-index: 40;
+    }
+    .btn-bottom-chapters {
+      background-color: #e05d44 !important;
+      color: #ffffff !important;
+      border: none !important;
+      border-radius: 12px !important;
+      height: 44px !important;
+      padding: 0 24px !important;
+      font-weight: 700 !important;
+      font-size: 14px !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      cursor: pointer !important;
+      box-shadow: 0 4px 14px rgba(224, 93, 68, 0.4) !important;
+      transition: all 0.2s ease !important;
+    }
+    .btn-bottom-chapters:hover {
+      background-color: #ea580c !important;
+      transform: translateY(-1px);
+    }
+    /* Nút icon trang sách: CHUYỂN SANG CHẾ ĐỘ HIỆN CHỮ */
+    .btn-bottom-toggle-text {
+      width: 44px !important;
+      height: 44px !important;
+      border-radius: 12px !important;
+      background-color: #18181c !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      color: #ffffff !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+    }
+    .btn-bottom-toggle-text:hover {
+      background-color: #26262e !important;
+      border-color: rgba(255, 255, 255, 0.35) !important;
+      transform: scale(1.06);
+    }
+    .btn-bottom-report {
+      height: 44px !important;
+      border-radius: 12px !important;
+      background-color: #18181c !important;
+      border: 1px solid rgba(255, 255, 255, 0.12) !important;
+      color: rgba(255, 255, 255, 0.85) !important;
+      padding: 0 16px !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 6px !important;
+      font-size: 13px !important;
+      font-weight: 600 !important;
+      cursor: pointer !important;
+      transition: all 0.2s ease !important;
+    }
+    .btn-bottom-report:hover {
+      background-color: #26262e !important;
+      color: #ffffff !important;
+    }
+
+    /* ========================================================
+       2. CHẾ ĐỘ HIỆN CHỮ (TEXT READING VIEW - Ảnh 3)
+       ======================================================== */
+    #text-reading-view {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 24px 20px 105px;
+      width: 100%;
+      display: none; /* Mặc định ẩn, bật lên khi bấm xem chữ */
+      user-select: text;
+    }
+
+    .text-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .btn-aa-settings {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background-color: #18181c !important;
+      border: 1px solid rgba(255, 255, 255, 0.14) !important;
+      color: #ffffff !important;
+      border-radius: 10px;
+      padding: 6px 14px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-aa-settings:hover {
+      background-color: #26262e !important;
+      border-color: rgba(255, 255, 255, 0.3) !important;
+    }
+
+    .text-chapter-heading {
+      font-size: 23px !important;
+      font-weight: 800 !important;
+      color: #ffffff !important;
+      margin: 0 0 24px 0 !important;
+      line-height: 1.35;
+    }
+
+    .reader-paragraph {
+      margin-bottom: 20px;
+      line-height: 1.85;
+      font-size: 18px;
+      color: #e2e8f0;
+      transition: all 0.2s ease;
+      cursor: pointer;
+      border-radius: 6px;
+      padding: 4px 6px;
+    }
+    .reader-paragraph:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+    .reader-paragraph.active-cue {
+      background-color: rgba(224, 93, 68, 0.15) !important;
+      color: #fbbf24 !important;
+      font-weight: 600;
+      border-left: 3px solid #e05d44;
+      padding-left: 10px;
+    }
+
+    /* Thanh Mini Player ở đáy màn hình khi đọc chữ (Ảnh 3) */
+    .mini-player-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background-color: #111114 !important;
+      border-top: 1px solid rgba(255, 255, 255, 0.09) !important;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 50;
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.6) !important;
+    }
+    .mini-progress-line {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 3px;
+      background-color: #e05d44;
+      width: 0%;
+      transition: width 0.15s linear;
+    }
+    .mini-player-left {
+      display: flex;
+      flex-direction: column;
+      cursor: pointer;
+      min-width: 0;
+      max-width: 58%;
+    }
+    .mini-chapter-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mini-story-title {
+      font-size: 11.5px;
+      color: rgba(255, 255, 255, 0.5);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mini-player-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .mini-time-display {
+      font-size: 12px;
+      font-family: monospace;
+      color: rgba(255, 255, 255, 0.65);
+    }
+    .mini-play-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      background-color: #e05d44;
+      color: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(224, 93, 68, 0.4);
+      transition: transform 0.2s ease;
+    }
+    .mini-play-btn:hover {
+      transform: scale(1.08);
+    }
+    .mini-switch-to-audio-btn {
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.7);
+      cursor: pointer;
+      padding: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .mini-switch-to-audio-btn:hover {
+      color: #ffffff;
+      transform: scale(1.15);
+    }
+
+    /* Popovers (Tốc độ & Hẹn giờ) */
+    .player-popover {
+      position: absolute;
+      bottom: calc(100% + 10px);
+      left: 50%;
+      transform: translateX(-50%);
+      background-color: #1c1c22 !important;
+      border: 1px solid rgba(255, 255, 255, 0.15) !important;
+      border-radius: 14px;
+      padding: 8px;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.8);
+      z-index: 60;
+      display: none;
+    }
+    .player-popover.show {
+      display: block;
+    }
+
+    /* Danh Sách Chương Drawer */
+    #chapter-drawer {
+      position: fixed;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 100%;
+      max-width: 320px;
+      background-color: #141418 !important;
+      border-left: 1px solid rgba(255, 255, 255, 0.1) !important;
+      z-index: 100;
+      transform: translateX(100%) !important;
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      flex-direction: column;
+    }
+    #chapter-drawer.open {
+      transform: translateX(0) !important;
+    }
+    #drawer-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      z-index: 99;
+      display: none;
+    }
+    #drawer-backdrop.open {
+      display: block;
+    }
+
+    /* Settings Popover Aa */
+    #settings-popover {
+      position: absolute;
+      right: 0;
+      top: calc(100% + 8px);
+      background-color: #18181d !important;
+      border: 1px solid rgba(255, 255, 255, 0.14) !important;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 14px 35px rgba(0, 0, 0, 0.85);
+      z-index: 60;
+      width: 290px;
+      display: none;
+    }
+    #settings-popover.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="reader-header">
     <div class="container mx-auto flex h-16 items-center justify-between px-4">
-      <a class="flex items-center gap-2 font-bold text-xl" href="/" style="color:var(--accent);padding-right:15px">
-        [ Tiểu Thuyết Mạng ✦ ]
+      <a class="flex items-center gap-2 font-bold text-xl" href="/" style="color:var(--accent);text-decoration:none">
+        🎧 Audio Web
       </a>
       <nav class="hidden md:flex items-center gap-6">
-        <a class="hover:opacity-80 transition-opacity text-sm font-medium" href="/" style="color:var(--text-primary)">Trang chủ</a>
-        <a class="hover:opacity-80 transition-opacity text-sm font-semibold" href="/" style="color:var(--accent)">Đang Đọc & Nghe</a>
+        <a class="hover:opacity-80 transition-opacity text-sm font-medium" href="/" style="color:rgba(255,255,255,0.7);text-decoration:none">Trang chủ</a>
+        <a class="hover:opacity-80 transition-opacity text-sm font-semibold" href="/" style="color:var(--accent);text-decoration:none">Đang Phát Audio</a>
       </nav>
-      <div class="flex items-center gap-2">
-        <button id="theme-toggle-btn" aria-label="Chuyển đổi giao diện" class="p-2 rounded-full transition-colors hover:opacity-80" title="Chuyển chế độ giao diện" type="button">
-          <svg id="theme-toggle-icon" class="lucide lucide-moon w-5 h-5" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="color:var(--text-secondary)" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+      <div class="flex items-center gap-3">
+        <button id="theme-toggle-btn" aria-label="Chuyển đổi giao diện" class="p-2 rounded-full transition-colors hover:bg-white/10" title="Chuyển chế độ giao diện" type="button">
+          <svg id="theme-toggle-icon" class="lucide lucide-moon w-5 h-5 text-neutral-300" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
           </svg>
         </button>
@@ -34,297 +622,235 @@
     </div>
   </header>
 
-  <!-- Resume Prompt Modal (exact from audio_reader_chunk.js lines 415-466) -->
-  <div id="resume-banner" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" role="dialog" aria-modal="true">
-    <div class="w-full max-w-sm rounded-2xl p-6 shadow-xl border" style="background-color:var(--bg-surface);border-color:var(--border)">
-      <h2 class="text-lg font-semibold mb-2" style="color:var(--text-primary)">Tiếp tục nghe?</h2>
-      <p id="resume-banner-text" class="text-sm mb-4" style="color:var(--text-secondary)">Bạn đã nghe đến vị trí đã lưu. Tiếp tục từ đây hay nghe từ đầu?</p>
-      <div class="flex gap-3">
-        <button id="btn-resume-yes" type="button" class="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-white" style="background-color:var(--accent)">Tiếp tục nghe</button>
-        <button id="btn-resume-no" type="button" class="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm border-2" style="border-color:var(--accent);color:var(--accent)">Nghe từ đầu</button>
+  <!-- ========================================================
+       1. VIEW MODE A: CHỈ NGHE AUDIO (Ảnh 2)
+       ======================================================== -->
+  <main id="audio-only-view">
+    <!-- Breadcrumb -->
+    <div style="width:100%;max-width:460px;margin-bottom:14px;text-align:left">
+      <a href="/" class="breadcrumb-link">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 19-7-7 7-7"/></svg>
+        <span id="audio-breadcrumb-book-title" class="truncate font-semibold text-neutral-300">Đang tải tên truyện...</span>
+      </a>
+    </div>
+
+    <!-- Vinyl Player Card -->
+    <div class="vinyl-player-card">
+      
+      <!-- Đĩa than xoay tròn -->
+      <div class="vinyl-disc-box audio-disc-spin paused" id="vinyl-disc">
+        <div class="vinyl-center-dot" id="vinyl-center-letter">A</div>
+      </div>
+
+      <!-- Tiêu đề chương & Tên truyện -->
+      <h2 class="vinyl-ep-title" id="audio-chapter-title">[ Đang tải chương... ]</h2>
+      <p class="vinyl-story-title" id="audio-story-subtitle">Audio Đồng Bộ Đỉnh Cao</p>
+
+      <!-- Scrubber -->
+      <div class="vinyl-scrubber-container">
+        <span class="vinyl-time-text" id="time-current">00:00</span>
+        <input type="range" min="0" max="100" value="0" step="0.1" class="vinyl-scrubber-bar" id="audio-scrubber" aria-label="Tua thời gian">
+        <span class="vinyl-time-text text-right" id="time-total">00:00</span>
+      </div>
+
+      <!-- Controls -->
+      <div class="vinyl-ctrl-row">
+        <!-- Chương trước -->
+        <button type="button" class="vinyl-skip-btn" id="btn-prev-chapter" title="Chương trước">
+          <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+        </button>
+
+        <!-- Tua lùi 10s -->
+        <button type="button" class="vinyl-step-btn" id="btn-seek-back" title="Tua lùi 10 giây">
+          -10s
+        </button>
+
+        <!-- Nút Play/Pause lớn -->
+        <button type="button" class="vinyl-main-play-btn" id="btn-play-pause" title="Phát audio">
+          <svg class="w-7 h-7 fill-current ml-0.5" id="play-pause-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
+
+        <!-- Tua tới 10s -->
+        <button type="button" class="vinyl-step-btn" id="btn-seek-fwd" title="Tua tới 10 giây">
+          +10s
+        </button>
+
+        <!-- Chương sau -->
+        <button type="button" class="vinyl-skip-btn" id="btn-next-chapter" title="Chương sau">
+          <svg class="w-6 h-6 fill-current" viewBox="0 0 24 24"><path d="m6 18 8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+        </button>
+      </div>
+
+      <!-- Secondary Options -->
+      <div class="vinyl-aux-row">
+        <!-- Tự động phát -->
+        <button type="button" class="vinyl-aux-pill active" id="btn-auto-next">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7"/></svg>
+          <span>Phát tự động</span>
+        </button>
+
+        <!-- Tốc độ -->
+        <div style="position:relative">
+          <button type="button" class="vinyl-aux-pill" id="btn-speed">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2"/></svg>
+            <span id="speed-label">1.0x</span>
+          </button>
+          <div class="player-popover" id="speed-popover">
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:4px;min-width:130px">
+              <button type="button" data-speed-val="0.75" class="py-1 px-2 text-xs rounded hover:bg-white/10 text-white">0.75x</button>
+              <button type="button" data-speed-val="1.0" class="py-1 px-2 text-xs rounded hover:bg-white/10 text-orange-400 font-bold">1.0x</button>
+              <button type="button" data-speed-val="1.25" class="py-1 px-2 text-xs rounded hover:bg-white/10 text-white">1.25x</button>
+              <button type="button" data-speed-val="1.5" class="py-1 px-2 text-xs rounded hover:bg-white/10 text-white">1.5x</button>
+              <button type="button" data-speed-val="2.0" class="py-1 px-2 text-xs rounded hover:bg-white/10 text-white">2.0x</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Hẹn giờ -->
+        <div style="position:relative">
+          <button type="button" class="vinyl-aux-pill" id="btn-timer">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span id="timer-label">Hẹn giờ</span>
+          </button>
+          <div class="player-popover" id="timer-popover">
+            <div style="display:flex;flex-direction:column;gap:3px;min-width:110px">
+              <button type="button" data-timer-min="0" class="py-1 px-2 text-xs rounded hover:bg-white/10 text-left text-white">Tắt</button>
+              <button type="button" data-timer-min="15" class="py-1 px-2 text-xs rounded hover:bg-white/10 text-left text-white">15 phút</button>
+              <button type="button" data-timer-min="30" class="py-1 px-2 text-xs rounded hover:bg-white/10 text-left text-white">30 phút</button>
+              <button type="button" data-timer-min="45" class="py-1 px-2 text-xs rounded hover:bg-white/10 text-left text-white">45 phút</button>
+              <button type="button" data-timer-min="60" class="py-1 px-2 text-xs rounded hover:bg-white/10 text-left text-white">60 phút</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Thanh công cụ đáy cố định (Ảnh 2) -->
+    <div class="audio-mode-bottom-bar">
+      <!-- Nút Chọn Chương -->
+      <button type="button" class="btn-bottom-chapters" id="btn-open-drawer">
+        <svg class="w-5 h-5 fill-none stroke-current" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        <span>Chọn chương</span>
+      </button>
+
+      <!-- Nút Icon Văn Bản: BẤM VÀO ĐÂY ĐỂ CHUYỂN SANG CHẾ ĐỘ HIỆN CHỮ (Ảnh 3) -->
+      <button type="button" class="btn-bottom-toggle-text" id="btn-switch-to-text" title="Xem lời thoại / Hiện chữ văn bản (Chế độ đọc)">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </button>
+
+      <!-- Nút Báo Lỗi -->
+      <button type="button" class="btn-bottom-report" id="btn-report-issue" title="Báo lỗi audio hoặc nội dung">
+        <svg class="w-4 h-4 text-neutral-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        <span>Báo lỗi</span>
+      </button>
+    </div>
+  </main>
+
+
+  <!-- ========================================================
+       2. VIEW MODE B: HIỆN CHỮ VĂN BẢN (Ảnh 3)
+       ======================================================== -->
+  <main id="text-reading-view">
+    <div class="text-top-bar">
+      <!-- Breadcrumb -->
+      <a href="/" class="breadcrumb-link" id="btn-back-from-text">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m15 19-7-7 7-7"/></svg>
+        <span id="text-breadcrumb-book-title" class="truncate font-semibold text-neutral-300">Đang tải tên truyện...</span>
+      </a>
+
+      <!-- Nút T Aa Settings -->
+      <div style="position:relative">
+        <button type="button" class="btn-aa-settings" id="btn-reading-settings">
+          <span>T Aa</span>
+          <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+        </button>
+
+        <!-- Popover Cài Đặt Đọc -->
+        <div id="settings-popover">
+          <div class="text-xs font-bold text-neutral-400 mb-2">PHÔNG CHỮ</div>
+          <div style="display:flex;gap:8px;margin-bottom:14px">
+            <button type="button" data-set-font="sans" class="flex-1 py-1.5 rounded-lg text-xs font-medium border border-neutral-700 bg-neutral-800 text-white">Sans-serif</button>
+            <button type="button" data-set-font="serif" class="flex-1 py-1.5 rounded-lg text-xs font-medium border border-neutral-700 bg-neutral-800 text-white font-serif">Serif</button>
+          </div>
+
+          <div class="text-xs font-bold text-neutral-400 mb-2">CỠ CHỮ</div>
+          <div style="display:flex;gap:4px;margin-bottom:14px">
+            <button type="button" data-set-size="15" class="flex-1 py-1 rounded border border-neutral-700 text-xs text-white">15</button>
+            <button type="button" data-set-size="18" class="flex-1 py-1 rounded border border-orange-500 text-xs text-orange-400 font-bold">18</button>
+            <button type="button" data-set-size="20" class="flex-1 py-1 rounded border border-neutral-700 text-xs text-white">20</button>
+            <button type="button" data-set-size="22" class="flex-1 py-1 rounded border border-neutral-700 text-xs text-white">22</button>
+            <button type="button" data-set-size="25" class="flex-1 py-1 rounded border border-neutral-700 text-xs text-white">25</button>
+          </div>
+
+          <div class="text-xs font-bold text-neutral-400 mb-2">GIÃN DÒNG</div>
+          <div style="display:flex;gap:6px;margin-bottom:14px">
+            <button type="button" data-set-line="1.6" class="flex-1 py-1 rounded border border-neutral-700 text-xs text-white">1.6</button>
+            <button type="button" data-set-line="1.9" class="flex-1 py-1 rounded border border-orange-500 text-xs text-orange-400 font-bold">1.9</button>
+            <button type="button" data-set-line="2.3" class="flex-1 py-1 rounded border border-neutral-700 text-xs text-white">2.3</button>
+          </div>
+
+          <div class="text-xs font-bold text-neutral-400 mb-2">CHẾ ĐỘ NỀN</div>
+          <div style="display:flex;gap:6px">
+            <button type="button" data-set-reading-theme="dark" class="flex-1 py-1.5 rounded-lg text-xs font-medium border border-neutral-700 bg-black text-white">Đen</button>
+            <button type="button" data-set-reading-theme="sepia" class="flex-1 py-1.5 rounded-lg text-xs font-medium border border-neutral-700 bg-[#f4ecd8] text-[#5c4b37]">Sepia</button>
+            <button type="button" data-set-reading-theme="white" class="flex-1 py-1.5 rounded-lg text-xs font-medium border border-neutral-700 bg-[#ffffff] text-[#111]">Trắng</button>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
 
-  <!-- Main Content Layout -->
-  <main class="flex-1 pb-28">
-    <div id="reader-area" class="min-h-screen transition-colors duration-200">
-      <div class="max-w-3xl mx-auto px-4 py-8">
+    <!-- Tiêu đề chương đọc -->
+    <h1 class="text-chapter-heading" id="text-chapter-title">Chương 1: [ Đang tải... ]</h1>
+
+    <!-- Vùng nội dung chữ (Hỗ trợ Karaoke theo audio) -->
+    <div id="chapter-content" class="leading-relaxed">
+      <!-- Paragraphs dynamically populated -->
+    </div>
+
+    <!-- Sticky Mini Player ở đáy (Ảnh 3) -->
+    <div class="mini-player-bar">
+      <!-- Đường line tiến trình ở mép đỉnh -->
+      <div class="mini-progress-line" id="mini-progress-fill"></div>
+
+      <!-- Bên trái: Bấm vào để phóng to quay lại Chế độ Chỉ Nghe (Ảnh 2) -->
+      <div class="mini-player-left" id="mini-player-expand-btn" title="Bấm để mở lại giao diện đĩa than (Ảnh 2)">
+        <div class="mini-chapter-title" id="mini-chapter-title">Chương 1</div>
+        <div class="mini-story-title" id="mini-story-title">Audio Web</div>
+      </div>
+
+      <!-- Bên phải: Thời gian, Nút Play, Nút chuyển về đĩa than -->
+      <div class="mini-player-right">
+        <span class="mini-time-display" id="mini-time-display">00:00 / 00:00</span>
         
-        <!-- Breadcrumb & Reading Settings Bar (from exact_main_reader.html lines 5-33) -->
-        <div class="flex items-center justify-between mb-6">
-          <a class="text-sm flex items-center gap-1 hover:opacity-80" href="/" style="color:var(--text-secondary)">
-            <svg class="lucide lucide-chevron-left w-4 h-4" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-              <path d="m15 18-6-6 6-6"></path>
-            </svg>
-            <span id="reader-book-title" class="truncate max-w-[200px] sm:max-w-md font-medium">Đang tải...</span>
-          </a>
+        <button type="button" class="mini-play-btn" id="mini-play-pause-btn" title="Phát / Dừng">
+          <svg class="w-5 h-5 fill-current ml-0.5" id="mini-play-pause-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        </button>
 
-          <!-- Aa Settings Button -->
-          <div class="relative">
-            <button id="btn-reading-settings" class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 hover:opacity-90 transition-opacity" style="border-color:var(--border);background-color:var(--bg-surface);color:var(--text-primary)" title="Cài đặt đọc (Font, Size, Theme)" type="button">
-              <svg class="lucide lucide-type w-4 h-4" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-                <polyline points="4 7 4 4 20 4 20 7"></polyline>
-                <line x1="9" x2="15" y1="20" y2="20"></line>
-                <line x1="12" x2="12" y1="4" y2="20"></line>
-              </svg>
-              <span class="text-sm font-medium">Aa</span>
-              <svg class="lucide lucide-chevron-down w-4 h-4" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-                <path d="m6 9 6 6 6-6"></path>
-              </svg>
-            </button>
-
-            <!-- Aa Popover Menu (exact from doc_reader_chunk.js lines 1156-1246) -->
-            <div id="settings-popover" class="hidden absolute right-0 top-full mt-2 py-4 px-4 rounded-xl shadow-2xl z-50 min-w-[280px] border" style="background-color:var(--bg-surface);border-color:var(--border)">
-              <p class="text-xs font-semibold mb-2" style="color:var(--text-secondary)">Font Chữ</p>
-              <div class="flex gap-2 mb-4">
-                <button type="button" data-set-font="sans" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="border-color:var(--border);background-color:var(--bg-primary);color:var(--text-primary)">Sans-serif</button>
-                <button type="button" data-set-font="serif" class="flex-1 py-1.5 rounded-lg text-xs font-medium border font-serif" style="border-color:var(--border);background-color:var(--bg-primary);color:var(--text-primary)">Serif</button>
-              </div>
-
-              <p class="text-xs font-semibold mb-2" style="color:var(--text-secondary)">Cỡ Chữ</p>
-              <div class="flex gap-1 mb-4">
-                <button type="button" data-set-size="14" class="w-8 h-8 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">14</button>
-                <button type="button" data-set-size="16" class="w-8 h-8 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">16</button>
-                <button type="button" data-set-size="18" class="w-8 h-8 rounded-lg text-xs font-medium border font-bold text-[var(--accent)]" style="border-color:var(--accent);color:var(--accent)">18</button>
-                <button type="button" data-set-size="20" class="w-8 h-8 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">20</button>
-                <button type="button" data-set-size="22" class="w-8 h-8 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">22</button>
-                <button type="button" data-set-size="24" class="w-8 h-8 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">24</button>
-              </div>
-
-              <p class="text-xs font-semibold mb-2" style="color:var(--text-secondary)">Giãn Dòng</p>
-              <div class="flex gap-2 mb-4">
-                <button type="button" data-set-line="1.6" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">1.6</button>
-                <button type="button" data-set-line="2.0" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">2.0</button>
-                <button type="button" data-set-line="2.5" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">2.5</button>
-              </div>
-
-              <p class="text-xs font-semibold mb-2" style="color:var(--text-secondary)">Màu Nền Đọc</p>
-              <div class="flex gap-2">
-                <button type="button" data-set-reading-theme="white" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="background-color:#fff9fa;color:#2d3436;border-color:#dcd1ba">Trắng</button>
-                <button type="button" data-set-reading-theme="sepia" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="background-color:#f4ecd8;color:#5c4b37;border-color:#dcd1ba">Sepia</button>
-                <button type="button" data-set-reading-theme="dark" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="background-color:#000000;color:#e8e4e0;border-color:var(--border)">Đen</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Audio Player Hero (Exact Spinning Vinyl Disc from audio_reader_chunk.js lines 468-500) -->
-        <div class="rounded-3xl p-6 sm:p-8 w-full max-w-lg mx-auto mb-8 border" style="background-color:var(--bg-surface);border-color:var(--border);box-shadow:0 8px 40px rgba(0,0,0,0.12)">
-          <div class="flex justify-center mb-6">
-            <div class="relative">
-              <div id="vinyl-disc" class="w-[180px] h-[180px] sm:w-[220px] sm:h-[220px] rounded-full flex items-center justify-center overflow-hidden transition-[box-shadow,transform] duration-300 audio-disc-spin paused"
-                   style="box-shadow: 0 12px 40px rgba(0,0,0,0.35), 0 0 0 4px rgba(255,255,255,0.1), inset 0 0 0 3px rgba(0,0,0,0.2)">
-                <div class="absolute inset-0 rounded-full opacity-95" style="background: repeating-radial-gradient(circle at center, transparent 0, transparent 3px, rgba(0,0,0,0.15) 3px, rgba(0,0,0,0.15) 4px), radial-gradient(circle at 35% 35%, #333 0%, #1a1a1a 35%, #0d0d0d 60%, #000 100%)"></div>
-                <div class="absolute w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center z-10 border-[3px]" style="background-color:var(--accent);border-color:rgba(255,255,255,0.35);box-shadow:inset 0 2px 4px rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.2)">
-                  <span class="text-white text-base sm:text-lg font-bold">🎧</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Chapter Info -->
-          <div class="text-center mb-4 min-w-0">
-            <h2 id="audio-chapter-title" class="text-base sm:text-lg font-bold truncate px-2 mb-0.5" style="color:var(--text-primary)">Chương 1</h2>
-            <p class="text-xs" style="color:var(--text-secondary)">Đồng bộ giọng đọc Neural & Karaoke trực quan</p>
-          </div>
-
-          <!-- Scrubber (from lines 517-545) -->
-          <div class="flex items-center gap-3 mb-5">
-            <span id="time-current" class="text-xs font-mono tabular-nums w-10 flex-shrink-0" style="color:var(--text-secondary)">00:00</span>
-            <input id="audio-scrubber" type="range" min="0" max="100" value="0" step="0.1" class="flex-1 h-1.5 rounded-full cursor-pointer touch-none" style="accent-color:var(--accent);background:var(--border)" aria-label="Tua thời gian">
-            <span id="time-total" class="text-xs font-mono tabular-nums w-10 flex-shrink-0 text-right" style="color:var(--text-secondary)">00:00</span>
-          </div>
-
-          <!-- Controls (from lines 546-621) -->
-          <div class="flex items-center justify-center gap-2 sm:gap-4 mb-4">
-            <button id="btn-prev-chapter" type="button" class="p-2.5 rounded-full hover:bg-white/5 active:scale-95 transition-all touch-manipulation" style="color:var(--accent)" title="Chương trước">
-              <svg class="lucide lucide-skip-back w-6 h-6" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="19 20 9 12 19 4 19 20"></polygon>
-                <line x1="5" x2="5" y1="19" y2="5"></line>
-              </svg>
-            </button>
-            <button id="btn-seek-back" type="button" class="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full hover:bg-white/5 active:scale-95 transition-all touch-manipulation text-xs font-semibold" style="color:var(--text-primary)" title="Tua lại 10s">
-              -10s
-            </button>
-            <button id="btn-play-pause" type="button" class="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 touch-manipulation shadow-xl" style="background-color:var(--accent)" title="Phát">
-              <svg class="lucide lucide-play w-7 h-7 sm:w-8 sm:h-8 ml-1" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="6 3 20 12 6 21 6 3"></polygon>
-              </svg>
-            </button>
-            <button id="btn-seek-fwd" type="button" class="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full hover:bg-white/5 active:scale-95 transition-all touch-manipulation text-xs font-semibold" style="color:var(--text-primary)" title="Tua nhanh 10s">
-              +10s
-            </button>
-            <button id="btn-next-chapter" type="button" class="p-2.5 rounded-full hover:bg-white/5 active:scale-95 transition-all touch-manipulation" style="color:var(--accent)" title="Chương sau">
-              <svg class="lucide lucide-skip-forward w-6 h-6" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-                <polygon points="5 4 15 12 5 20 5 4"></polygon>
-                <line x1="19" x2="19" y1="5" y2="19"></line>
-              </svg>
-            </button>
-          </div>
-
-          <!-- Secondary Audio Options (from lines 622-680) -->
-          <div class="flex items-center justify-center gap-2 flex-wrap text-xs pt-3 border-t" style="border-color:var(--border)">
-            <button id="btn-auto-next" type="button" class="px-3 py-1.5 rounded-full border transition-colors flex items-center gap-1 font-medium" style="border-color:var(--border);color:var(--accent)">
-              🔁 Tự động phát
-            </button>
-
-            <!-- Speed Menu -->
-            <div class="relative">
-              <button id="btn-speed" type="button" class="px-3 py-1.5 rounded-full border transition-colors font-medium" style="border-color:var(--border);color:var(--text-primary)">
-                1.0x
-              </button>
-              <div id="speed-popover" class="hidden absolute bottom-full mb-2 left-1/2 -translate-x-1/2 p-2 rounded-xl shadow-xl z-50 border grid grid-cols-3 gap-1 min-w-[140px]" style="background-color:var(--bg-surface);border-color:var(--border)">
-                <button data-speed-val="0.75" class="py-1 px-2 rounded hover:bg-white/10 text-xs">0.75x</button>
-                <button data-speed-val="1.0" class="py-1 px-2 rounded hover:bg-white/10 text-xs font-bold text-[var(--accent)]">1.0x</button>
-                <button data-speed-val="1.25" class="py-1 px-2 rounded hover:bg-white/10 text-xs">1.25x</button>
-                <button data-speed-val="1.5" class="py-1 px-2 rounded hover:bg-white/10 text-xs">1.5x</button>
-                <button data-speed-val="2.0" class="py-1 px-2 rounded hover:bg-white/10 text-xs">2.0x</button>
-              </div>
-            </div>
-
-            <!-- Timer Menu -->
-            <div class="relative">
-              <button id="btn-timer" type="button" class="px-3 py-1.5 rounded-full border transition-colors font-medium" style="border-color:var(--border);color:var(--text-primary)">
-                Hẹn giờ
-              </button>
-              <div id="timer-popover" class="hidden absolute bottom-full mb-2 left-1/2 -translate-x-1/2 p-2 rounded-xl shadow-xl z-50 border flex flex-col gap-1 min-w-[120px]" style="background-color:var(--bg-surface);border-color:var(--border)">
-                <button data-timer-min="0" class="py-1 px-3 text-left rounded hover:bg-white/10 text-xs">Tắt</button>
-                <button data-timer-min="15" class="py-1 px-3 text-left rounded hover:bg-white/10 text-xs">15 phút</button>
-                <button data-timer-min="30" class="py-1 px-3 text-left rounded hover:bg-white/10 text-xs">30 phút</button>
-                <button data-timer-min="45" class="py-1 px-3 text-left rounded hover:bg-white/10 text-xs">45 phút</button>
-                <button data-timer-min="60" class="py-1 px-3 text-left rounded hover:bg-white/10 text-xs">60 phút</button>
-              </div>
-            </div>
-
-            <!-- Voice Switcher -->
-            <button id="btn-voice" type="button" class="px-3 py-1.5 rounded-full border transition-colors font-medium flex items-center gap-1" style="border-color:var(--border);color:var(--text-primary)">
-              🎙️ Thiện Minh (VieNeu-TTS) ▾
-            </button>
-          </div>
-        </div>
-
-        <!-- Chapter Heading -->
-        <h1 id="chapter-title" class="text-xl sm:text-2xl font-bold mb-6 text-center" style="color:var(--text-primary)">
-          Chương 1
-        </h1>
-
-        <!-- Reading Content (Karaoke Realtime synced) -->
-        <div id="chapter-content" class="content-area prose prose-lg max-w-none mt-6 leading-relaxed transition-all" style="font-size:18px;line-height:2">
-          <!-- Paragraphs populated by reader.js -->
-        </div>
-
+        <button type="button" class="mini-switch-to-audio-btn" id="mini-switch-to-audio-icon" title="Quay lại chế độ máy nghe nhạc đĩa than (Ảnh 2)">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z"/></svg>
+        </button>
       </div>
     </div>
   </main>
 
-  <!-- Exact ReadNavBar (from exact_main_reader.html lines 653-698) -->
-  <div class="fixed bottom-0 left-0 right-0 z-40 border-t shadow-[0_-2px_12px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)]" style="background-color:var(--bg-surface);border-color:var(--border)">
-    <div class="max-w-xl mx-auto px-3 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
-      <button id="btn-nav-prev" onclick="document.getElementById('btn-prev-chapter').click()" class="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2.5 rounded-xl font-medium text-sm touch-manipulation shrink-0 flex-1 min-w-0 max-w-[140px] sm:max-w-[160px] border-2" style="border-color:var(--accent);color:var(--accent)">
-        <svg class="lucide lucide-chevron-left w-5 h-5 shrink-0" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-          <path d="m15 18-6-6 6-6"></path>
-        </svg>
-        <span class="truncate hidden sm:inline">Trước</span>
-      </button>
 
-      <button id="btn-open-drawer" class="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2.5 rounded-xl font-medium text-sm touch-manipulation shrink-0 flex-1 min-w-0 max-w-[140px] sm:max-w-[160px] text-white shadow-md" style="background-color:var(--accent)" type="button">
-        <svg class="lucide lucide-list w-5 h-5 shrink-0" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M3 12h.01"></path>
-          <path d="M3 18h.01"></path>
-          <path d="M3 6h.01"></path>
-          <path d="M8 12h13"></path>
-          <path d="M8 18h13"></path>
-          <path d="M8 6h13"></path>
-        </svg>
-        <span class="truncate">Chọn chương</span>
-      </button>
-
-      <button id="btn-nav-next" onclick="document.getElementById('btn-next-chapter').click()" class="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2.5 rounded-xl font-medium text-sm touch-manipulation shrink-0 flex-1 min-w-0 max-w-[140px] sm:max-w-[160px] border-2" style="border-color:var(--accent);color:var(--accent)">
-        <span class="truncate hidden sm:inline">Sau</span>
-        <svg class="lucide lucide-chevron-right w-5 h-5 shrink-0" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-          <path d="m9 18 6-6-6-6"></path>
-        </svg>
-      </button>
-
-      <button onclick="document.getElementById('btn-play-pause').click()" class="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2.5 rounded-xl font-medium text-sm touch-manipulation shrink-0 w-12 sm:w-14 border-2" style="border-color:var(--border);color:var(--text-primary)" title="Phát audio">
-        <span class="text-lg">🎧</span>
-      </button>
+  <!-- ========================================================
+       DRAWER DANH SÁCH CHƯƠNG (Trượt từ bên phải vào)
+       ======================================================== -->
+  <div id="drawer-backdrop"></div>
+  <aside id="chapter-drawer">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px;border-bottom:1px solid rgba(255,255,255,0.08)">
+      <h3 style="font-size:16px;font-weight:700;color:#ffffff;margin:0">Danh Sách Chương</h3>
+      <button type="button" id="btn-close-drawer" style="background:none;border:none;color:#9ca3af;font-size:18px;cursor:pointer;padding:4px">✕</button>
     </div>
-  </div>
-
-  <!-- Chapter Drawer (Slide from right) -->
-  <div id="drawer-backdrop" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity"></div>
-  <aside id="chapter-drawer" class="fixed right-0 top-0 bottom-0 z-50 w-full max-w-xs translate-x-full transition-transform duration-300 ease-in-out border-l shadow-2xl flex flex-col" style="background-color:var(--bg-surface);border-color:var(--border)">
-    <div class="flex items-center justify-between p-4 border-b" style="border-color:var(--border)">
-      <h3 class="font-bold text-base" style="color:var(--text-primary)">Danh Sách Chương</h3>
-      <button id="btn-close-drawer" class="p-1.5 rounded-full hover:bg-white/10" style="color:var(--text-secondary)">✕</button>
-    </div>
-    <div id="drawer-chapter-list" class="flex-1 overflow-y-auto p-3 space-y-1">
-      <!-- List populated by reader.js -->
+    <div id="drawer-chapter-list" style="flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:6px">
+      <!-- Dynamic list -->
     </div>
   </aside>
-
-  <!-- Voice Presets Modal -->
-  <div id="voice-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
-    <div class="w-full max-w-md rounded-2xl p-6 shadow-2xl border" style="background-color:var(--bg-surface);border-color:var(--border)">
-      <div class="flex items-center justify-between mb-4 pb-2 border-b" style="border-color:var(--border)">
-        <h3 class="font-bold text-base" style="color:var(--text-primary)">🎙️ Chọn Giọng Đọc VieNeu-TTS v3</h3>
-        <button id="voice-modal-close" class="p-1 rounded-full hover:bg-white/10 text-neutral-400">✕</button>
-      </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="thienminh" data-label="Thiện Minh">
-          <span class="text-xl">🎙️</span>
-          <div>
-            <div class="text-xs font-bold" style="color:var(--text-primary)">Thiện Minh (Chuẩn)</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Nam · Bắc · Phong cách kể chuyện</div>
-          </div>
-        </button>
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="trucly" data-label="Trúc Ly">
-          <span class="text-xl">🌸</span>
-          <div>
-            <div class="text-xs font-bold" style="color:var(--text-primary)">Trúc Ly</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Nữ · Bắc · Tự nhiên, trong trẻo</div>
-          </div>
-        </button>
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="quynhanh" data-label="Quỳnh Anh">
-          <span class="text-xl">✨</span>
-          <div>
-            <div class="text-xs font-bold" style="color:var(--text-primary)">Quỳnh Anh</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Nữ · Bắc · Phong cách đọc truyện</div>
-          </div>
-        </button>
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="haidang" data-label="Hải Đăng">
-          <span class="text-xl">🌊</span>
-          <div>
-            <div class="text-xs font-bold" style="color:var(--text-primary)">Hải Đăng</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Nam · Bắc · Trầm ấm tự nhiên</div>
-          </div>
-        </button>
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="thaison" data-label="Thái Sơn">
-          <span class="text-xl">⚔️</span>
-          <div>
-            <div class="text-xs font-bold" style="color:var(--text-primary)">Thái Sơn</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Nam · Nam Bộ · Kể chuyện hào hùng</div>
-          </div>
-        </button>
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="myduyen" data-label="Mỹ Duyên">
-          <span class="text-xl">🌙</span>
-          <div>
-            <div class="text-xs font-bold" style="color:var(--text-primary)">Mỹ Duyên</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Nữ · Nam Bộ · Đọc truyện dịu dàng</div>
-          </div>
-        </button>
-        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)] col-span-1 sm:col-span-2 border-[var(--accent)]" style="border-color:var(--accent);background-color:rgba(56,189,248,0.08)" data-voice="custom_voice" data-label="Giọng Của Tôi (LoRA)">
-          <span class="text-xl">👑</span>
-          <div>
-            <div class="text-xs font-bold text-[var(--accent)]">Giọng Của Tôi (Custom LoRA)</div>
-            <div class="text-[11px]" style="color:var(--text-secondary)">Giọng riêng đã Fine-tune từ file mẫu · RTX 5060 GPU</div>
-          </div>
-        </button>
-      </div>
-    </div>
-  </div>
 
   <script src="/js/navbar.js"></script>
   <script src="/js/reader.js"></script>

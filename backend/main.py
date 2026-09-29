@@ -256,8 +256,6 @@ def stream_audio(
                 aliases.extend(["thaison", "haidang", "male"])
             elif v_clean in ["myduyen"]:
                 aliases.extend(["myduyen", "trucly", "female"])
-            elif v_clean in ["custom", "customvoice", "custom_voice", "lora", "thang"]:
-                aliases.extend(["custom_voice", "customvoice", "custom", "lora", "thang"])
             elif "female" in v_clean or "nu" in v_clean or "hoaimy" in v_clean:
                 aliases.extend(["trucly", "female", "nu"])
             elif "male" in v_clean or "nam" in v_clean:

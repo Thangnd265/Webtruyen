@@ -1,0 +1,22 @@
+{
+  "title": "Cho Cậu Học Ở Trường Quý Tộc, Vậy Mà Cậu Lại Đi Tán Gái Đại Tiểu Thư",
+  "author": "Tác Giả Ẩn Danh",
+  "description": "\"Xã tử\" - tức là cái chết xã hội, cũng có thể hiểu là chết vì mất mặt... nhưng hành trình của thiếu niên bình dân bước chân vào học viện quý tộc lại bắt đầu từ đây.",
+  "slug": "sample-story",
+  "document_hash": "sample_story_hash_1234567890abcdef",
+  "cover_url": "/api/books/sample-story/cover",
+  "total_chapters": 180,
+  "genres": "Huyền Huyễn, Đô Thị, Ngôn Tình, Hài Hước",
+  "status": "Đang ra",
+  "views": "96.9k",
+  "rating": 4.6,
+  "updated_at": "28/09/2026",
+  "chapters": [
+    {
+      "id": "chapter_001",
+      "title": "Chương 1: Khởi đầu mới",
+      "chapter_index": 1,
+      "audio_url": "/api/books/sample-story/audio/chapter_001"
+    }
+  ]
+}

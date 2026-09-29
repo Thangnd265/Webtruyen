@@ -11,6 +11,7 @@ htmlcov/
 # Environments
 .env
 .venv
+.py312/
 env/
 venv/
 ENV/
@@ -20,11 +21,6 @@ audiobooks/
 *.m4b
 *.mp3
 *.wav
-*.safetensors
-*.parquet
-finetune/dataset/
-finetune/output/
-voices/
 /mnt/gdrive/
 
 # Editor directories
@@ -33,6 +29,15 @@ voices/
 *.swp
 *.swo
 
-# OS files
+# OS files & temp files
 .DS_Store
 Thumbs.db
+*.log
+screenshot*.png
+git_out*.txt
+git_log*.txt
+test_*.txt
+winget_*.txt
+pacman_*.txt
+venv_create.txt
+chrome_dump.html

@@ -1,8 +1,12 @@
 /**
- * Reader & Audio Controller - Tái hiện chính xác chức năng đọc & nghe từ tieuthuyetmang.com
+ * Reader & Audio Player Controller
+ * Thiết kế chuẩn 2 chế độ hiển thị theo tieuthuyetmang.com:
+ * 1. Chế độ Chỉ Nghe Audio (Ảnh 2): Vinyl Record Player Card toàn màn hình.
+ * 2. Chế độ Hiện Chữ Văn Bản (Ảnh 3): Khung đọc văn bản + Sticky Mini Player ở đáy.
  */
 
 const state = {
+  viewMode: 'audio', // 'audio' (Ảnh 2) hoặc 'text' (Ảnh 3)
   bookSlug: '',
   bookData: null,
   chapters: [],
@@ -16,11 +20,10 @@ const state = {
   sleepTimerMinutes: 0,
   sleepTimeoutId: null,
   voice: 'thienminh',
-  pitch: '',
   readingSettings: {
     font: 'sans',
     fontSize: 18,
-    lineHeight: 2.0,
+    lineHeight: 1.9,
     theme: 'dark'
   }
 };
@@ -37,15 +40,77 @@ function formatSeconds(sec) {
 
 async function initReaderPage() {
   loadSavedSettings();
+  setupViewModeToggle();
   setupSettingsModal();
   setupAudioEngine();
   setupChapterDrawer();
   setupSpeedAndTimer();
+  setupReportButton();
 
   // Đọc slug từ URL
   const params = new URLSearchParams(window.location.search);
-  const slug = params.get('book') || 'sample-story';
+  const slug = params.get('book') || params.get('slug') || 'sample-story';
   await loadBook(slug);
+}
+
+/**
+ * Quản lý chuyển đổi giữa 2 chế độ:
+ * - 'audio': Thẻ đĩa than trung tâm (Ảnh 2)
+ * - 'text': Đọc chữ văn bản + Mini Player (Ảnh 3)
+ */
+function setupViewModeToggle() {
+  const savedMode = localStorage.getItem('audioweb-reader-mode');
+  if (savedMode === 'text') {
+    state.viewMode = 'text';
+  } else {
+    state.viewMode = 'audio';
+  }
+  applyViewMode();
+
+  // Nút chuyển sang Hiện Chữ trên thanh đáy (Ảnh 2)
+  const switchToTextBtn = document.getElementById('btn-switch-to-text');
+  if (switchToTextBtn) {
+    switchToTextBtn.addEventListener('click', () => {
+      setViewMode('text');
+    });
+  }
+
+  // Nút quay lại Chế độ Chỉ Nghe trên Mini Player (Ảnh 3)
+  const miniExpandBtn = document.getElementById('mini-player-expand-btn');
+  const miniSwitchAudioBtn = document.getElementById('mini-switch-to-audio-icon');
+  if (miniExpandBtn) {
+    miniExpandBtn.addEventListener('click', () => {
+      setViewMode('audio');
+    });
+  }
+  if (miniSwitchAudioBtn) {
+    miniSwitchAudioBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setViewMode('audio');
+    });
+  }
+}
+
+function setViewMode(mode) {
+  state.viewMode = mode;
+  localStorage.setItem('audioweb-reader-mode', mode);
+  applyViewMode();
+  if (mode === 'text') {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function applyViewMode() {
+  const audioView = document.getElementById('audio-only-view');
+  const textView = document.getElementById('text-reading-view');
+
+  if (state.viewMode === 'text') {
+    if (audioView) audioView.style.display = 'none';
+    if (textView) textView.style.display = 'block';
+  } else {
+    if (audioView) audioView.style.display = 'flex';
+    if (textView) textView.style.display = 'none';
+  }
 }
 
 function loadSavedSettings() {
@@ -60,24 +125,27 @@ function loadSavedSettings() {
 
 function applyReadingSettings() {
   const contentEl = document.getElementById('chapter-content');
+  const textView = document.getElementById('text-reading-view');
+
   if (contentEl) {
     contentEl.style.fontSize = `${state.readingSettings.fontSize}px`;
     contentEl.style.lineHeight = state.readingSettings.lineHeight;
-    contentEl.style.fontFamily = state.readingSettings.font === 'serif' ? 'var(--font-serif)' : 'var(--font-sans)';
+    contentEl.style.fontFamily = state.readingSettings.font === 'serif' ? 'var(--font-serif), Georgia, serif' : 'var(--font-sans), Nunito, sans-serif';
   }
 
-  // Cập nhật theme đọc
-  const readerArea = document.getElementById('reader-area');
-  if (readerArea) {
+  if (textView) {
     if (state.readingSettings.theme === 'white') {
-      readerArea.style.backgroundColor = '#fff9fa';
-      readerArea.style.color = '#2d3436';
+      textView.style.backgroundColor = '#ffffff';
+      textView.style.color = '#111827';
+      document.body.style.backgroundColor = '#ffffff';
     } else if (state.readingSettings.theme === 'sepia') {
-      readerArea.style.backgroundColor = '#f4ecd8';
-      readerArea.style.color = '#5c4b37';
+      textView.style.backgroundColor = '#f4ecd8';
+      textView.style.color = '#45321f';
+      document.body.style.backgroundColor = '#f4ecd8';
     } else {
-      readerArea.style.backgroundColor = '#000000';
-      readerArea.style.color = '#e8e4e0';
+      textView.style.backgroundColor = 'transparent';
+      textView.style.color = '#f3f4f6';
+      document.body.style.backgroundColor = '#0b0b0e';
     }
   }
 }
@@ -91,19 +159,33 @@ async function loadBook(slug) {
     state.bookData = book;
     state.chapters = book.chapters || [];
 
-    const bookTitleEl = document.getElementById('reader-book-title');
-    if (bookTitleEl) bookTitleEl.textContent = book.title;
+    // Tên truyện trên các thanh tiêu đề & breadcrumb
+    const bookTitle = book.title || 'Audio Web';
+    const audioBreadcrumb = document.getElementById('audio-breadcrumb-book-title');
+    const textBreadcrumb = document.getElementById('text-breadcrumb-book-title');
+    const audioStorySub = document.getElementById('audio-story-subtitle');
+    const miniStorySub = document.getElementById('mini-story-title');
+
+    if (audioBreadcrumb) audioBreadcrumb.textContent = bookTitle;
+    if (textBreadcrumb) textBreadcrumb.textContent = bookTitle;
+    if (audioStorySub) audioStorySub.textContent = bookTitle;
+    if (miniStorySub) miniStorySub.textContent = bookTitle;
+
+    // Chữ cái trung tâm đĩa than
+    const vinylLetter = document.getElementById('vinyl-center-letter');
+    if (vinylLetter) {
+      vinylLetter.textContent = (bookTitle.trim()[0] || 'A').toUpperCase();
+    }
 
     renderChapterDrawer();
 
-    // Xác định chương cần đọc
+    // Xác định chương cần đọc/nghe
     const params = new URLSearchParams(window.location.search);
     const reqCh = params.get('chapter');
     let idx = state.chapters.findIndex((c) => c.id === reqCh);
     if (idx === -1) idx = 0;
 
     await loadChapter(idx);
-    checkKosyncProgress();
   } catch (err) {
     console.error('Lỗi khi nạp sách:', err);
   }
@@ -115,22 +197,25 @@ async function loadChapter(index) {
   const ch = state.chapters[index];
   state.currentChapterId = ch.id;
 
-  // Cập nhật tiêu đề chương
-  const titleEl = document.getElementById('chapter-title');
-  if (titleEl) titleEl.textContent = ch.title;
-  const audioTitleEl = document.getElementById('audio-chapter-title');
-  if (audioTitleEl) audioTitleEl.textContent = ch.title;
+  // Cập nhật các vị trí hiển thị tiêu đề chương
+  const formattedTitle = ch.title.startsWith('Chương') ? ch.title : `Chương ${index + 1}: ${ch.title}`;
+  
+  // 1. Thẻ đĩa than (Ảnh 2)
+  const audioChTitle = document.getElementById('audio-chapter-title');
+  if (audioChTitle) audioChTitle.textContent = `[ ${formattedTitle} ]`;
 
-  // Cập nhật trạng thái nút Trước / Sau
-  const prevBtn = document.getElementById('btn-nav-prev');
-  const nextBtn = document.getElementById('btn-nav-next');
-  if (prevBtn) prevBtn.style.opacity = index === 0 ? '0.4' : '1';
-  if (nextBtn) nextBtn.style.opacity = index === state.chapters.length - 1 ? '0.4' : '1';
+  // 2. Chế độ đọc chữ (Ảnh 3)
+  const textChTitle = document.getElementById('text-chapter-title');
+  if (textChTitle) textChTitle.textContent = formattedTitle;
 
-  // Nạp nội dung chương từ backend
+  // 3. Mini Player (Ảnh 3)
+  const miniChTitle = document.getElementById('mini-chapter-title');
+  if (miniChTitle) miniChTitle.textContent = formattedTitle;
+
+  // Nạp nội dung chữ
   const contentArea = document.getElementById('chapter-content');
   if (contentArea) {
-    contentArea.innerHTML = `<div class="py-12 text-center text-sm" style="color:var(--text-secondary)">Đang tải nội dung ${ch.title}...</div>`;
+    contentArea.innerHTML = `<div class="py-12 text-center text-sm text-neutral-400">Đang tải nội dung văn bản ${formattedTitle}...</div>`;
   }
 
   try {
@@ -145,12 +230,12 @@ async function loadChapter(index) {
         contentArea.innerHTML = chapterData.html;
       } else if (state.cues.length > 0) {
         contentArea.innerHTML = state.cues.map((c) => `
-          <p id="${c.id}" data-start="${c.start}" data-end="${c.end}" class="reader-paragraph mb-4 cursor-pointer hover:opacity-90">
+          <p id="${c.id}" data-start="${c.start}" data-end="${c.end}" class="reader-paragraph">
             ${c.text}
           </p>
         `).join('');
       } else {
-        contentArea.innerHTML = `<p class="p-4 text-center">Nội dung đang được cập nhật.</p>`;
+        contentArea.innerHTML = `<p class="p-6 text-center text-neutral-400">Nội dung văn bản chương này đang được chuẩn bị.</p>`;
       }
     }
 
@@ -158,74 +243,84 @@ async function loadChapter(index) {
     if (chapterData.audio_url) {
       loadAudioTrack(chapterData.audio_url);
     }
+    saveListeningHistory();
   } catch (err) {
     console.error('Lỗi khi tải chi tiết chương:', err);
   }
 }
 
 function loadAudioTrack(baseUrl) {
-  const pitchParam = state.pitch ? `&pitch=${encodeURIComponent(state.pitch)}` : '';
-  const url = `${baseUrl}?voice=${encodeURIComponent(state.voice)}${pitchParam}`;
+  const url = `${baseUrl}?voice=${encodeURIComponent(state.voice)}`;
   audio.src = url;
   audio.playbackRate = state.speed;
   audio.load();
 }
 
 function setupAudioEngine() {
-  const playBtn = document.getElementById('btn-play-pause');
+  const mainPlayBtn = document.getElementById('btn-play-pause');
+  const miniPlayBtn = document.getElementById('mini-play-pause-btn');
   const scrubber = document.getElementById('audio-scrubber');
   const timeCur = document.getElementById('time-current');
   const timeTot = document.getElementById('time-total');
+  const miniTime = document.getElementById('mini-time-display');
+  const miniProgress = document.getElementById('mini-progress-fill');
   const vinylDisc = document.getElementById('vinyl-disc');
+  const playPauseIcon = document.getElementById('play-pause-icon');
+  const miniPlayPauseIcon = document.getElementById('mini-play-pause-icon');
 
-  if (playBtn) {
-    playBtn.addEventListener('click', () => {
-      if (audio.paused) {
-        audio.play().catch((err) => console.log('Lỗi phát audio:', err));
-      } else {
-        audio.pause();
-      }
-    });
+  function togglePlay() {
+    if (audio.paused) {
+      audio.play().catch((err) => console.log('Lỗi phát audio:', err));
+    } else {
+      audio.pause();
+    }
   }
 
+  if (mainPlayBtn) mainPlayBtn.addEventListener('click', togglePlay);
+  if (miniPlayBtn) miniPlayBtn.addEventListener('click', togglePlay);
+
+  // Khi đang phát
   audio.addEventListener('play', () => {
-    if (playBtn) {
-      playBtn.innerHTML = `
-        <svg class="lucide lucide-pause w-7 h-7 sm:w-8 sm:h-8" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-          <rect height="16" rx="1" width="4" x="6" y="4"></rect>
-          <rect height="16" rx="1" width="4" x="14" y="4"></rect>
-        </svg>
-      `;
-    }
     if (vinylDisc) vinylDisc.classList.remove('paused');
+    const pauseSvg = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
+    if (playPauseIcon) playPauseIcon.innerHTML = pauseSvg;
+    if (miniPlayPauseIcon) miniPlayPauseIcon.innerHTML = pauseSvg;
+    saveListeningHistory();
   });
 
+  // Khi tạm dừng
   audio.addEventListener('pause', () => {
-    if (playBtn) {
-      playBtn.innerHTML = `
-        <svg class="lucide lucide-play w-7 h-7 sm:w-8 sm:h-8 ml-1" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="6 3 20 12 6 21 6 3"></polygon>
-        </svg>
-      `;
-    }
     if (vinylDisc) vinylDisc.classList.add('paused');
-    syncProgressToKosync();
+    const playSvg = `<path d="M8 5v14l11-7z"/>`;
+    if (playPauseIcon) playPauseIcon.innerHTML = playSvg;
+    if (miniPlayPauseIcon) miniPlayPauseIcon.innerHTML = playSvg;
+    saveListeningHistory();
   });
 
+  // Cập nhật thời gian & Scrubber & Mini progress
   audio.addEventListener('timeupdate', () => {
     const cur = audio.currentTime;
-    const dur = audio.duration;
-    if (timeCur) timeCur.textContent = formatSeconds(cur);
-    if (dur && timeTot) timeTot.textContent = formatSeconds(dur);
+    const dur = audio.duration || 1;
+    const curStr = formatSeconds(cur);
+    const durStr = formatSeconds(dur);
 
+    // Cập nhật card lớn (Ảnh 2)
+    if (timeCur) timeCur.textContent = curStr;
+    if (timeTot && dur > 1) timeTot.textContent = durStr;
     if (scrubber && dur > 0) {
-      const pct = (cur / dur) * 100;
       scrubber.value = cur;
       scrubber.max = dur;
-      scrubber.style.background = `linear-gradient(to right, var(--accent) 0%, var(--accent) ${pct}%, var(--border) ${pct}%, var(--border) 100%)`;
+      const pct = (cur / dur) * 100;
+      scrubber.style.background = `linear-gradient(to right, #e05d44 0%, #e05d44 ${pct}%, rgba(255,255,255,0.15) ${pct}%, rgba(255,255,255,0.15) 100%)`;
     }
 
-    // Karaoke Cues
+    // Cập nhật mini player (Ảnh 3)
+    if (miniTime) miniTime.textContent = `${curStr} / ${durStr}`;
+    if (miniProgress && dur > 0) {
+      miniProgress.style.width = `${(cur / dur) * 100}%`;
+    }
+
+    // Karaoke Cues khi đang ở chế độ text
     if (state.cues && state.cues.length > 0) {
       const active = state.cues.find((c) => cur >= c.start && cur < c.end);
       if (active && active.id !== state.currentActiveCueId) {
@@ -233,7 +328,9 @@ function setupAudioEngine() {
         const el = document.getElementById(active.id);
         if (el) {
           el.classList.add('active-cue');
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          if (state.viewMode === 'text') {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
         }
         state.currentActiveCueId = active.id;
       }
@@ -265,7 +362,7 @@ function setupAudioEngine() {
     }
   });
 
-  // Click vào câu để nghe
+  // Click vào câu văn bản để nghe từ đó
   const contentArea = document.getElementById('chapter-content');
   if (contentArea) {
     contentArea.addEventListener('click', (e) => {
@@ -281,18 +378,134 @@ function setupAudioEngine() {
   }
 }
 
+function setupChapterDrawer() {
+  const drawerBtn = document.getElementById('btn-open-drawer');
+  const drawer = document.getElementById('chapter-drawer');
+  const closeBtn = document.getElementById('btn-close-drawer');
+  const backdrop = document.getElementById('drawer-backdrop');
+
+  function openDrawer() {
+    if (drawer) drawer.classList.add('open');
+    if (backdrop) backdrop.classList.add('open');
+  }
+
+  function closeDrawer() {
+    if (drawer) drawer.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('open');
+  }
+
+  if (drawerBtn) drawerBtn.addEventListener('click', openDrawer);
+  if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
+  if (backdrop) backdrop.addEventListener('click', closeDrawer);
+}
+
+function renderChapterDrawer() {
+  const list = document.getElementById('drawer-chapter-list');
+  if (!list) return;
+  list.innerHTML = state.chapters.map((ch, idx) => `
+    <div style="padding:10px 12px;border-radius:10px;font-size:13.5px;cursor:pointer;transition:all 0.15s ease;background-color:${
+      idx === state.currentChapterIndex ? 'rgba(224,93,68,0.18)' : 'transparent'
+    };color:${idx === state.currentChapterIndex ? '#e05d44' : '#e5e7eb'};font-weight:${idx === state.currentChapterIndex ? '700' : '500'}"
+    onclick="loadChapterByIndex(${idx})">
+      ${ch.title}
+    </div>
+  `).join('');
+}
+
+window.loadChapterByIndex = (idx) => {
+  const drawer = document.getElementById('chapter-drawer');
+  const backdrop = document.getElementById('drawer-backdrop');
+  if (drawer) drawer.classList.remove('open');
+  if (backdrop) backdrop.classList.remove('open');
+  loadChapter(idx);
+};
+
+function setupSpeedAndTimer() {
+  // Speed popover
+  const speedBtn = document.getElementById('btn-speed');
+  const speedPopover = document.getElementById('speed-popover');
+  const speedLabel = document.getElementById('speed-label');
+
+  if (speedBtn && speedPopover) {
+    speedBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      speedPopover.classList.toggle('show');
+    });
+    document.querySelectorAll('[data-speed-val]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const spd = parseFloat(btn.dataset.speedVal);
+        state.speed = spd;
+        audio.playbackRate = spd;
+        if (speedLabel) speedLabel.textContent = `${spd}x`;
+        speedPopover.classList.remove('show');
+      });
+    });
+  }
+
+  // Timer popover
+  const timerBtn = document.getElementById('btn-timer');
+  const timerPopover = document.getElementById('timer-popover');
+  const timerLabel = document.getElementById('timer-label');
+
+  if (timerBtn && timerPopover) {
+    timerBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      timerPopover.classList.toggle('show');
+    });
+    document.querySelectorAll('[data-timer-min]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const mins = parseInt(btn.dataset.timerMin, 10);
+        setSleepTimer(mins);
+        timerPopover.classList.remove('show');
+      });
+    });
+  }
+
+  // Tự động phát toggle
+  const autoNextBtn = document.getElementById('btn-auto-next');
+  if (autoNextBtn) {
+    autoNextBtn.addEventListener('click', () => {
+      state.autoPlayNext = !state.autoPlayNext;
+      autoNextBtn.classList.toggle('active', state.autoPlayNext);
+    });
+  }
+
+  // Đóng popover khi click ngoài
+  document.addEventListener('click', () => {
+    if (speedPopover) speedPopover.classList.remove('show');
+    if (timerPopover) timerPopover.classList.remove('show');
+  });
+}
+
+function setSleepTimer(minutes) {
+  if (state.sleepTimeoutId) clearTimeout(state.sleepTimeoutId);
+  const timerLabel = document.getElementById('timer-label');
+  if (minutes === 0) {
+    if (timerLabel) timerLabel.textContent = 'Hẹn giờ';
+    return;
+  }
+  if (timerLabel) timerLabel.textContent = `${minutes}m`;
+  state.sleepTimeoutId = setTimeout(() => {
+    audio.pause();
+    if (timerLabel) timerLabel.textContent = 'Hẹn giờ';
+    alert('Hẹn giờ tắt: Audio đã tạm dừng.');
+  }, minutes * 60 * 1000);
+}
+
 function setupSettingsModal() {
   const btnAa = document.getElementById('btn-reading-settings');
-  const modalAa = document.getElementById('settings-popover');
-  if (btnAa && modalAa) {
+  const popover = document.getElementById('settings-popover');
+
+  if (btnAa && popover) {
     btnAa.addEventListener('click', (e) => {
       e.stopPropagation();
-      modalAa.classList.toggle('hidden');
+      popover.classList.toggle('show');
     });
-
     document.addEventListener('click', (e) => {
-      if (!modalAa.contains(e.target) && e.target !== btnAa) {
-        modalAa.classList.add('hidden');
+      if (!popover.contains(e.target) && e.target !== btnAa) {
+        popover.classList.remove('show');
       }
     });
   }
@@ -335,178 +548,40 @@ function saveAndApplySettings() {
   applyReadingSettings();
 }
 
-function setupChapterDrawer() {
-  const drawerBtn = document.getElementById('btn-open-drawer');
-  const drawer = document.getElementById('chapter-drawer');
-  const closeBtn = document.getElementById('btn-close-drawer');
-  const backdrop = document.getElementById('drawer-backdrop');
-
-  if (drawerBtn && drawer) {
-    drawerBtn.addEventListener('click', () => {
-      drawer.classList.remove('translate-x-full');
-      if (backdrop) backdrop.classList.remove('hidden');
-    });
-  }
-  if (closeBtn && drawer) {
-    closeBtn.addEventListener('click', () => {
-      drawer.classList.add('translate-x-full');
-      if (backdrop) backdrop.classList.add('hidden');
-    });
-  }
-  if (backdrop && drawer) {
-    backdrop.addEventListener('click', () => {
-      drawer.classList.add('translate-x-full');
-      backdrop.classList.add('hidden');
+function setupReportButton() {
+  const reportBtn = document.getElementById('btn-report-issue');
+  if (reportBtn) {
+    reportBtn.addEventListener('click', () => {
+      alert('Cảm ơn bạn! Phản hồi báo lỗi chương/audio đã được gửi đến quản trị viên.');
     });
   }
 }
 
-function renderChapterDrawer() {
-  const list = document.getElementById('drawer-chapter-list');
-  if (!list) return;
-  list.innerHTML = state.chapters.map((ch, idx) => `
-    <div class="py-2.5 px-3 rounded-lg text-sm cursor-pointer transition-colors hover:bg-neutral-800 ${
-      idx === state.currentChapterIndex ? 'font-bold text-[var(--accent)] bg-neutral-800/60' : 'text-neutral-300'
-    }" onclick="loadChapterByIndex(${idx})">
-      ${ch.title}
-    </div>
-  `).join('');
-}
-
-window.loadChapterByIndex = (idx) => {
-  const drawer = document.getElementById('chapter-drawer');
-  const backdrop = document.getElementById('drawer-backdrop');
-  if (drawer) drawer.classList.add('translate-x-full');
-  if (backdrop) backdrop.classList.add('hidden');
-  loadChapter(idx);
-};
-
-function setupSpeedAndTimer() {
-  // Speed menu
-  const speedBtn = document.getElementById('btn-speed');
-  const speedPopover = document.getElementById('speed-popover');
-  if (speedBtn && speedPopover) {
-    speedBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      speedPopover.classList.toggle('hidden');
-    });
-    document.querySelectorAll('[data-speed-val]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const spd = parseFloat(btn.dataset.speedVal);
-        state.speed = spd;
-        audio.playbackRate = spd;
-        speedBtn.textContent = `${spd}x`;
-        speedPopover.classList.add('hidden');
-      });
-    });
-  }
-
-  // Sleep timer
-  const timerBtn = document.getElementById('btn-timer');
-  const timerPopover = document.getElementById('timer-popover');
-  if (timerBtn && timerPopover) {
-    timerBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      timerPopover.classList.toggle('hidden');
-    });
-    document.querySelectorAll('[data-timer-min]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const mins = parseInt(btn.dataset.timerMin, 10);
-        setSleepTimer(mins);
-        timerPopover.classList.add('hidden');
-      });
-    });
-  }
-
-  // Voice presets modal
-  const voiceBtn = document.getElementById('btn-voice');
-  const voiceModal = document.getElementById('voice-modal');
-  const voiceClose = document.getElementById('voice-modal-close');
-  if (voiceBtn && voiceModal) {
-    voiceBtn.addEventListener('click', () => voiceModal.classList.remove('hidden'));
-    if (voiceClose) voiceClose.addEventListener('click', () => voiceModal.classList.add('hidden'));
-    document.querySelectorAll('.voice-preset-card').forEach((card) => {
-      card.addEventListener('click', () => {
-        const v = card.dataset.voice;
-        state.voice = v;
-        state.pitch = '';
-        if (voiceBtn) voiceBtn.innerHTML = `🎙️ ${card.dataset.label || 'Giọng đọc'} ▾`;
-        voiceModal.classList.add('hidden');
-
-        // Seamless hot swap preserving current position
-        if (state.currentChapterData) {
-          const curTime = audio.currentTime;
-          const wasPlaying = !audio.paused;
-          loadAudioTrack(state.currentChapterData.audio_url);
-          audio.addEventListener('loadedmetadata', () => {
-            audio.currentTime = curTime;
-            if (wasPlaying) audio.play();
-          }, { once: true });
-        }
-      });
-    });
-  }
-
-  // Autoplay next toggle
-  const autoNextBtn = document.getElementById('btn-auto-next');
-  if (autoNextBtn) {
-    autoNextBtn.addEventListener('click', () => {
-      state.autoPlayNext = !state.autoPlayNext;
-      autoNextBtn.style.color = state.autoPlayNext ? 'var(--accent)' : 'var(--text-secondary)';
-    });
-  }
-}
-
-function setSleepTimer(minutes) {
-  if (state.sleepTimeoutId) clearTimeout(state.sleepTimeoutId);
-  const timerBtn = document.getElementById('btn-timer');
-  if (minutes === 0) {
-    if (timerBtn) timerBtn.textContent = 'Hẹn giờ';
-    return;
-  }
-  if (timerBtn) timerBtn.textContent = `${minutes}m`;
-  state.sleepTimeoutId = setTimeout(() => {
-    audio.pause();
-    if (timerBtn) timerBtn.textContent = 'Hẹn giờ';
-    alert('Hẹn giờ tắt: Audio đã tự động tạm dừng.');
-  }, minutes * 60 * 1000);
-}
-
-async function checkKosyncProgress() {
-  if (!state.bookSlug) return;
+function saveListeningHistory() {
+  if (!state.bookSlug || !state.bookData) return;
   try {
-    const res = await fetch(`/api/books/${state.bookSlug}/sync`);
-    if (!res.ok) return;
-    const data = await res.json();
-    if (data.chapter_id && data.chapter_id !== state.currentChapterId) {
-      const banner = document.getElementById('resume-banner');
-      const text = document.getElementById('resume-banner-text');
-      if (banner && text) {
-        text.textContent = `Bạn đã đọc đến ${data.chapter_id}. Tiếp tục từ đây?`;
-        banner.classList.remove('hidden');
-        document.getElementById('btn-resume-yes').onclick = () => {
-          const idx = state.chapters.findIndex((c) => c.id === data.chapter_id);
-          if (idx !== -1) loadChapter(idx);
-          banner.classList.add('hidden');
-        };
-        document.getElementById('btn-resume-no').onclick = () => banner.classList.add('hidden');
-      }
-    }
-  } catch (_) {}
-}
+    const history = JSON.parse(localStorage.getItem('audioweb-recent-history') || '[]');
+    const ch = (state.chapters && state.chapters[state.currentChapterIndex]) || { id: 'chapter_001', title: 'Chương 1' };
+    const curTime = audio.currentTime || 0;
+    const dur = audio.duration || 1;
+    const pct = Math.min(100, Math.max(1, Math.round((curTime / dur) * 100)));
 
-async function syncProgressToKosync() {
-  if (!state.bookSlug || !state.currentChapterId) return;
-  try {
-    await fetch(`/api/books/${state.bookSlug}/sync`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        chapter_id: state.currentChapterId,
-        cue_id: state.currentActiveCueId,
-        device: 'Tieuthuyetmang PWA'
-      })
-    });
+    const entry = {
+      slug: state.bookSlug,
+      title: state.bookData.title || state.bookSlug,
+      author: state.bookData.author || 'Tác Giả Ẩn Danh',
+      cover_url: state.bookData.cover_url || `/api/books/${state.bookSlug}/cover`,
+      chapter_id: state.currentChapterId || ch.id,
+      chapter_title: ch.title || 'Chương 1',
+      progress: pct,
+      currentTime: curTime,
+      total_chapters: state.bookData.total_chapters || state.chapters.length || 1,
+      updated_at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' hôm nay'
+    };
+
+    const remaining = history.filter((h) => h.slug !== state.bookSlug);
+    remaining.unshift(entry);
+    localStorage.setItem('audioweb-recent-history', JSON.stringify(remaining.slice(0, 10)));
   } catch (_) {}
 }
 

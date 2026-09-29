@@ -1,0 +1,22 @@
+{
+  "title": "Đồ Giám Quái Vật: Bắt Đầu Từ Huyết Mạch Goblin",
+  "author": "Tác Giả Ẩn Danh",
+  "description": "Lâm Ẩn chuyển sinh vào thân phận một người dân làng thời trung cổ, đúng lúc gặp phải cuộc đại loạn của quái vật dị giới...",
+  "slug": "do-giam-quai-vat",
+  "document_hash": "do_giam_quai_vat_hash_9876543210fedcba",
+  "cover_url": "/api/books/do-giam-quai-vat/cover",
+  "total_chapters": 32,
+  "genres": "Tây Huyễn, Đời Thường, Mạo Hiểm",
+  "status": "Đang ra",
+  "views": "16.3k",
+  "rating": 4.3,
+  "updated_at": "28/09/2026",
+  "chapters": [
+    {
+      "id": "chapter_001",
+      "title": "Chương 1: Thức tỉnh đồ giám",
+      "chapter_index": 1,
+      "audio_url": "/api/books/sample-story/audio/chapter_001"
+    }
+  ]
+}
