@@ -123,8 +123,8 @@ Webtruyenv2/
 
 1. **Clone repository:**
    ```bash
-   git clone https://github.com/Thangnd265/Webtruyenv2.git
-   cd Webtruyenv2
+   git clone https://github.com/Thangnd265/Webtruyen.git
+   cd Webtruyen
    ```
 
 2. **Cấu hình file môi trường:**
