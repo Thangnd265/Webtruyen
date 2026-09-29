@@ -83,10 +83,10 @@ class TTSEngine:
 
     def _init_real_model(self) -> None:
         try:
-            import vieneu  # type: ignore
+            from vieneu import Vieneu
 
-            logger.info("VieNeu-TTS engine successfully loaded.")
-            self._model = vieneu
+            logger.info("VieNeu-TTS v3 engine successfully loaded.")
+            self._model = Vieneu()
         except ImportError:
             logger.warning(
                 "VieNeu-TTS ('vieneu') is not installed. Real synthesis will fail unless dry_run=True."
@@ -114,13 +114,13 @@ class TTSEngine:
         return duration
 
     def _real_synthesize(self, text: str, output_wav_path: Path) -> float:
-        """Synthesizes text using VieNeu-TTS model."""
+        """Synthesizes text using VieNeu-TTS v3 model."""
         if self._model is None:
             raise RuntimeError(
                 "VieNeu-TTS engine is not available. Please install 'vieneu' or use --dry-run."
             )
-        # VieNeu invocation: write WAV output
-        self._model.tts_to_file(text=text, speaker=self.voice, file_path=str(output_wav_path))
+        audio = self._model.infer(text, voice=self.voice)
+        self._model.save(audio, str(output_wav_path))
         return get_wav_duration(output_wav_path)
 
 
