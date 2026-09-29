@@ -1,0 +1,23 @@
+{
+  "id": "tieuthuyetmang-sepia",
+  "name": "Giấy Vàng Cổ Điển (Sepia)",
+  "type": "light",
+  "author": "Tieuthuyetmang",
+  "version": "1.0.0",
+  "tokens": {
+    "--bg-primary": "#f4ecd8",
+    "--bg-surface": "#faf5eb",
+    "--text-primary": "#5c4b37",
+    "--text-secondary": "#7d6a54",
+    "--accent": "#b85d19",
+    "--accent-hover": "#9a4a0f",
+    "--vip-gold": "#b8860b",
+    "--border": "rgba(92, 75, 55, 0.15)",
+    "--active-cue-bg": "rgba(184, 93, 25, 0.15)",
+    "--active-cue-border": "#b85d19"
+  },
+  "fonts": {
+    "sans": "Nunito, system-ui, -apple-system, sans-serif",
+    "serif": "Merriweather, Georgia, serif"
+  }
+}

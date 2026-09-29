@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[ Tiểu Thuyết Mạng ] - Đọc & Nghe truyện online</title>
+  <meta name="description" content="Nền tảng đọc truyện và nghe audio online hàng đầu">
+  <link rel="stylesheet" href="/css/tieuthuyetmang.css">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
+  <script src="/plugins/themes/theme-engine.js"></script>
+</head>
+<body class="font-sans min-h-screen flex flex-col" style="background-color:var(--bg-primary);color:var(--text-primary)">
+
+  <!-- Exact Header from tieuthuyetmang.com -->
+  <header class="sticky top-0 z-50 w-full border-b bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80" style="border-color:var(--border);background-color:var(--bg-surface)">
+    <div class="container mx-auto flex h-16 items-center justify-between px-4">
+      <a class="flex items-center gap-2 font-bold text-xl" href="/" style="color:var(--accent);padding-right:15px">
+        [ Tiểu Thuyết Mạng ✦ ]
+      </a>
+      <nav class="hidden md:flex items-center gap-6">
+        <a class="hover:opacity-80 transition-opacity text-sm font-medium" href="/" style="color:var(--text-primary)">Trang chủ</a>
+        <a class="hover:opacity-80 transition-opacity text-sm font-semibold" href="/" style="color:var(--accent)">Đang Đọc & Nghe</a>
+      </nav>
+      <div class="flex items-center gap-2">
+        <button id="theme-toggle-btn" aria-label="Chuyển đổi giao diện" class="p-2 rounded-full transition-colors hover:opacity-80" title="Chuyển chế độ giao diện" type="button">
+          <svg id="theme-toggle-icon" class="lucide lucide-moon w-5 h-5" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="color:var(--text-secondary)" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Resume Prompt Modal (exact from audio_reader_chunk.js lines 415-466) -->
+  <div id="resume-banner" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60" role="dialog" aria-modal="true">
+    <div class="w-full max-w-sm rounded-2xl p-6 shadow-xl border" style="background-color:var(--bg-surface);border-color:var(--border)">
+      <h2 class="text-lg font-semibold mb-2" style="color:var(--text-primary)">Tiếp tục nghe?</h2>
+      <p id="resume-banner-text" class="text-sm mb-4" style="color:var(--text-secondary)">Bạn đã nghe đến vị trí đã lưu. Tiếp tục từ đây hay nghe từ đầu?</p>
+      <div class="flex gap-3">
+        <button id="btn-resume-yes" type="button" class="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm text-white" style="background-color:var(--accent)">Tiếp tục nghe</button>
+        <button id="btn-resume-no" type="button" class="flex-1 py-2.5 px-4 rounded-xl font-semibold text-sm border-2" style="border-color:var(--accent);color:var(--accent)">Nghe từ đầu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Layout -->
+  <main class="flex-1 pb-28">
+    <div id="reader-area" class="min-h-screen transition-colors duration-200">
+      <div class="max-w-3xl mx-auto px-4 py-8">
+        
+        <!-- Breadcrumb & Reading Settings Bar (from exact_main_reader.html lines 5-33) -->
+        <div class="flex items-center justify-between mb-6">
+          <a class="text-sm flex items-center gap-1 hover:opacity-80" href="/" style="color:var(--text-secondary)">
+            <svg class="lucide lucide-chevron-left w-4 h-4" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+              <path d="m15 18-6-6 6-6"></path>
+            </svg>
+            <span id="reader-book-title" class="truncate max-w-[200px] sm:max-w-md font-medium">Đang tải...</span>
+          </a>
+
+          <!-- Aa Settings Button -->
+          <div class="relative">
+            <button id="btn-reading-settings" class="flex items-center gap-2 px-3 py-2 rounded-lg border-2 hover:opacity-90 transition-opacity" style="border-color:var(--border);background-color:var(--bg-surface);color:var(--text-primary)" title="Cài đặt đọc (Font, Size, Theme)" type="button">
+              <svg class="lucide lucide-type w-4 h-4" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+                <polyline points="4 7 4 4 20 4 20 7"></polyline>
+                <line x1="9" x2="15" y1="20" y2="20"></line>
+                <line x1="12" x2="12" y1="4" y2="20"></line>
+              </svg>
+              <span class="text-sm font-medium">Aa</span>
+              <svg class="lucide lucide-chevron-down w-4 h-4" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+                <path d="m6 9 6 6 6-6"></path>
+              </svg>
+            </button>
+
+            <!-- Aa Popover Menu (exact from doc_reader_chunk.js lines 1156-1246) -->
+            <div id="settings-popover" class="hidden absolute right-0 top-full mt-2 py-4 px-4 rounded-xl shadow-2xl z-50 min-w-[280px] border" style="background-color:var(--bg-surface);border-color:var(--border)">
+              <p class="text-xs font-semibold mb-2" style="color:var(--text-secondary)">Font Chữ</p>
+              <div class="flex gap-2 mb-4">
+                <button type="button" data-set-font="sans" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="border-color:var(--border);background-color:var(--bg-primary);color:var(--text-primary)">Sans-serif</button>
+                <button type="button" data-set-font="serif" class="flex-1 py-1.5 rounded-lg text-xs font-medium border font-serif" style="border-color:var(--border);background-color:var(--bg-primary);color:var(--text-primary)">Serif</button>
+              </div>
+
+              <p class="text-xs font-semibold mb-2" style="color:var(--text-secondary)">Cỡ Chữ</p>
+              <div class="flex gap-1 mb-4">
+                <button type="button" data-set-size="14" class="w-8 h-8 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">14</button>
+                <button type="button" data-set-size="16" class="w-8 h-8 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">16</button>
+                <button type="button" data-set-size="18" class="w-8 h-8 rounded-lg text-xs font-medium border font-bold text-[var(--accent)]" style="border-color:var(--accent);color:var(--accent)">18</button>
+                <button type="button" data-set-size="20" class="w-8 h-8 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">20</button>
+                <button type="button" data-set-size="22" class="w-8 h-8 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">22</button>
+                <button type="button" data-set-size="24" class="w-8 h-8 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">24</button>
+              </div>
+
+              <p class="text-xs font-semibold mb-2" style="color:var(--text-secondary)">Giãn Dòng</p>
+              <div class="flex gap-2 mb-4">
+                <button type="button" data-set-line="1.6" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">1.6</button>
+                <button type="button" data-set-line="2.0" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">2.0</button>
+                <button type="button" data-set-line="2.5" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="border-color:var(--border);color:var(--text-primary)">2.5</button>
+              </div>
+
+              <p class="text-xs font-semibold mb-2" style="color:var(--text-secondary)">Màu Nền Đọc</p>
+              <div class="flex gap-2">
+                <button type="button" data-set-reading-theme="white" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="background-color:#fff9fa;color:#2d3436;border-color:#dcd1ba">Trắng</button>
+                <button type="button" data-set-reading-theme="sepia" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="background-color:#f4ecd8;color:#5c4b37;border-color:#dcd1ba">Sepia</button>
+                <button type="button" data-set-reading-theme="dark" class="flex-1 py-1.5 rounded-lg text-xs font-medium border" style="background-color:#000000;color:#e8e4e0;border-color:var(--border)">Đen</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audio Player Hero (Exact Spinning Vinyl Disc from audio_reader_chunk.js lines 468-500) -->
+        <div class="rounded-3xl p-6 sm:p-8 w-full max-w-lg mx-auto mb-8 border" style="background-color:var(--bg-surface);border-color:var(--border);box-shadow:0 8px 40px rgba(0,0,0,0.12)">
+          <div class="flex justify-center mb-6">
+            <div class="relative">
+              <div id="vinyl-disc" class="w-[180px] h-[180px] sm:w-[220px] sm:h-[220px] rounded-full flex items-center justify-center overflow-hidden transition-[box-shadow,transform] duration-300 audio-disc-spin paused"
+                   style="box-shadow: 0 12px 40px rgba(0,0,0,0.35), 0 0 0 4px rgba(255,255,255,0.1), inset 0 0 0 3px rgba(0,0,0,0.2)">
+                <div class="absolute inset-0 rounded-full opacity-95" style="background: repeating-radial-gradient(circle at center, transparent 0, transparent 3px, rgba(0,0,0,0.15) 3px, rgba(0,0,0,0.15) 4px), radial-gradient(circle at 35% 35%, #333 0%, #1a1a1a 35%, #0d0d0d 60%, #000 100%)"></div>
+                <div class="absolute w-12 h-12 sm:w-14 sm:h-14 rounded-full flex items-center justify-center z-10 border-[3px]" style="background-color:var(--accent);border-color:rgba(255,255,255,0.35);box-shadow:inset 0 2px 4px rgba(255,255,255,0.2), 0 2px 8px rgba(0,0,0,0.2)">
+                  <span class="text-white text-base sm:text-lg font-bold">🎧</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Chapter Info -->
+          <div class="text-center mb-4 min-w-0">
+            <h2 id="audio-chapter-title" class="text-base sm:text-lg font-bold truncate px-2 mb-0.5" style="color:var(--text-primary)">Chương 1</h2>
+            <p class="text-xs" style="color:var(--text-secondary)">Đồng bộ giọng đọc Neural & Karaoke trực quan</p>
+          </div>
+
+          <!-- Scrubber (from lines 517-545) -->
+          <div class="flex items-center gap-3 mb-5">
+            <span id="time-current" class="text-xs font-mono tabular-nums w-10 flex-shrink-0" style="color:var(--text-secondary)">00:00</span>
+            <input id="audio-scrubber" type="range" min="0" max="100" value="0" step="0.1" class="flex-1 h-1.5 rounded-full cursor-pointer touch-none" style="accent-color:var(--accent);background:var(--border)" aria-label="Tua thời gian">
+            <span id="time-total" class="text-xs font-mono tabular-nums w-10 flex-shrink-0 text-right" style="color:var(--text-secondary)">00:00</span>
+          </div>
+
+          <!-- Controls (from lines 546-621) -->
+          <div class="flex items-center justify-center gap-2 sm:gap-4 mb-4">
+            <button id="btn-prev-chapter" type="button" class="p-2.5 rounded-full hover:bg-white/5 active:scale-95 transition-all touch-manipulation" style="color:var(--accent)" title="Chương trước">
+              <svg class="lucide lucide-skip-back w-6 h-6" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="19 20 9 12 19 4 19 20"></polygon>
+                <line x1="5" x2="5" y1="19" y2="5"></line>
+              </svg>
+            </button>
+            <button id="btn-seek-back" type="button" class="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full hover:bg-white/5 active:scale-95 transition-all touch-manipulation text-xs font-semibold" style="color:var(--text-primary)" title="Tua lại 10s">
+              -10s
+            </button>
+            <button id="btn-play-pause" type="button" class="w-14 h-14 sm:w-16 sm:h-16 rounded-full flex items-center justify-center text-white transition-all hover:scale-105 active:scale-95 touch-manipulation shadow-xl" style="background-color:var(--accent)" title="Phát">
+              <svg class="lucide lucide-play w-7 h-7 sm:w-8 sm:h-8 ml-1" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="6 3 20 12 6 21 6 3"></polygon>
+              </svg>
+            </button>
+            <button id="btn-seek-fwd" type="button" class="min-w-[40px] min-h-[40px] flex items-center justify-center rounded-full hover:bg-white/5 active:scale-95 transition-all touch-manipulation text-xs font-semibold" style="color:var(--text-primary)" title="Tua nhanh 10s">
+              +10s
+            </button>
+            <button id="btn-next-chapter" type="button" class="p-2.5 rounded-full hover:bg-white/5 active:scale-95 transition-all touch-manipulation" style="color:var(--accent)" title="Chương sau">
+              <svg class="lucide lucide-skip-forward w-6 h-6" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+                <polygon points="5 4 15 12 5 20 5 4"></polygon>
+                <line x1="19" x2="19" y1="5" y2="19"></line>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Secondary Audio Options (from lines 622-680) -->
+          <div class="flex items-center justify-center gap-2 flex-wrap text-xs pt-3 border-t" style="border-color:var(--border)">
+            <button id="btn-auto-next" type="button" class="px-3 py-1.5 rounded-full border transition-colors flex items-center gap-1 font-medium" style="border-color:var(--border);color:var(--accent)">
+              🔁 Tự động phát
+            </button>
+
+            <!-- Speed Menu -->
+            <div class="relative">
+              <button id="btn-speed" type="button" class="px-3 py-1.5 rounded-full border transition-colors font-medium" style="border-color:var(--border);color:var(--text-primary)">
+                1.0x
+              </button>
+              <div id="speed-popover" class="hidden absolute bottom-full mb-2 left-1/2 -translate-x-1/2 p-2 rounded-xl shadow-xl z-50 border grid grid-cols-3 gap-1 min-w-[140px]" style="background-color:var(--bg-surface);border-color:var(--border)">
+                <button data-speed-val="0.75" class="py-1 px-2 rounded hover:bg-white/10 text-xs">0.75x</button>
+                <button data-speed-val="1.0" class="py-1 px-2 rounded hover:bg-white/10 text-xs font-bold text-[var(--accent)]">1.0x</button>
+                <button data-speed-val="1.25" class="py-1 px-2 rounded hover:bg-white/10 text-xs">1.25x</button>
+                <button data-speed-val="1.5" class="py-1 px-2 rounded hover:bg-white/10 text-xs">1.5x</button>
+                <button data-speed-val="2.0" class="py-1 px-2 rounded hover:bg-white/10 text-xs">2.0x</button>
+              </div>
+            </div>
+
+            <!-- Timer Menu -->
+            <div class="relative">
+              <button id="btn-timer" type="button" class="px-3 py-1.5 rounded-full border transition-colors font-medium" style="border-color:var(--border);color:var(--text-primary)">
+                Hẹn giờ
+              </button>
+              <div id="timer-popover" class="hidden absolute bottom-full mb-2 left-1/2 -translate-x-1/2 p-2 rounded-xl shadow-xl z-50 border flex flex-col gap-1 min-w-[120px]" style="background-color:var(--bg-surface);border-color:var(--border)">
+                <button data-timer-min="0" class="py-1 px-3 text-left rounded hover:bg-white/10 text-xs">Tắt</button>
+                <button data-timer-min="15" class="py-1 px-3 text-left rounded hover:bg-white/10 text-xs">15 phút</button>
+                <button data-timer-min="30" class="py-1 px-3 text-left rounded hover:bg-white/10 text-xs">30 phút</button>
+                <button data-timer-min="45" class="py-1 px-3 text-left rounded hover:bg-white/10 text-xs">45 phút</button>
+                <button data-timer-min="60" class="py-1 px-3 text-left rounded hover:bg-white/10 text-xs">60 phút</button>
+              </div>
+            </div>
+
+            <!-- Voice Switcher -->
+            <button id="btn-voice" type="button" class="px-3 py-1.5 rounded-full border transition-colors font-medium flex items-center gap-1" style="border-color:var(--border);color:var(--text-primary)">
+              🎙️ Nữ (Hoài My) ▾
+            </button>
+          </div>
+        </div>
+
+        <!-- Chapter Heading -->
+        <h1 id="chapter-title" class="text-xl sm:text-2xl font-bold mb-6 text-center" style="color:var(--text-primary)">
+          Chương 1
+        </h1>
+
+        <!-- Reading Content (Karaoke Realtime synced) -->
+        <div id="chapter-content" class="content-area prose prose-lg max-w-none mt-6 leading-relaxed transition-all" style="font-size:18px;line-height:2">
+          <!-- Paragraphs populated by reader.js -->
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <!-- Exact ReadNavBar (from exact_main_reader.html lines 653-698) -->
+  <div class="fixed bottom-0 left-0 right-0 z-40 border-t shadow-[0_-2px_12px_rgba(0,0,0,0.06)] pb-[env(safe-area-inset-bottom)]" style="background-color:var(--bg-surface);border-color:var(--border)">
+    <div class="max-w-xl mx-auto px-3 py-2.5 flex items-center justify-between gap-2 sm:gap-3">
+      <button id="btn-nav-prev" onclick="document.getElementById('btn-prev-chapter').click()" class="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2.5 rounded-xl font-medium text-sm touch-manipulation shrink-0 flex-1 min-w-0 max-w-[140px] sm:max-w-[160px] border-2" style="border-color:var(--accent);color:var(--accent)">
+        <svg class="lucide lucide-chevron-left w-5 h-5 shrink-0" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+          <path d="m15 18-6-6 6-6"></path>
+        </svg>
+        <span class="truncate hidden sm:inline">Trước</span>
+      </button>
+
+      <button id="btn-open-drawer" class="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2.5 rounded-xl font-medium text-sm touch-manipulation shrink-0 flex-1 min-w-0 max-w-[140px] sm:max-w-[160px] text-white shadow-md" style="background-color:var(--accent)" type="button">
+        <svg class="lucide lucide-list w-5 h-5 shrink-0" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+          <path d="M3 12h.01"></path>
+          <path d="M3 18h.01"></path>
+          <path d="M3 6h.01"></path>
+          <path d="M8 12h13"></path>
+          <path d="M8 18h13"></path>
+          <path d="M8 6h13"></path>
+        </svg>
+        <span class="truncate">Chọn chương</span>
+      </button>
+
+      <button id="btn-nav-next" onclick="document.getElementById('btn-next-chapter').click()" class="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2.5 rounded-xl font-medium text-sm touch-manipulation shrink-0 flex-1 min-w-0 max-w-[140px] sm:max-w-[160px] border-2" style="border-color:var(--accent);color:var(--accent)">
+        <span class="truncate hidden sm:inline">Sau</span>
+        <svg class="lucide lucide-chevron-right w-5 h-5 shrink-0" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+          <path d="m9 18 6-6-6-6"></path>
+        </svg>
+      </button>
+
+      <button onclick="document.getElementById('btn-play-pause').click()" class="flex items-center justify-center gap-1.5 min-h-[44px] px-3 py-2.5 rounded-xl font-medium text-sm touch-manipulation shrink-0 w-12 sm:w-14 border-2" style="border-color:var(--border);color:var(--text-primary)" title="Phát audio">
+        <span class="text-lg">🎧</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Chapter Drawer (Slide from right) -->
+  <div id="drawer-backdrop" class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity"></div>
+  <aside id="chapter-drawer" class="fixed right-0 top-0 bottom-0 z-50 w-full max-w-xs translate-x-full transition-transform duration-300 ease-in-out border-l shadow-2xl flex flex-col" style="background-color:var(--bg-surface);border-color:var(--border)">
+    <div class="flex items-center justify-between p-4 border-b" style="border-color:var(--border)">
+      <h3 class="font-bold text-base" style="color:var(--text-primary)">Danh Sách Chương</h3>
+      <button id="btn-close-drawer" class="p-1.5 rounded-full hover:bg-white/10" style="color:var(--text-secondary)">✕</button>
+    </div>
+    <div id="drawer-chapter-list" class="flex-1 overflow-y-auto p-3 space-y-1">
+      <!-- List populated by reader.js -->
+    </div>
+  </aside>
+
+  <!-- Voice Presets Modal -->
+  <div id="voice-modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+    <div class="w-full max-w-md rounded-2xl p-6 shadow-2xl border" style="background-color:var(--bg-surface);border-color:var(--border)">
+      <div class="flex items-center justify-between mb-4 pb-2 border-b" style="border-color:var(--border)">
+        <h3 class="font-bold text-base" style="color:var(--text-primary)">🎙️ Chọn Giọng Đọc & Sắc Thái</h3>
+        <button id="voice-modal-close" class="p-1 rounded-full hover:bg-white/10 text-neutral-400">✕</button>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="female" data-pitch="0Hz" data-label="Nữ (Chuẩn)">
+          <span class="text-xl">🌸</span>
+          <div>
+            <div class="text-xs font-bold" style="color:var(--text-primary)">Nữ Tiêu Chuẩn</div>
+            <div class="text-[11px]" style="color:var(--text-secondary)">Hoài My • Truyền cảm</div>
+          </div>
+        </button>
+        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="female" data-pitch="+10Hz" data-label="Thiếu nữ">
+          <span class="text-xl">✨</span>
+          <div>
+            <div class="text-xs font-bold" style="color:var(--text-primary)">Thiếu Nữ Trẻ</div>
+            <div class="text-[11px]" style="color:var(--text-secondary)">Hoài My (+10Hz)</div>
+          </div>
+        </button>
+        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="female" data-pitch="-10Hz" data-label="Nữ trầm">
+          <span class="text-xl">🌙</span>
+          <div>
+            <div class="text-xs font-bold" style="color:var(--text-primary)">Nữ Trầm Lắng</div>
+            <div class="text-[11px]" style="color:var(--text-secondary)">Hoài My (-10Hz)</div>
+          </div>
+        </button>
+        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="male" data-pitch="0Hz" data-label="Nam (Chuẩn)">
+          <span class="text-xl">⚔️</span>
+          <div>
+            <div class="text-xs font-bold" style="color:var(--text-primary)">Nam Tiêu Chuẩn</div>
+            <div class="text-[11px]" style="color:var(--text-secondary)">Nam Minh • Rõ ràng</div>
+          </div>
+        </button>
+        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="male" data-pitch="-10Hz" data-label="Nam hào hùng">
+          <span class="text-xl">🛡️</span>
+          <div>
+            <div class="text-xs font-bold" style="color:var(--text-primary)">Nam Kiếm Hiệp</div>
+            <div class="text-[11px]" style="color:var(--text-secondary)">Nam Minh (-10Hz)</div>
+          </div>
+        </button>
+        <button class="voice-preset-card p-3 rounded-xl border text-left flex items-center gap-2.5 hover:border-[var(--accent)]" style="border-color:var(--border);background-color:var(--bg-primary)" data-voice="male" data-pitch="-20Hz" data-label="Lão gia">
+          <span class="text-xl">📜</span>
+          <div>
+            <div class="text-xs font-bold" style="color:var(--text-primary)">Lão Gia / Trung Niên</div>
+            <div class="text-[11px]" style="color:var(--text-secondary)">Nam Minh (-20Hz)</div>
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/navbar.js"></script>
+  <script src="/js/reader.js"></script>
+  <script>
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.themeEngine) window.themeEngine.init();
+    });
+  </script>
+</body>
+</html>

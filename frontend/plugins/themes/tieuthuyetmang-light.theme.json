@@ -1,0 +1,23 @@
+{
+  "id": "tieuthuyetmang-light",
+  "name": "Tiểu Thuyết Mạng (Sáng Gốc)",
+  "type": "light",
+  "author": "Tieuthuyetmang",
+  "version": "1.0.0",
+  "tokens": {
+    "--bg-primary": "#fff8f6",
+    "--bg-surface": "#ffffff",
+    "--text-primary": "#2d1f1c",
+    "--text-secondary": "#6b5348",
+    "--accent": "#e54d42",
+    "--accent-hover": "#c43d33",
+    "--vip-gold": "#e8a317",
+    "--border": "rgba(229, 77, 66, 0.12)",
+    "--active-cue-bg": "rgba(229, 77, 66, 0.12)",
+    "--active-cue-border": "#e54d42"
+  },
+  "fonts": {
+    "sans": "Nunito, system-ui, -apple-system, sans-serif",
+    "serif": "Merriweather, Georgia, serif"
+  }
+}

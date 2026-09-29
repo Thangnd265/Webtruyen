@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="600" viewBox="0 0 400 600">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#180e29"/>
+      <stop offset="40%" stop-color="#2a1438"/>
+      <stop offset="75%" stop-color="#190e24"/>
+      <stop offset="100%" stop-color="#0a0612"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="50%" stop-color="#fde047"/>
+      <stop offset="100%" stop-color="#e05344"/>
+    </linearGradient>
+    <linearGradient id="titleGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fce7f3"/>
+    </linearGradient>
+    <radialGradient id="moonGlow" cx="50%" cy="35%" r="40%">
+      <stop offset="0%" stop-color="#e05344" stop-opacity="0.35"/>
+      <stop offset="60%" stop-color="#9333ea" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#000000" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#000000" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="400" height="600" fill="url(#bgGrad)"/>
+  <circle cx="200" cy="220" r="160" fill="url(#moonGlow)"/>
+
+  <!-- Stars / Magic Sparkles -->
+  <g fill="#fde047" opacity="0.6">
+    <circle cx="60" cy="80" r="1.5"/>
+    <circle cx="120" cy="140" r="2"/>
+    <circle cx="330" cy="95" r="1.5"/>
+    <circle cx="280" cy="180" r="2.5"/>
+    <circle cx="90" cy="260" r="1.5"/>
+    <circle cx="320" cy="300" r="2"/>
+    <polygon points="200,60 203,68 211,70 203,72 200,80 197,72 189,70 197,68" fill="#fde047" opacity="0.8"/>
+    <polygon points="310,140 312,146 318,147 312,149 310,155 308,149 302,147 308,146" fill="#fde047" opacity="0.7"/>
+  </g>
+
+  <!-- Stylized Anime Silhouette / Magic Circle -->
+  <circle cx="200" cy="230" r="110" fill="none" stroke="url(#goldGrad)" stroke-width="1.5" stroke-dasharray="8 4" opacity="0.4"/>
+  <circle cx="200" cy="230" r="95" fill="none" stroke="#e05344" stroke-width="1" opacity="0.3"/>
+  <polygon points="200,135 282,277 118,277" fill="none" stroke="#f59e0b" stroke-width="0.8" opacity="0.25"/>
+  <polygon points="200,325 282,183 118,183" fill="none" stroke="#f59e0b" stroke-width="0.8" opacity="0.25"/>
+
+  <!-- Character Icon / Symbol -->
+  <g transform="translate(160, 180) scale(1.6)" filter="url(#shadow)">
+    <path d="M25 5 C15 5 10 15 10 25 C10 38 25 45 25 45 C25 45 40 38 40 25 C40 15 35 5 25 5 Z" fill="#e05344" opacity="0.85"/>
+    <polygon points="25,12 28,19 35,20 30,25 31,32 25,28 19,32 20,25 15,20 22,19" fill="#fde047"/>
+  </g>
+
+  <!-- Frame Border -->
+  <rect x="15" y="15" width="370" height="570" rx="8" fill="none" stroke="url(#goldGrad)" stroke-width="1.5" opacity="0.7"/>
+  <rect x="20" y="20" width="360" height="560" rx="6" fill="none" stroke="#22222a" stroke-width="1"/>
+
+  <!-- Top Badge -->
+  <rect x="110" y="32" width="180" height="26" rx="13" fill="#141418" stroke="#e05344" stroke-width="1"/>
+  <text x="200" y="49" fill="#fde047" font-family="'Inter', sans-serif" font-size="11" font-weight="700" text-anchor="middle" letter-spacing="1.5">★ TIỂU THUYẾT MẠNG ★</text>
+
+  <!-- Bottom Title Block with Shadow Overlay -->
+  <rect x="22" y="390" width="356" height="186" rx="4" fill="#09090bee" opacity="0.92"/>
+  <line x1="40" y1="400" x2="360" y2="400" stroke="url(#goldGrad)" stroke-width="2"/>
+
+  <!-- Book Title -->
+  <text x="200" y="440" fill="url(#titleGrad)" font-family="'Merriweather', serif" font-size="22" font-weight="700" text-anchor="middle" filter="url(#shadow)">BƯỚC CHÂN ĐẦU TIÊN</text>
+  <text x="200" y="472" fill="#fde047" font-family="'Merriweather', serif" font-size="16" font-weight="700" text-anchor="middle" letter-spacing="0.5">ĐẠI TIỂU THƯ HỌC VIỆN</text>
+
+  <!-- Metadata Subtitle -->
+  <text x="200" y="505" fill="#a1a1aa" font-family="'Inter', sans-serif" font-size="12" text-anchor="middle">Huyền Huyễn • Đô Thị • Bản Audio Đồng Bộ</text>
+
+  <!-- Author Badge -->
+  <rect x="130" y="525" width="140" height="24" rx="12" fill="#e05344" opacity="0.9"/>
+  <text x="200" y="541" fill="#ffffff" font-family="'Inter', sans-serif" font-size="11" font-weight="700" text-anchor="middle" letter-spacing="0.5">TÁC GIẢ: ĐINH THẮNG</text>
+</svg>

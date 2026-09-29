@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>[ Tiểu Thuyết Mạng ] - Đọc & Nghe truyện online</title>
+  <meta name="description" content="Nền tảng đọc truyện và nghe audio online hàng đầu">
+  <link rel="stylesheet" href="/css/tieuthuyetmang.css">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
+  <script src="/plugins/themes/theme-engine.js"></script>
+</head>
+<body class="font-sans min-h-screen flex flex-col" style="background-color:var(--bg-primary);color:var(--text-primary)">
+
+  <!-- Exact Header from tieuthuyetmang.com -->
+  <header class="sticky top-0 z-50 w-full border-b bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80" style="border-color:var(--border);background-color:var(--bg-surface)">
+    <div class="container mx-auto flex h-16 items-center justify-between px-4">
+      <a class="flex items-center gap-2 font-bold text-xl" href="/" style="color:var(--accent);padding-right:15px">
+        [ Tiểu Thuyết Mạng ✦ ]
+      </a>
+      <nav class="hidden md:flex items-center gap-6">
+        <a class="hover:opacity-80 transition-opacity text-sm font-semibold" href="/" style="color:var(--accent)">
+          Trang chủ
+        </a>
+        <a class="hover:opacity-80 transition-opacity text-sm font-medium" href="/#audio-section" style="color:var(--text-primary)">
+          Truyện audio
+        </a>
+        <a class="hover:opacity-80 transition-opacity text-sm font-medium" href="/#ranking-section" style="color:var(--text-primary)">
+          Bảng xếp hạng
+        </a>
+        <a class="btn-member text-sm" href="/reader.html?book=sample-story">
+          Nghe Ngay
+        </a>
+      </nav>
+      <div class="hidden md:flex items-center flex-1 max-w-xs mx-4">
+        <div class="relative w-full max-w-xs">
+          <div class="relative">
+            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 opacity-60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+            </svg>
+            <input id="navbar-search-input" class="w-full pl-10 pr-4 py-2 rounded-lg bg-surface border text-sm" placeholder="Tìm truyện..." style="border-color:var(--border);background-color:var(--bg-primary);color:var(--text-primary)" type="search" value=""/>
+          </div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <button id="theme-toggle-btn" aria-label="Chuyển đổi giao diện" class="p-2 rounded-full transition-colors hover:opacity-80" title="Chuyển chế độ giao diện" type="button">
+          <svg id="theme-toggle-icon" class="lucide lucide-moon w-5 h-5" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="color:var(--text-secondary)" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+          </svg>
+        </button>
+        <button id="mobile-menu-toggle" class="md:hidden p-2 flex-shrink-0 mobile-menu-toggle" title="Menu">
+          <svg class="lucide lucide-menu w-6 h-6" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+            <line x1="4" x2="20" y1="12" y2="12"></line>
+            <line x1="4" x2="20" y1="6" y2="6"></line>
+            <line x1="4" x2="20" y1="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <!-- Mobile Nav Menu -->
+    <div id="mobile-nav-menu" class="hidden md:hidden border-t px-4 py-3 space-y-2" style="border-color:var(--border);background-color:var(--bg-surface)">
+      <a class="block py-2 text-sm font-semibold" href="/" style="color:var(--accent)">Trang chủ</a>
+      <a class="block py-2 text-sm font-medium" href="/#audio-section" style="color:var(--text-primary)">Truyện audio</a>
+      <a class="block py-2 text-sm font-medium" href="/#ranking-section" style="color:var(--text-primary)">Bảng xếp hạng</a>
+      <a class="block py-2 text-sm font-medium text-amber-500" href="/reader.html?book=sample-story">Nghe Truyện Mẫu</a>
+    </div>
+  </header>
+
+  <!-- Hero Banner Slider -->
+  <section class="relative h-[320px] sm:h-[420px] flex items-center justify-center overflow-hidden" style="background:linear-gradient(135deg, #0B1120 0%, #1E293B 50%, #2d3436 100%)">
+    <div class="absolute inset-0 opacity-60" style="background-image:radial-gradient(circle at 20% 30%, rgba(255,255,255,0.15) 0%, transparent 50%), radial-gradient(circle at 80% 70%, rgba(255,255,255,0.1) 0%, transparent 50%)"></div>
+    <div id="hero-bg" class="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-30 transition-all duration-700" style="background-image:url(https://img.tieuthuyetmang.com/images/avatars/01KNTTFQ5CRR9Y9S9AZGM7CG4K.png)"></div>
+    <button id="hero-prev" aria-label="Trước" class="absolute left-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/30 hover:bg-white/50 text-white flex items-center justify-center text-2xl transition-colors" type="button">‹</button>
+    <button id="hero-next" aria-label="Sau" class="absolute right-4 top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full bg-white/30 hover:bg-white/50 text-white flex items-center justify-center text-2xl transition-colors" type="button">›</button>
+    <div class="relative z-[1] text-center text-white px-4 max-w-2xl">
+      <span class="inline-block px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-3 bg-red-500/80 text-white shadow-lg">Nổi Bật Nhất</span>
+      <h1 id="hero-title" class="text-2xl sm:text-[36px] md:text-4xl font-bold mb-4 leading-tight transition-all duration-300">
+        Cho Cậu Học Ở Trường Quý Tộc, Vậy Mà Cậu Lại Đi Tán Gái Đại Tiểu Thư
+      </h1>
+      <a href="/reader.html?book=sample-story" class="inline-flex items-center gap-2 px-6 py-2.5 rounded-full font-semibold text-sm text-white shadow-xl hover:scale-105 active:scale-95 transition-all" style="background-color:var(--accent)">
+        🎧 Thưởng Thức Ngay
+      </a>
+    </div>
+    <div id="hero-dots" class="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
+      <button class="h-2.5 rounded-full transition-all w-8 bg-white" type="button"></button>
+      <button class="h-2.5 rounded-full transition-all w-2.5 bg-white/40 hover:bg-white/60" type="button"></button>
+      <button class="h-2.5 rounded-full transition-all w-2.5 bg-white/40 hover:bg-white/60" type="button"></button>
+    </div>
+  </section>
+
+  <!-- Main Content Layout: Audio Stories Grid + Rankings Sidebar -->
+  <main class="flex-1 max-w-[1240px] w-full mx-auto px-4 py-8 sm:py-12" id="audio-section">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      
+      <!-- Left Column: Audio Stories Grid (2 cols on tablet/desktop) -->
+      <section class="lg:col-span-2">
+        <div class="flex items-center justify-between mb-6">
+          <div>
+            <h2 class="text-2xl font-bold flex items-center gap-2" style="color:var(--accent)">
+              🎧 Truyện Audio
+            </h2>
+            <p class="text-xs sm:text-sm mt-1" style="color:var(--text-secondary)">
+              Vừa đọc vừa nghe — trải nghiệm đồng bộ thời gian thực chuẩn Tiểu Thuyết Mạng
+            </p>
+          </div>
+          <span class="text-xs px-3 py-1 rounded-full font-semibold border" style="border-color:var(--border);color:var(--text-secondary)">
+            Đồng bộ Cloud
+          </span>
+        </div>
+
+        <!-- Stories Grid -->
+        <div id="audio-books-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <!-- Will be rendered by home.js from /api/books -->
+          <div class="p-8 text-center text-sm" style="color:var(--text-secondary)">Đang nạp danh sách truyện...</div>
+        </div>
+      </section>
+
+      <!-- Right Column: Sidebar Rankings -->
+      <aside class="space-y-6" id="ranking-section">
+        <!-- Monthly Rankings -->
+        <div class="rounded-xl p-5 border shadow-sm" style="background-color:var(--bg-surface);border-color:var(--border)">
+          <div class="flex items-center justify-between mb-4 pb-2 border-b" style="border-color:var(--border)">
+            <h3 class="font-bold text-sm sm:text-base flex items-center gap-1.5" style="color:var(--text-primary)">
+              🏆 Bảng Xếp Hạng Tháng
+            </h3>
+            <span class="text-[11px]" style="color:var(--accent)">Xem thêm →</span>
+          </div>
+          <div id="monthly-rankings-list" class="space-y-1">
+            <!-- Rendered by home.js -->
+          </div>
+        </div>
+
+        <!-- Reader Ranking / VIP Donors -->
+        <div class="rounded-xl p-5 border shadow-sm" style="background-color:var(--bg-surface);border-color:var(--border)">
+          <div class="flex items-center justify-between mb-4 pb-2 border-b" style="border-color:var(--border)">
+            <h3 class="font-bold text-sm sm:text-base flex items-center gap-1.5 text-amber-400">
+              💎 Vinh Danh Phú Hào
+            </h3>
+            <span class="text-[11px]" style="color:var(--text-secondary)">Thành viên</span>
+          </div>
+          <div id="user-rankings-list" class="space-y-1">
+            <!-- Rendered by home.js -->
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- Exact Footer from tieuthuyetmang.com -->
+  <footer class="mt-auto border-t" style="border-color:var(--border);background-color:var(--bg-surface);color:var(--text-primary)">
+    <div class="max-w-[1200px] mx-auto px-5 py-12">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
+        <div>
+          <div class="flex items-center gap-2 mb-3">
+            <svg class="lucide lucide-book-open w-5 h-5" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="color:var(--accent)" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 7v14"></path>
+              <path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"></path>
+            </svg>
+            <h3 class="font-bold text-base" style="color:var(--text-primary)">
+              Tiểu Thuyết Mạng
+            </h3>
+          </div>
+          <p class="text-sm leading-relaxed" style="color:var(--text-secondary)">
+            Nền tảng đọc truyện chữ & nghe audio đồng bộ hàng đầu. Kho tàng truyện đa dạng, cập nhật liên tục.
+          </p>
+        </div>
+        <div>
+          <h3 class="font-bold text-base mb-3" style="color:var(--text-primary)">Khám Phá</h3>
+          <ul class="space-y-2">
+            <li><a class="text-sm hover:underline" href="/" style="color:var(--text-secondary)">Trang Chủ</a></li>
+            <li><a class="text-sm hover:underline" href="/#ranking-section" style="color:var(--text-secondary)">Bảng Xếp Hạng</a></li>
+            <li><a class="text-sm hover:underline" href="/reader.html?book=sample-story" style="color:var(--text-secondary)">Truyện Audio Mẫu</a></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-bold text-base mb-3" style="color:var(--text-primary)">Giao Diện & Plugin</h3>
+          <ul class="space-y-2">
+            <li><button onclick="window.themeEngine.apply('tieuthuyetmang-dark')" class="text-sm hover:underline text-left" style="color:var(--text-secondary)">Theme Dark Gốc</button></li>
+            <li><button onclick="window.themeEngine.apply('tieuthuyetmang-light')" class="text-sm hover:underline text-left" style="color:var(--text-secondary)">Theme Light Gốc</button></li>
+            <li><button onclick="window.themeEngine.apply('tieuthuyetmang-sepia')" class="text-sm hover:underline text-left" style="color:var(--text-secondary)">Theme Sepia</button></li>
+            <li><button onclick="window.themeEngine.apply('oled-pure-black')" class="text-sm hover:underline text-left" style="color:var(--text-secondary)">Theme OLED Black</button></li>
+          </ul>
+        </div>
+        <div>
+          <h3 class="font-bold text-base mb-3" style="color:var(--text-primary)">Đồng Bộ Thiết Bị</h3>
+          <p class="text-sm leading-relaxed mb-2" style="color:var(--text-secondary)">
+            Tự động đồng bộ tiến độ đọc 2 chiều với máy đọc sách Kindle KOReader qua Kosync Server.
+          </p>
+        </div>
+      </div>
+      <div class="pt-6 border-t flex flex-col sm:flex-row items-center justify-between text-xs" style="border-color:var(--border);color:var(--text-secondary)">
+        <p>© 2026 Tiểu Thuyết Mạng. Giao diện chuẩn xác 100% kết hợp kiến trúc Theme Plugin độc lập.</p>
+        <p class="mt-2 sm:mt-0">Hỗ trợ PWA & Offline Caching</p>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/js/navbar.js"></script>
+  <script src="/js/home.js"></script>
+  <script>
+    // Khởi tạo Theme Plugin Engine
+    window.addEventListener('DOMContentLoaded', () => {
+      if (window.themeEngine) window.themeEngine.init();
+    });
+  </script>
+</body>
+</html>
