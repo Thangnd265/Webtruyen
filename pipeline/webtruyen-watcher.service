@@ -1,0 +1,17 @@
+[Unit]
+Description=Webtruyenv2 Auto Folder Watcher & TTS Pipeline
+After=network-online.target rclone-audiobooks.service
+Wants=rclone-audiobooks.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/root/webtruyen
+ExecStart=/root/vieneu-env/bin/python3 pipeline/watcher.py --watch-dir /mnt/gdrive/audiobooks/incoming_books --output-dir /mnt/gdrive/audiobooks --voice "Ngọc Huyền" --interval 10
+Restart=always
+RestartSec=15
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

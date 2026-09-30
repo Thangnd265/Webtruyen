@@ -104,7 +104,7 @@ def process_incoming_file(
     output_dir: Path,
     done_dir: Path,
     failed_dir: Path,
-    voice: str = "Hải Đăng",
+    voice: str = "Ngọc Huyền",
     dry_run: bool = False,
     bitrate: str = "64k",
     max_chapters: Optional[int] = None,
@@ -172,7 +172,7 @@ def run_watch_cycle(
     output_dir: Path,
     done_dir: Path,
     failed_dir: Path,
-    voice: str = "Hải Đăng",
+    voice: str = "Ngọc Huyền",
     dry_run: bool = False,
     bitrate: str = "64k",
     max_chapters: Optional[int] = None,
@@ -219,7 +219,7 @@ def run_watch_cycle(
 def start_watcher(
     watch_dir: Path,
     output_dir: Path,
-    voice: str = "Hải Đăng",
+    voice: str = "Ngọc Huyền",
     poll_interval: int = 5,
     dry_run: bool = False,
     bitrate: str = "64k",
@@ -287,8 +287,8 @@ def main() -> None:
     parser.add_argument(
         "--voice",
         type=str,
-        default="Hải Đăng",
-        help="TTS Voice preset or reference audio path (default: 'Hải Đăng')",
+        default="Ngọc Huyền",
+        help="TTS Voice preset or reference audio path (default: 'Ngọc Huyền')",
     )
     parser.add_argument(
         "--interval",

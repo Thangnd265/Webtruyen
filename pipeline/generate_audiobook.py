@@ -72,7 +72,7 @@ class TTSEngine:
 
     def __init__(
         self,
-        voice: str = "vie_neu_v3_female",
+        voice: str = "Ngọc Huyền",
         dry_run: bool = False,
         model_path: Optional[str] = None,
     ) -> None:
@@ -90,6 +90,9 @@ class TTSEngine:
 
             logger.info("VieNeu-TTS v3 engine successfully loaded.")
             self._model = Vieneu()
+            if self.model_path and Path(self.model_path).exists():
+                logger.info(f"Loading custom voice presets from {self.model_path}...")
+                self._model._load_voices_from_file(Path(self.model_path))
         except ImportError:
             logger.warning(
                 "VieNeu-TTS ('vieneu') is not installed. Real synthesis will fail unless dry_run=True."
