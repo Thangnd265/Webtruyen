@@ -1,0 +1,29 @@
+[Unit]
+Description=Rclone Mount Google Drive Audiobooks
+After=network-online.target
+Wants=network-online.target
+Before=docker.service
+
+[Service]
+Type=notify
+ExecStart=/usr/bin/rclone mount gdrive:Audiobooks /mnt/gdrive/audiobooks \
+  --config=/root/.config/rclone/rclone.conf \
+  --cache-dir=/var/cache/rclone \
+  --allow-other \
+  --vfs-cache-mode full \
+  --vfs-cache-max-size 30G \
+  --vfs-cache-max-age 720h \
+  --vfs-read-ahead 32M \
+  --vfs-fast-fingerprint \
+  --vfs-read-chunk-size 8M \
+  --buffer-size 16M \
+  --dir-cache-time 24h \
+  --poll-interval 1m \
+  --drive-pacer-min-sleep 10ms \
+  --umask 002
+ExecStop=/bin/fusermount3 -u -z /mnt/gdrive/audiobooks
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
