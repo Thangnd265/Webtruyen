@@ -428,9 +428,10 @@ def generate_audiobook(
             "chapters": combined_chapters,
         }
         meta_path.write_text(json.dumps(book_metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+        return combined_chapters
 
     # Write metadata upfront so chapters are immediately visible on web
-    _sync_metadata()
+    all_chapters = _sync_metadata()
 
     processed_chapters = []
     for ch in active_chapters:
@@ -445,30 +446,32 @@ def generate_audiobook(
             voice_tag=voice_tag,
         )
         processed_chapters.append(res)
-        _sync_metadata()
+        all_chapters = _sync_metadata()
 
     logger.info(f"Audiobook generation completed for '{slug}' at {target_book_dir} (Total chapters on web: {len(chapters)})")
     return {
         "slug": slug,
         "output_dir": str(target_book_dir),
         "chapters": processed_chapters,
-        "total_chapters": len(combined_chapters),
+        "total_chapters": len(all_chapters),
     }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="VieNeu-TTS v3 RAM-Based Audiobook Generator")
+    parser.add_argument("input_pos", nargs="?", default=None, help="Path to input file (positional)")
     parser.add_argument("--input", "-i", type=str, default=None, help="Path to input .epub or .txt file")
     parser.add_argument("--epub", type=str, default=None, help="Path to input .epub file (legacy flag)")
     parser.add_argument("--txt", type=str, default=None, help="Path to input .txt file")
     parser.add_argument("--slug", type=str, default=None, help="Slug for book (defaults to filename or title)")
+    parser.add_argument("--title", type=str, default=None, help="Book title override")
     parser.add_argument(
         "--output-dir",
         type=str,
         default="/mnt/gdrive/audiobooks",
         help="Target output base directory (e.g. /mnt/gdrive/audiobooks)",
     )
-    parser.add_argument("--voice", type=str, default="vie_neu_v3_female", help="Voice model ID")
+    parser.add_argument("--voice", type=str, default="Ngọc Huyền", help="Voice model ID")
     parser.add_argument("--voice-tag", type=str, default=None, help="Suffix tag for multi-voice chapters (e.g. ngochuyen, custom_voice)")
     parser.add_argument("--ram-dir", type=str, default=None, help="RAM disk directory (default: /dev/shm)")
     parser.add_argument("--bitrate", type=str, default="64k", help="Audio bitrate for FFmpeg (default: 64k)")
@@ -478,13 +481,14 @@ def main() -> None:
         action="store_true",
         help="Force re-generation of already existing chapters",
     )
+    parser.add_argument("--start-chapter", type=int, default=1, help="Starting chapter index (1-based)")
     parser.add_argument("--max-chapters", type=int, default=None, help="Limit number of chapters to process")
 
     args = parser.parse_args()
 
-    input_file_str = args.input or args.epub or args.txt
+    input_file_str = args.input_pos or args.input or args.epub or args.txt
     if not input_file_str:
-        logger.error("Please specify an input file via --input, --epub, or --txt.")
+        logger.error("Please specify an input file via positional argument, --input, --epub, or --txt.")
         sys.exit(1)
 
     input_path = Path(input_file_str)
@@ -496,6 +500,8 @@ def main() -> None:
         sys.exit(1)
 
     metadata_info, chapters = extract_book_chapters(input_path)
+    if args.title:
+        metadata_info["title"] = args.title
     book_slug = args.slug or slugify(metadata_info.get("title", input_path.stem))
     output_base_dir = Path(args.output_dir)
     ram_dir = Path(args.ram_dir) if args.ram_dir else None
@@ -512,6 +518,7 @@ def main() -> None:
         dry_run=args.dry_run,
         skip_existing=not args.no_skip_existing,
         max_chapters=args.max_chapters,
+        start_chapter=args.start_chapter,
     )
 
 
