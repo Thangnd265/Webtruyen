@@ -113,6 +113,8 @@ def list_books():
     books = []
     for item in sorted(books_dir.iterdir(), key=lambda p: p.name):
         if item.is_dir():
+            if item.name.startswith(".") or item.name in ("voices", "models", "lost+found", "incoming_books"):
+                continue
             slug = item.name
             meta_file = item / "metadata.json"
             meta: Dict[str, Any] = {}
@@ -124,6 +126,8 @@ def list_books():
                     pass
 
             chapters = get_book_chapters(item, meta.get("chapters"))
+            if not meta_file.exists() and len(chapters) == 0:
+                continue
             total_chapters = meta.get("total_chapters", len(chapters))
 
             books.append({

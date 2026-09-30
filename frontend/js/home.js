@@ -19,9 +19,7 @@ async function initHomePage() {
 
 // Banners map cho từng bộ truyện từ Google Drive
 const BANNER_MAP = {
-  'sample-story': '/images/banners/banner_sample-story.jpg',
-  'do-giam-quai-vat': '/images/banners/banner_do-giam-quai-vat.jpg',
-  'xuyen-khong-1970': '/images/banners/banner_xuyen-khong-1970.jpg',
+  'tu-da-quai-bat-dau-tien-hoa-thang-cap-full': '/api/books/tu-da-quai-bat-dau-tien-hoa-thang-cap-full/cover',
 };
 
 let currentHeroIndex = 0;
@@ -174,8 +172,8 @@ function setupHistoryControls() {
   }
 }
 
-// Danh sách 3 bộ truyện gốc từ Google Drive của bạn
-const DRIVE_ORIGINALS = ['sample-story', 'do-giam-quai-vat', 'xuyen-khong-1970'];
+// Danh sách các bộ truyện từ Google Drive của bạn
+const DRIVE_ORIGINALS = ['tu-da-quai-bat-dau-tien-hoa-thang-cap-full'];
 
 function sortBooksWithDrivePriority(books) {
   if (!Array.isArray(books)) return [];
@@ -239,20 +237,18 @@ function renderFeaturedSlider(books) {
   totalHeroSlides = featuredBooks.length;
 
   const HERO_GENRE_MAP = {
-    'sample-story': 'ĐỀ CỬ ĐẶC BIỆT',
-    'do-giam-quai-vat': 'TÂY HUYỄN HOT',
-    'xuyen-khong-1970': 'ĐÔ THỊ TRÙNG SINH',
+    'tu-da-quai-bat-dau-tien-hoa-thang-cap-full': 'TIÊN HIỆP TRÙNG SINH',
   };
 
   track.innerHTML = featuredBooks.map((b, idx) => {
-    const bannerUrl = BANNER_MAP[b.slug] || `/images/banners/banner_sample-story.jpg`;
-    const genreTag = HERO_GENRE_MAP[b.slug] || (b.genres && b.genres[0]) || 'THỊNH HÀNH';
+    const bannerUrl = BANNER_MAP[b.slug] || b.cover_url || `/api/books/${encodeURIComponent(b.slug)}/cover`;
+    const genreTag = HERO_GENRE_MAP[b.slug] || (b.genres && b.genres.split(',')[0].trim()) || 'THỊNH HÀNH';
     const badgeLabel = `🔥 TOP #${idx + 1} • ${genreTag.toUpperCase()}`;
     const targetUrl = `/reader.html?slug=${encodeURIComponent(b.slug)}&chapter=chapter_001`;
 
     return `
       <div class="hero-slide" onclick="window.location.href='${targetUrl}'">
-        <img src="${bannerUrl}" alt="${b.title}" class="hero-slide-bg" onerror="this.src='/images/banners/banner_sample-story.jpg'" />
+        <img src="${bannerUrl}" alt="${b.title}" class="hero-slide-bg" onerror="this.src='${b.cover_url || ''}'" />
         <div class="hero-slide-overlay"></div>
         <div class="hero-slide-content">
           <span class="hero-badge">
@@ -296,9 +292,7 @@ const LATEST_PAGE_SIZE = 6;
 let latestDisplayBooks = [];
 
 const BOOK_DESCRIPTIONS = {
-  'sample-story': 'Được gia đình gom góp cho theo học tại trường quý tộc hàng đầu, thế nhưng mục tiêu của cậu không phải danh vọng mà lại là chinh phục trái tim đại tiểu thư lạnh lùng kiêu sa...',
-  'do-giam-quai-vat': 'Thế giới dị biến, quái vật hoành hành. Lâm Ẩn thức tỉnh Đồ Giám Quái Vật vô thượng, bắt đầu con đường tiến hóa nghịch thiên từ huyết mạch Goblin yếu ớt nhất...',
-  'xuyen-khong-1970': 'Trùng sinh về những năm 1970 đầy biến động, mang theo tri thức hiện đại cùng không gian bí ẩn, chàng thanh niên từng bước làm giàu, đổi vận bản thân và gia tộc...',
+  'tu-da-quai-bat-dau-tien-hoa-thang-cap-full': 'Sau khi trọng sinh thành dã quái Sài Lang Nhân yếu ớt, từng bước tiến hóa thăng cấp thành Chân Thần.',
 };
 
 function setupLatestControls() {
