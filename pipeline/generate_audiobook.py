@@ -390,6 +390,48 @@ def generate_audiobook(
     else:
         active_chapters = chapters[start_idx:]
 
+    def _sync_metadata():
+        meta_path = target_book_dir / "metadata.json"
+        existing_chapters_map = {}
+        if meta_path.exists():
+            try:
+                with open(meta_path, "r", encoding="utf-8") as f:
+                    old_meta = json.load(f)
+                    for ch in old_meta.get("chapters", []):
+                        existing_chapters_map[ch["id"]] = ch
+            except Exception as e:
+                logger.warning(f"Could not read existing metadata.json: {e}")
+
+        # Ensure all book chapters are registered
+        for ch in chapters:
+            ch_id = ch["id"]
+            if ch_id not in existing_chapters_map:
+                existing_chapters_map[ch_id] = {
+                    "id": ch_id,
+                    "title": ch["title"],
+                    "chapter_index": ch["chapter_index"],
+                    "audio_url": f"/api/books/{slug}/audio/{ch_id}",
+                }
+
+        combined_chapters = sorted(
+            existing_chapters_map.values(),
+            key=lambda c: c.get("chapter_index", 0)
+        )
+
+        book_metadata = {
+            "title": metadata_info.get("title", slug),
+            "author": metadata_info.get("author", "Unknown"),
+            "description": metadata_info.get("description", ""),
+            "slug": slug,
+            "cover_url": f"/api/books/{slug}/cover" if (target_book_dir / "cover.jpg").exists() else None,
+            "total_chapters": len(combined_chapters),
+            "chapters": combined_chapters,
+        }
+        meta_path.write_text(json.dumps(book_metadata, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    # Write metadata upfront so chapters are immediately visible on web
+    _sync_metadata()
+
     processed_chapters = []
     for ch in active_chapters:
         res = process_chapter(
@@ -403,46 +445,9 @@ def generate_audiobook(
             voice_tag=voice_tag,
         )
         processed_chapters.append(res)
+        _sync_metadata()
 
-    # Build and merge metadata.json directly in target output dir
-    meta_path = target_book_dir / "metadata.json"
-    existing_chapters_map = {}
-    if meta_path.exists():
-        try:
-            with open(meta_path, "r", encoding="utf-8") as f:
-                old_meta = json.load(f)
-                for ch in old_meta.get("chapters", []):
-                    existing_chapters_map[ch["id"]] = ch
-        except Exception as e:
-            logger.warning(f"Could not read existing metadata.json: {e}")
-
-    # Add or update active_chapters
-    for ch in active_chapters:
-        existing_chapters_map[ch["id"]] = {
-            "id": ch["id"],
-            "title": ch["title"],
-            "chapter_index": ch["chapter_index"],
-            "audio_url": f"/api/books/{slug}/audio/{ch['id']}",
-        }
-
-    combined_chapters = sorted(
-        existing_chapters_map.values(),
-        key=lambda c: c.get("chapter_index", 0)
-    )
-
-    book_metadata = {
-        "title": metadata_info.get("title", slug),
-        "author": metadata_info.get("author", "Unknown"),
-        "description": metadata_info.get("description", ""),
-        "slug": slug,
-        "cover_url": f"/api/books/{slug}/cover" if (target_book_dir / "cover.jpg").exists() else None,
-        "total_chapters": len(combined_chapters),
-        "chapters": combined_chapters,
-    }
-
-    meta_path.write_text(json.dumps(book_metadata, ensure_ascii=False, indent=2), encoding="utf-8")
-
-    logger.info(f"Audiobook generation completed for '{slug}' at {target_book_dir} (Total chapters on web: {len(combined_chapters)})")
+    logger.info(f"Audiobook generation completed for '{slug}' at {target_book_dir} (Total chapters on web: {len(chapters)})")
     return {
         "slug": slug,
         "output_dir": str(target_book_dir),
