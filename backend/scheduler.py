@@ -80,6 +80,7 @@ class QueueManager:
     def __init__(self):
         self._queue: List[Dict[str, Any]] = []
         self._current_job: Optional[JobProgress] = None
+        self._current_process: Optional[subprocess.Popen] = None
         self._lock = threading.RLock()
         self._worker_thread: Optional[threading.Thread] = None
         self._running = False
@@ -166,6 +167,12 @@ class QueueManager:
                 self._current_job.cancelled = True
                 self._current_job.status = "cancelled"
                 self.add_log(f"🛑 Đã gửi lệnh huỷ tác vụ: {self._current_job.book_title}")
+                if self._current_process and self._current_process.poll() is None:
+                    try:
+                        self._current_process.terminate()
+                        self.add_log(f"🛑 Đã dừng tiến trình subprocess (PID {self._current_process.pid})")
+                    except Exception as e:
+                        logger.error(f"Error terminating process: {e}")
                 return True
         return False
 
@@ -305,6 +312,7 @@ class QueueManager:
             gen_script = str(root_dir / "pipeline" / "generate_audiobook.py")
             cmd = [
                 python_bin,
+                "-u",
                 gen_script,
                 str(source_file),
                 "--slug", book_slug,
@@ -316,7 +324,7 @@ class QueueManager:
                 "--bitrate", "64k",
             ]
 
-            self.add_log(f"⚙️ Chạy tiến trình: {' '.join(cmd[:4])} ...")
+            self.add_log(f"⚙️ Chạy tiến trình: {' '.join(cmd[:5])} ...")
 
             process = subprocess.Popen(
                 cmd,
@@ -325,34 +333,62 @@ class QueueManager:
                 text=True,
                 bufsize=1,
             )
+            with self._lock:
+                self._current_process = process
 
             ch_processed = 0
             lines_output: List[str] = []
 
-            for line in iter(process.stdout.readline, ""):
-                if not line:
-                    break
-                lines_output.append(line.strip())
-                if progress.cancelled:
-                    process.terminate()
-                    break
+            try:
+                for line in iter(process.stdout.readline, ""):
+                    if not line:
+                        break
+                    line_str = line.strip()
+                    lines_output.append(line_str)
+                    if progress.cancelled:
+                        try:
+                            process.terminate()
+                        except Exception:
+                            pass
+                        break
 
-                # Parse log for progress cues
-                # E.g. "Processing chapter 2/5: 12/40 sentences"
-                if "Successfully processed chapter_" in line:
-                    ch_processed += 1
-                    progress.current_chapter = start_ch + ch_processed
-                    progress.percent = min(100, int((ch_processed / max_ch) * 100))
-                    self.add_log(f"✅ Hoàn thành chương {progress.current_chapter - 1}")
+                    # Parse sentence-level progress: PROGRESS:<chapter_id>:<current>:<total>:<pct>
+                    if "PROGRESS:" in line_str:
+                        try:
+                            p_part = line_str[line_str.index("PROGRESS:") :]
+                            parts = p_part.split(":")
+                            ch_id = parts[1]
+                            cur_s = int(parts[2])
+                            tot_s = int(parts[3])
+                            pct_s = float(parts[4])
+                            progress.current_sentence = cur_s
+                            progress.total_sentences = tot_s
 
-                # Calculate ETA based on speed (~3.5s per cue or elapsed)
-                elapsed = time.time() - progress.start_time
-                if ch_processed > 0:
-                    time_per_ch = elapsed / ch_processed
-                    rem_ch = max(0, max_ch - ch_processed)
-                    progress.eta_seconds = int(time_per_ch * rem_ch)
+                            ch_fraction = cur_s / max(1, tot_s)
+                            overall_pct = min(99, int(((ch_processed + ch_fraction) / max(1, max_ch)) * 100))
+                            progress.percent = overall_pct
+                            progress.message = f"Đang tổng hợp {ch_id}: câu {cur_s}/{tot_s} ({pct_s:.1f}%)"
 
-            process.wait()
+                            elapsed = time.time() - progress.start_time
+                            if cur_s > 0 and elapsed > 0:
+                                total_est = max_ch * tot_s
+                                done_s = ch_processed * tot_s + cur_s
+                                speed = done_s / elapsed
+                                if speed > 0:
+                                    rem = max(0, total_est - done_s)
+                                    progress.eta_seconds = int(rem / speed)
+                        except Exception:
+                            pass
+                    elif "Successfully processed chapter_" in line_str:
+                        ch_processed += 1
+                        progress.current_chapter = start_ch + ch_processed
+                        progress.percent = min(100, int((ch_processed / max_ch) * 100))
+                        self.add_log(f"✅ Hoàn thành chương {progress.current_chapter - 1}")
+
+                process.wait()
+            finally:
+                with self._lock:
+                    self._current_process = None
 
             if progress.cancelled:
                 self.add_log(f"🛑 Đã hủy render '{book_title}'")

@@ -210,9 +210,10 @@ def process_chapter(
     if ram_base_dir is None:
         ram_base_dir = get_default_ram_dir()
 
-    # Create temporary batch directory strictly in RAM Disk
-    batch_ram_dir = ram_base_dir / f"tts_batch_{slug}_{chapter_id}_{uuid.uuid4().hex[:8]}"
+    # Create temporary batch directory in RAM Disk (deterministic per book & chapter to allow resume)
+    batch_ram_dir = ram_base_dir / f"tts_batch_{slug}_{chapter_id}"
     batch_ram_dir.mkdir(parents=True, exist_ok=True)
+    stitch_success = False
 
     try:
         raw_html = chapter.get("html", "")
@@ -224,14 +225,19 @@ def process_chapter(
         wav_files: List[Path] = []
         final_cues: List[Dict[str, Any]] = []
         current_time: float = 0.0
+        total_cues = len(cues_raw)
 
-        for cue in cues_raw:
+        for idx, cue in enumerate(cues_raw, 1):
             cue_id = cue["id"]
             sentence_text = cue["text"]
             wav_path = batch_ram_dir / f"{cue_id}.wav"
 
-            tts.synthesize_sentence(sentence_text, wav_path)
-            duration = get_wav_duration(wav_path)
+            # Checkpoint resume in RAM Disk: reuse already synthesized WAV if present
+            if wav_path.is_file() and wav_path.stat().st_size > 44:
+                duration = get_wav_duration(wav_path)
+            else:
+                tts.synthesize_sentence(sentence_text, wav_path)
+                duration = get_wav_duration(wav_path)
 
             start = round(current_time, 3)
             end = round(current_time + duration, 3)
@@ -244,6 +250,12 @@ def process_chapter(
                 "text": sentence_text,
             })
             wav_files.append(wav_path)
+
+            # Emit real-time progress for scheduler and live console
+            pct = round((idx / total_cues) * 100, 1)
+            print(f"PROGRESS:{chapter_id}:{idx}:{total_cues}:{pct}", flush=True)
+            if idx % 10 == 0 or idx == total_cues or idx == 1:
+                logger.info(f"[{chapter_id}] Đang tổng hợp câu {idx}/{total_cues} ({pct}%)")
 
         # Stitch all individual sentence WAVs into chapter .m4b
         stitch_success = stitch_to_m4b(wav_files, m4b_path, ram_dir=batch_ram_dir, bitrate=bitrate)
@@ -274,8 +286,8 @@ def process_chapter(
         }
 
     finally:
-        # Guarantee 0 MB local SSD / RAM leak by purging all temporary batch files
-        if batch_ram_dir.exists():
+        # Guarantee 0 MB local SSD / RAM leak by purging temporary batch files once stitched
+        if stitch_success and batch_ram_dir.exists():
             shutil.rmtree(batch_ram_dir, ignore_errors=True)
 
 
