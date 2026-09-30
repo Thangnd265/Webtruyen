@@ -27,11 +27,14 @@ if str(pipeline_dir) not in sys.path:
 
 try:
     from apps.web_reader.pipeline.text_splitter import format_cues_html, split_into_cues
+    from apps.web_reader.pipeline.universal_extractor import extract_book_chapters
 except ImportError:
     try:
         from pipeline.text_splitter import format_cues_html, split_into_cues
+        from pipeline.universal_extractor import extract_book_chapters
     except ImportError:
         from text_splitter import format_cues_html, split_into_cues
+        from universal_extractor import extract_book_chapters
 
 logger = logging.getLogger("audiobook_pipeline")
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] [%(levelname)s] %(message)s")
@@ -190,13 +193,15 @@ def process_chapter(
     slug: str = "audiobook",
     bitrate: str = "64k",
     skip_existing: bool = True,
+    voice_tag: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Processes a single chapter: splits text, runs TTS in RAM, stitches m4b, and saves cues."""
     chapter_id = chapter["id"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    m4b_path = output_dir / f"{chapter_id}.m4b"
-    cues_path = output_dir / f"{chapter_id}_cues.json"
+    tag_suffix = f"_{voice_tag}" if voice_tag else ""
+    m4b_path = output_dir / f"{chapter_id}{tag_suffix}.m4b"
+    cues_path = output_dir / f"{chapter_id}{tag_suffix}_cues.json"
     html_path = output_dir / f"{chapter_id}.html"
 
     # Chapter resume capability
@@ -363,6 +368,7 @@ def generate_audiobook(
     skip_existing: bool = True,
     max_chapters: Optional[int] = None,
     model_path: Optional[str] = None,
+    voice_tag: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Generates complete audiobook directly to target output directory."""
     target_book_dir = output_base_dir / slug
@@ -391,6 +397,7 @@ def generate_audiobook(
             slug=slug,
             bitrate=bitrate,
             skip_existing=skip_existing,
+            voice_tag=voice_tag,
         )
         processed_chapters.append(res)
 
@@ -427,7 +434,9 @@ def generate_audiobook(
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="VieNeu-TTS v3 RAM-Based Audiobook Generator")
-    parser.add_argument("--epub", type=str, required=True, help="Path to input .epub file")
+    parser.add_argument("--input", "-i", type=str, default=None, help="Path to input .epub or .txt file")
+    parser.add_argument("--epub", type=str, default=None, help="Path to input .epub file (legacy flag)")
+    parser.add_argument("--txt", type=str, default=None, help="Path to input .txt file")
     parser.add_argument("--slug", type=str, default=None, help="Slug for book (defaults to filename or title)")
     parser.add_argument(
         "--output-dir",
@@ -436,6 +445,7 @@ def main() -> None:
         help="Target output base directory (e.g. /mnt/gdrive/audiobooks)",
     )
     parser.add_argument("--voice", type=str, default="vie_neu_v3_female", help="Voice model ID")
+    parser.add_argument("--voice-tag", type=str, default=None, help="Suffix tag for multi-voice chapters (e.g. ngochuyen, custom_voice)")
     parser.add_argument("--ram-dir", type=str, default=None, help="RAM disk directory (default: /dev/shm)")
     parser.add_argument("--bitrate", type=str, default="64k", help="Audio bitrate for FFmpeg (default: 64k)")
     parser.add_argument("--dry-run", action="store_true", help="Simulate TTS without neural inference")
@@ -449,13 +459,21 @@ def main() -> None:
 
     args = parser.parse_args()
 
-    epub_path = Path(args.epub)
-    if not epub_path.exists():
-        logger.error(f"Input EPUB file not found: {epub_path}")
+    input_file_str = args.input or args.epub or args.txt
+    if not input_file_str:
+        logger.error("Please specify an input file via --input, --epub, or --txt.")
         sys.exit(1)
 
-    metadata_info, chapters = extract_epub_chapters(epub_path)
-    book_slug = args.slug or slugify(metadata_info.get("title", epub_path.stem))
+    input_path = Path(input_file_str)
+    if not input_path.exists():
+        if args.epub or input_path.suffix.lower() == ".epub":
+            logger.error(f"Input EPUB file not found: {input_path}")
+        else:
+            logger.error(f"Input file not found: {input_path}")
+        sys.exit(1)
+
+    metadata_info, chapters = extract_book_chapters(input_path)
+    book_slug = args.slug or slugify(metadata_info.get("title", input_path.stem))
     output_base_dir = Path(args.output_dir)
     ram_dir = Path(args.ram_dir) if args.ram_dir else None
 
@@ -465,6 +483,7 @@ def main() -> None:
         chapters=chapters,
         metadata_info=metadata_info,
         voice=args.voice,
+        voice_tag=args.voice_tag,
         ram_dir=ram_dir,
         bitrate=args.bitrate,
         dry_run=args.dry_run,

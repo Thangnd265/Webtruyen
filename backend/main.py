@@ -154,14 +154,20 @@ def get_book_cover(slug: str):
 
 
 @app.get("/api/books/{slug}/chapters/{chapter_id}")
-def get_chapter(slug: str, chapter_id: str):
+def get_chapter(slug: str, chapter_id: str, voice: Optional[str] = None):
     validate_identifier(chapter_id, "chapter_id")
     book_dir = get_safe_book_dir(slug)
 
     # Locate cues file
     cues = []
     cues_file = None
-    for name in [f"{chapter_id}_cues.json", f"{chapter_id}.cues.json", f"{chapter_id}.json"]:
+    names_to_try = []
+    if voice:
+        v_clean = re.sub(r"[^a-zA-Z0-9_\-]", "", voice.lower())
+        names_to_try.extend([f"{chapter_id}_{v_clean}_cues.json", f"{chapter_id}_{v_clean}.cues.json"])
+    names_to_try.extend([f"{chapter_id}_cues.json", f"{chapter_id}.cues.json", f"{chapter_id}.json"])
+
+    for name in names_to_try:
         candidate = book_dir / name
         if candidate.exists() and candidate.is_file():
             cues_file = candidate
@@ -250,6 +256,8 @@ def stream_audio(
                 aliases.extend(["trucly", "female", "nu"])
             elif v_clean in ["haidang", "male", "nam"]:
                 aliases.extend(["haidang", "male", "nam"])
+            elif v_clean in ["ngochuyen", "ngoc_huyen"]:
+                aliases.extend(["ngochuyen", "ngoc_huyen", "female", "nu"])
             elif v_clean in ["quynhanh"]:
                 aliases.extend(["quynhanh", "trucly", "female"])
             elif v_clean in ["thaison"]:

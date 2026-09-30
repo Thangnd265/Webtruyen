@@ -36,3 +36,23 @@ voices/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Incoming books temporary files
+incoming_books/done/
+incoming_books/failed/
+incoming_books/*.prc
+incoming_books/*.mobi
+incoming_books/*.epub
+incoming_books/*.pdf
+incoming_books/*.docx
+incoming_books/*.txt
+incoming_books/*.md
+!incoming_books/README.md
+
+# Generated book samples
+samples/tu-da-quai-*
+
+# Temporary inference scripts
+run_ngochuyen_inference.py
+input_ngochuyen.txt
+vieneu-ngoc-huyen-tts/
