@@ -621,6 +621,13 @@ def list_book_chapters(slug: str):
     if not chapters:
         incoming_dir = books_dir / "incoming_books"
         candidates = list(incoming_dir.glob(f"{slug}.*")) + list(incoming_dir.glob(f"*{slug}*"))
+        with get_db() as conn:
+            row = conn.execute("SELECT source_filename FROM admin_books WHERE slug = ?", (slug,)).fetchone()
+            if row and row["source_filename"]:
+                db_source = incoming_dir / row["source_filename"]
+                if db_source.is_file() and db_source not in candidates:
+                    candidates.insert(0, db_source)
+
         for cand in candidates:
             if cand.is_file() and extract_book_chapters:
                 try:
