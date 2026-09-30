@@ -289,20 +289,22 @@ class UpdateBookRequest(BaseModel):
 @router.get("/books")
 def list_admin_books():
     books_dir = Path(settings.AUDIOBOOKS_DIR).resolve()
-    result = []
 
-    # Sync folders with database
-    found_slugs = set()
+    # 1. Fetch all books registered in DB
+    with get_db() as conn:
+        db_rows = conn.execute("SELECT * FROM admin_books ORDER BY created_at DESC").fetchall()
+        books_by_slug = {r["slug"]: dict(r) for r in db_rows}
+
+    # 2. Sync folders on disk with database
     if books_dir.is_dir():
         for d in books_dir.iterdir():
             if not d.is_dir() or d.name.startswith(".") or d.name in {"incoming_books", "voices", "lost+found"}:
                 continue
             slug = d.name
-            found_slugs.add(slug)
             meta_file = d / "metadata.json"
             title = slug.replace("-", " ").title()
             author = "Chưa rõ"
-            cover_url = None
+            cover_url = f"/api/books/{slug}/cover" if (d / "cover.jpg").is_file() else None
             total_chapters = 0
             genres = "Huyền Huyễn, Đô Thị"
 
@@ -324,10 +326,20 @@ def list_admin_books():
                 if item.suffix in [".mp3", ".m4b", ".aac", ".wav"]:
                     rendered_chapters += 1
 
-            # Ensure row exists in DB
-            with get_db() as conn:
-                row = conn.execute("SELECT * FROM admin_books WHERE slug = ?", (slug,)).fetchone()
-                if not row:
+            if slug in books_by_slug:
+                b = books_by_slug[slug]
+                b["rendered_chapters"] = rendered_chapters
+                if total_chapters > 0:
+                    b["total_chapters"] = max(b.get("total_chapters", 0), total_chapters)
+                if cover_url and not b.get("cover_url"):
+                    b["cover_url"] = cover_url
+                if author != "Chưa rõ" and b.get("author") in {"", "Chưa rõ"}:
+                    b["author"] = author
+                if title != slug.replace("-", " ").title() and b.get("title") == slug:
+                    b["title"] = title
+            else:
+                # Discovered a novel directory on disk not yet tracked in DB
+                with get_db() as conn:
                     conn.execute(
                         """
                         INSERT INTO admin_books (
@@ -335,17 +347,42 @@ def list_admin_books():
                             daily_quota, schedule_time, auto_render,
                             current_rendered_chapter, total_chapters, status
                         ) VALUES (?, ?, ?, ?, ?, 'Ngọc Huyền', 50, '02:00', 1, ?, ?, 'idle')
+                        ON CONFLICT(slug) DO NOTHING
                         """,
                         (slug, title, author, genres, cover_url, rendered_chapters, max(total_chapters, rendered_chapters)),
                     )
-                    row = conn.execute("SELECT * FROM admin_books WHERE slug = ?", (slug,)).fetchone()
+                books_by_slug[slug] = {
+                    "slug": slug,
+                    "title": title,
+                    "author": author,
+                    "genres": genres,
+                    "cover_url": cover_url,
+                    "voice": "Ngọc Huyền",
+                    "daily_quota": 50,
+                    "schedule_time": "02:00",
+                    "auto_render": 1,
+                    "current_rendered_chapter": rendered_chapters,
+                    "total_chapters": max(total_chapters, rendered_chapters),
+                    "rendered_chapters": rendered_chapters,
+                    "status": "idle",
+                    "source_filename": "",
+                }
 
-                b_dict = dict(row)
-                b_dict["rendered_chapters"] = rendered_chapters
-                b_dict["total_chapters"] = max(b_dict["total_chapters"], total_chapters, rendered_chapters)
-                result.append(b_dict)
+    # 3. For any DB book that has no folder or wasn't iterated, calculate rendered count
+    for slug, b in books_by_slug.items():
+        if "rendered_chapters" not in b:
+            d = books_dir / slug
+            rendered_chapters = 0
+            if d.is_dir():
+                for item in d.glob("chapter_*"):
+                    if item.suffix in [".mp3", ".m4b", ".aac", ".wav"]:
+                        rendered_chapters += 1
+            b["rendered_chapters"] = rendered_chapters
 
-    return result
+        if not b.get("cover_url") and (books_dir / slug / "cover.jpg").is_file():
+            b["cover_url"] = f"/api/books/{slug}/cover"
+
+    return list(books_by_slug.values())
 
 
 @router.post("/books/upload")
@@ -375,7 +412,8 @@ async def upload_book(
         book_slug = f"book-{int(datetime.datetime.now().timestamp())}"
 
     # Target folder: incoming_books on audiobooks dir or local
-    incoming_dir = Path(settings.AUDIOBOOKS_DIR).resolve() / "incoming_books"
+    books_dir = Path(settings.AUDIOBOOKS_DIR).resolve()
+    incoming_dir = books_dir / "incoming_books"
     incoming_dir.mkdir(parents=True, exist_ok=True)
 
     dest_file = incoming_dir / f"{book_slug}{ext}"
@@ -385,10 +423,12 @@ async def upload_book(
     total_chapters = 0
     extracted_title = book_title
     extracted_author = author or "Chưa rõ"
+    meta_info: Dict[str, Any] = {}
+    ch_list: List[Dict[str, Any]] = []
 
     if extract_book_chapters:
         try:
-            ch_list, meta_info = extract_book_chapters(dest_file)
+            meta_info, ch_list = extract_book_chapters(dest_file)
             total_chapters = len(ch_list)
             if not title and meta_info.get("title"):
                 extracted_title = meta_info["title"]
@@ -397,12 +437,46 @@ async def upload_book(
         except Exception as e:
             logger.warning(f"Could not extract chapters directly during upload: {e}")
 
+    canonical_slug = slugify(extracted_title) or book_slug
+
+    # Initialize book directory & cover
+    book_dir = books_dir / canonical_slug
+    book_dir.mkdir(parents=True, exist_ok=True)
+
+    cover_url = None
+    if meta_info.get("cover_bytes"):
+        try:
+            (book_dir / "cover.jpg").write_bytes(meta_info["cover_bytes"])
+            cover_url = f"/api/books/{canonical_slug}/cover"
+        except Exception as e:
+            logger.warning(f"Could not save cover image: {e}")
+    elif (book_dir / "cover.jpg").is_file():
+        cover_url = f"/api/books/{canonical_slug}/cover"
+
+    # Save initial metadata.json if not present
+    meta_path = book_dir / "metadata.json"
+    if not meta_path.is_file() and ch_list:
+        try:
+            initial_meta = {
+                "title": extracted_title,
+                "author": extracted_author,
+                "genres": genres,
+                "cover_url": cover_url,
+                "chapters": [
+                    {"id": ch["id"], "title": ch["title"], "chapter_index": ch.get("chapter_index", i + 1)}
+                    for i, ch in enumerate(ch_list)
+                ],
+            }
+            meta_path.write_text(json.dumps(initial_meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception as e:
+            logger.warning(f"Could not write initial metadata.json: {e}")
+
     # Register in DB
     with get_db() as conn:
         conn.execute(
             """
             INSERT INTO admin_books (
-                slug, title, author, genres, voice,
+                slug, title, author, genres, cover_url, voice,
                 daily_quota, schedule_time, auto_render,
                 current_rendered_chapter, total_chapters,
                 source_filename, status
@@ -410,6 +484,7 @@ async def upload_book(
             ON CONFLICT(slug) DO UPDATE SET
                 title = excluded.title,
                 author = excluded.author,
+                cover_url = CASE WHEN excluded.cover_url IS NOT NULL AND excluded.cover_url != '' THEN excluded.cover_url ELSE admin_books.cover_url END,
                 voice = excluded.voice,
                 daily_quota = excluded.daily_quota,
                 schedule_time = excluded.schedule_time,
@@ -419,10 +494,11 @@ async def upload_book(
                 updated_at = CURRENT_TIMESTAMP
             """,
             (
-                book_slug,
+                canonical_slug,
                 extracted_title,
                 extracted_author,
                 genres,
+                cover_url,
                 voice,
                 daily_quota,
                 schedule_time,
@@ -436,7 +512,7 @@ async def upload_book(
 
     if run_now:
         queue_manager.enqueue(
-            book_slug=book_slug,
+            book_slug=canonical_slug,
             book_title=extracted_title,
             start_ch=1,
             max_ch=daily_quota,
@@ -446,7 +522,7 @@ async def upload_book(
 
     return {
         "status": "ok",
-        "slug": book_slug,
+        "slug": canonical_slug,
         "title": extracted_title,
         "author": extracted_author,
         "total_chapters": total_chapters,
@@ -529,9 +605,8 @@ def delete_book(slug: str, delete_files: bool = Query(False)):
 
 @router.get("/books/{slug}/chapters")
 def list_book_chapters(slug: str):
-    book_dir = Path(settings.AUDIOBOOKS_DIR).resolve() / slug
-    if not book_dir.is_dir():
-        raise HTTPException(status_code=404, detail="Thư mục truyện không tồn tại")
+    books_dir = Path(settings.AUDIOBOOKS_DIR).resolve()
+    book_dir = books_dir / slug
 
     meta_file = book_dir / "metadata.json"
     chapters = []
@@ -542,6 +617,29 @@ def list_book_chapters(slug: str):
         except Exception:
             pass
 
+    # If chapters not in metadata.json, try reading from source file in incoming_books
+    if not chapters:
+        incoming_dir = books_dir / "incoming_books"
+        candidates = list(incoming_dir.glob(f"{slug}.*")) + list(incoming_dir.glob(f"*{slug}*"))
+        for cand in candidates:
+            if cand.is_file() and extract_book_chapters:
+                try:
+                    meta_info, ch_list = extract_book_chapters(cand)
+                    chapters = [
+                        {
+                            "id": ch.get("id", f"chapter_{i+1:03d}"),
+                            "title": ch.get("title", f"Chương {i+1}"),
+                            "chapter_index": ch.get("chapter_index", i + 1),
+                        }
+                        for i, ch in enumerate(ch_list)
+                    ]
+                    break
+                except Exception:
+                    pass
+
+    if not chapters and not book_dir.is_dir():
+        raise HTTPException(status_code=404, detail="Thư mục truyện không tồn tại")
+
     chapter_details = []
     for ch in chapters:
         ch_id = ch.get("id", "")
@@ -551,16 +649,16 @@ def list_book_chapters(slug: str):
         # Check audio existence (.m4b, .mp3, .wav, .aac)
         has_audio = False
         audio_file_size = 0
-        for ext in [".mp3", ".m4b", ".aac", ".wav"]:
-            audio_p = book_dir / f"{ch_id}{ext}"
-            if audio_p.is_file():
-                has_audio = True
-                audio_file_size = audio_p.stat().st_size
-                break
+        if book_dir.is_dir():
+            for ext in [".mp3", ".m4b", ".aac", ".wav"]:
+                audio_p = book_dir / f"{ch_id}{ext}"
+                if audio_p.is_file():
+                    has_audio = True
+                    audio_file_size = audio_p.stat().st_size
+                    break
 
         # Check VTT subtitle existence
-        vtt_p = book_dir / f"{ch_id}.vtt"
-        has_vtt = vtt_p.is_file()
+        has_vtt = (book_dir / f"{ch_id}.vtt").is_file() if book_dir.is_dir() else False
 
         chapter_details.append({
             "id": ch_id,

@@ -907,11 +907,16 @@
           statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Hoàn thành</span>`;
         }
 
+        const coverHtml = b.cover_url
+          ? `<img src="${b.cover_url}" alt="${b.title}" class="w-12 h-16 object-cover rounded-lg border border-zinc-800 shrink-0 shadow-sm" onerror="this.style.display='none'">`
+          : `<div class="w-12 h-16 rounded-lg bg-zinc-950 border border-zinc-800 shrink-0 flex items-center justify-center text-zinc-600"><i data-lucide="book" class="w-5 h-5"></i></div>`;
+
         const card = document.createElement('div');
         card.className = 'bg-zinc-900/90 border border-zinc-800 hover:border-zinc-700/80 rounded-2xl p-5 flex flex-col justify-between transition-all duration-200 hover:shadow-xl';
         card.innerHTML = `
           <div>
-            <div class="flex items-start justify-between gap-3 mb-3">
+            <div class="flex items-start gap-3 mb-3">
+              ${coverHtml}
               <div class="flex-1 min-w-0">
                 <div class="flex items-center gap-2 mb-1">
                   ${statusBadge}
