@@ -8,6 +8,9 @@
 let allCatalogBooks = [];
 
 async function initHomePage() {
+  if (homePageInitialized) return;
+  homePageInitialized = true;
+
   setupSliderControls();
   setupLatestControls();
   setupHistoryControls();
@@ -28,8 +31,13 @@ const BANNER_MAP = {
 let currentHeroIndex = 0;
 let totalHeroSlides = 7;
 let heroAutoplayTimer = null;
+let sliderControlsInitialized = false;
+let homePageInitialized = false;
 
 function setupSliderControls() {
+  if (sliderControlsInitialized) return;
+  sliderControlsInitialized = true;
+
   const prevBtn = document.getElementById('hero-prev-btn');
   const nextBtn = document.getElementById('hero-next-btn');
   const section = document.getElementById('featured-section');
@@ -38,6 +46,7 @@ function setupSliderControls() {
     prevBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       goToHeroSlide(currentHeroIndex - 1);
+      startHeroAutoplay();
     });
   }
 
@@ -45,6 +54,7 @@ function setupSliderControls() {
     nextBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       goToHeroSlide(currentHeroIndex + 1);
+      startHeroAutoplay();
     });
   }
 
@@ -55,6 +65,7 @@ function setupSliderControls() {
       const btn = e.target.closest('.hero-dot-item');
       if (btn && btn.dataset.index !== undefined) {
         goToHeroSlide(parseInt(btn.dataset.index, 10));
+        startHeroAutoplay();
       }
     });
   }
@@ -64,19 +75,60 @@ function setupSliderControls() {
     section.addEventListener('mouseenter', stopHeroAutoplay);
     section.addEventListener('mouseleave', startHeroAutoplay);
 
-    // Touch swipe support
+    // Touch swipe support (chuẩn di động chống vuốt nhảy cóc)
     let touchStartX = 0;
+    let touchStartY = 0;
+    let isTouchActive = false;
+
     section.addEventListener('touchstart', (e) => {
-      touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true });
-    section.addEventListener('touchend', (e) => {
-      const touchEndX = e.changedTouches[0].screenX;
-      if (touchEndX < touchStartX - 50) {
-        goToHeroSlide(currentHeroIndex + 1);
-      } else if (touchEndX > touchStartX + 50) {
-        goToHeroSlide(currentHeroIndex - 1);
+      if (e.touches.length > 0) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        isTouchActive = true;
       }
     }, { passive: true });
+
+    section.addEventListener('touchend', (e) => {
+      if (!isTouchActive || e.changedTouches.length === 0) return;
+      isTouchActive = false;
+      const diffX = e.changedTouches[0].clientX - touchStartX;
+      const diffY = e.changedTouches[0].clientY - touchStartY;
+
+      // Chỉ kích hoạt đổi slide khi vuốt ngang rõ rệt hơn vuốt dọc và cự ly > 40px
+      if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 40) {
+        if (diffX < 0) {
+          goToHeroSlide(currentHeroIndex + 1);
+        } else {
+          goToHeroSlide(currentHeroIndex - 1);
+        }
+        startHeroAutoplay();
+      }
+    }, { passive: true });
+
+    // Mouse drag support trên desktop
+    let mouseStartX = 0;
+    let isMouseDown = false;
+    section.addEventListener('mousedown', (e) => {
+      if (e.target.closest('button, a')) return;
+      mouseStartX = e.clientX;
+      isMouseDown = true;
+    });
+    section.addEventListener('mouseup', (e) => {
+      if (!isMouseDown) return;
+      isMouseDown = false;
+      const diffX = e.clientX - mouseStartX;
+      if (Math.abs(diffX) > 50) {
+        if (diffX < 0) {
+          goToHeroSlide(currentHeroIndex + 1);
+        } else {
+          goToHeroSlide(currentHeroIndex - 1);
+        }
+        startHeroAutoplay();
+      }
+    });
+    section.addEventListener('mouseleave', () => {
+      isMouseDown = false;
+    });
   }
 
   startHeroAutoplay();
@@ -100,7 +152,7 @@ function goToHeroSlide(index) {
   const track = document.getElementById('hero-slider-track');
   if (!track || totalHeroSlides === 0) return;
 
-  currentHeroIndex = (index + totalHeroSlides) % totalHeroSlides;
+  currentHeroIndex = ((index % totalHeroSlides) + totalHeroSlides) % totalHeroSlides;
   track.style.transform = `translateX(-${currentHeroIndex * 100}%)`;
 
   // Update dots
@@ -190,11 +242,20 @@ function renderFeaturedSlider(books) {
   const featuredBooks = books.slice(0, 7);
   totalHeroSlides = featuredBooks.length;
 
+  const HERO_GENRE_MAP = {
+    'sample-story': 'ĐỀ CỬ ĐẶC BIỆT',
+    'do-giam-quai-vat': 'TÂY HUYỄN HOT',
+    'xuyen-khong-1970': 'ĐÔ THỊ TRÙNG SINH',
+    'dai-phung-da-canh-nhan': 'TIÊN HIỆP ĐỈNH CAO',
+    'ta-co-mot-than-bi-dong-ky': 'HÀI HƯỚC DỊ NĂNG',
+    'than-thoai-ky-nguyen': 'HUYỀN HUYỄN DỊ GIỚI',
+    'van-co-de-nhat-than': 'ĐÔNG PHƯƠNG HUYỀN HUYỄN',
+  };
+
   track.innerHTML = featuredBooks.map((b, idx) => {
     const bannerUrl = BANNER_MAP[b.slug] || `/images/banners/banner_sample-story.jpg`;
-    const badgeLabel = idx === 0 ? '🔥 HOT #1 • ĐỀ CỬ ĐẶC BIỆT' : 
-                       idx === 1 ? '🔥 TOP #2 • TÂY HUYỄN HOT' : 
-                       idx === 2 ? '🔥 TOP #3 • ĐÔ THỊ TRÙNG SINH' : '⭐ ĐỀ CỬ THỊNH HÀNH';
+    const genreTag = HERO_GENRE_MAP[b.slug] || (b.genres && b.genres[0]) || 'THỊNH HÀNH';
+    const badgeLabel = `🔥 TOP #${idx + 1} • ${genreTag.toUpperCase()}`;
     const targetUrl = `/reader.html?slug=${encodeURIComponent(b.slug)}&chapter=chapter_001`;
 
     return `
@@ -394,50 +455,66 @@ function renderLatestBooksList(books) {
 }
 
 /**
- * 3. PHẦN TRUYỆN ĐANG NGHE (Chính xác 3 bộ đang nghe gần nhất từ localStorage)
+ * 3. PHẦN TRUYỆN ĐANG NGHE (Lịch sử từ tài khoản người dùng hoặc localStorage)
  */
-function renderRecentBooksGrid(books) {
+async function renderRecentBooksGrid(books) {
   const container = document.getElementById('recent-books-grid');
   if (!container) return;
 
   let recentList = [];
-  try {
-    const raw = localStorage.getItem('audioweb-recent-history');
-    const parsed = raw ? JSON.parse(raw) : [];
-    recentList = Array.isArray(parsed) ? parsed : [];
-  } catch (_) {
-    recentList = [];
-  }
 
-  // Đảm bảo có đúng 3 bộ: nếu thiếu thì bù từ kho sách catalog
-  const displayRecent = [...recentList];
-  if (displayRecent.length < 3 && books && books.length > 0) {
-    const existingSlugs = new Set(displayRecent.map(r => r.slug));
-    const fallbackProgresses = [35, 60, 15];
-
-    for (let i = 0; i < books.length && displayRecent.length < 3; i++) {
-      const b = books[i];
-      if (!existingSlugs.has(b.slug)) {
-        displayRecent.push({
-          slug: b.slug,
-          title: b.title,
-          author: b.author || 'Tác Giả Ẩn Danh',
-          cover_url: b.cover_url || `/api/books/${b.slug}/cover`,
-          chapter_id: 'chapter_001',
-          chapter_title: 'Chương 1',
-          progress: fallbackProgresses[displayRecent.length % fallbackProgresses.length],
-          total_chapters: b.total_chapters || 1,
-          updated_at: 'Gợi ý tiếp tục'
-        });
-        existingSlugs.add(b.slug);
+  // 1. Thử lấy lịch sử từ server nếu đã đăng nhập
+  if (window.authManager && window.authManager.isLoggedIn()) {
+    try {
+      const res = await fetch('/api/user/history?limit=10', {
+        headers: { Authorization: `Bearer ${window.authManager.getToken()}` }
+      });
+      if (res.ok) {
+        const serverList = await res.json();
+        if (Array.isArray(serverList) && serverList.length > 0) {
+          recentList = serverList.map(item => ({
+            slug: item.book_slug,
+            title: item.book_title,
+            author: item.book_author || 'Tác Giả Ẩn Danh',
+            cover_url: item.book_cover || `/api/books/${item.book_slug}/cover`,
+            chapter_id: item.chapter_id,
+            chapter_title: item.chapter_title,
+            progress: Math.min(100, Math.max(5, Math.round(item.progress || 20))),
+            currentTime: item.current_time || 0,
+            updated_at: 'Đã đồng bộ'
+          }));
+        }
       }
+    } catch (e) {
+      console.warn('Lỗi lấy lịch sử server:', e);
     }
   }
 
-  // Chỉ lấy đúng 3 bộ gần nhất
-  const threeBooks = displayRecent.slice(0, 3);
+  // 2. Nếu chưa có hoặc offline, đọc từ localStorage
+  if (recentList.length === 0) {
+    try {
+      const raw = localStorage.getItem('audioweb-recent-history');
+      const parsed = raw ? JSON.parse(raw) : [];
+      recentList = Array.isArray(parsed) ? parsed : [];
+    } catch (_) {
+      recentList = [];
+    }
+  }
 
-  container.innerHTML = threeBooks.map((item) => {
+  if (recentList.length === 0) {
+    container.innerHTML = `
+      <div class="col-span-full py-8 text-center" style="color:var(--text-secondary)">
+        <p class="text-sm">Bạn chưa có truyện nào trong danh sách đang nghe.</p>
+        <a href="#featured-section" class="inline-block mt-3 px-4 py-1.5 rounded-full text-xs font-semibold border border-[var(--accent)] text-[var(--accent)] hover:bg-[var(--accent)] hover:text-white transition">Khám phá truyện ngay</a>
+      </div>
+    `;
+    return;
+  }
+
+  // Hiển thị các bộ truyện thực sự đã nghe (tối đa 3 bộ trên trang chủ)
+  const displayBooks = recentList.slice(0, 3);
+
+  container.innerHTML = displayBooks.map((item) => {
     const coverUrl = item.cover_url || `/api/books/${item.slug}/cover`;
     const progress = Math.min(100, Math.max(5, item.progress || 20));
     const chapterName = item.chapter_title || 'Chương 1';
@@ -500,6 +577,10 @@ function renderRecentBooksGrid(books) {
 }
 
 window.initHomePage = initHomePage;
+
+window.addEventListener('audioweb:auth-changed', () => {
+  renderRecentBooksGrid(allCatalogBooks);
+});
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', initHomePage);

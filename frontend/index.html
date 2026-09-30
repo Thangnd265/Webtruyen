@@ -6,6 +6,7 @@
   <title>Audio Web - Đọc & Nghe Truyện Audio</title>
   <meta name="description" content="Nền tảng đọc truyện và nghe audio online đồng bộ thời gian thực">
   <link rel="stylesheet" href="/css/tieuthuyetmang.css">
+  <link rel="stylesheet" href="/css/auth.css">
   <link rel="manifest" href="/manifest.json">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -394,6 +395,7 @@
         </div>
       </div>
       <div class="flex items-center gap-2">
+        <div id="navbar-auth-container"></div>
         <button id="theme-toggle-btn" aria-label="Chuyển đổi giao diện" class="p-2 rounded-full transition-colors hover:opacity-80" title="Chuyển chế độ giao diện" type="button">
           <svg id="theme-toggle-icon" class="lucide lucide-moon w-5 h-5" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" style="color:var(--text-secondary)" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
@@ -415,6 +417,7 @@
       <a class="block py-2 text-sm font-medium" href="/#latest-section" style="color:var(--text-primary)">Mới cập nhật</a>
       <a class="block py-2 text-sm font-medium" href="/#recent-section" style="color:var(--text-primary)">Đang nghe</a>
       <a class="block py-2 text-sm font-medium text-amber-500" href="/reader.html?slug=sample-story&chapter=chapter_001">Nghe Ngay</a>
+      <div id="mobile-auth-container" class="pt-2 border-t" style="border-color:var(--border)"></div>
     </div>
   </header>
 
@@ -429,7 +432,7 @@
         <div class="hero-slide-overlay"></div>
         <div class="hero-slide-content">
           <span class="hero-badge">
-            🔥 HOT #1 • ĐỀ CỬ ĐẶC BIỆT
+            🔥 TOP #1 • ĐỀ CỬ ĐẶC BIỆT
           </span>
           <h2 class="hero-slide-title">
             Cho Cậu Học Ở Trường Quý Tộc, Vậy Mà Cậu Lại Đi Tán Gái Đại Tiểu Thư
@@ -519,7 +522,7 @@
         <div class="hero-slide-overlay"></div>
         <div class="hero-slide-content">
           <span class="hero-badge">
-            ⭐ TIÊN HIỆP ĐỈNH CAO
+            🔥 TOP #4 • TIÊN HIỆP ĐỈNH CAO
           </span>
           <h2 class="hero-slide-title">
             Đại Phụng Đả Canh Nhân
@@ -549,7 +552,7 @@
         <div class="hero-slide-overlay"></div>
         <div class="hero-slide-content">
           <span class="hero-badge">
-            ⭐ HÀI HƯỚC DỊ NĂNG
+            🔥 TOP #5 • HÀI HƯỚC DỊ NĂNG
           </span>
           <h2 class="hero-slide-title">
             Ta Có Một Thân Bị Động Kỹ
@@ -579,7 +582,7 @@
         <div class="hero-slide-overlay"></div>
         <div class="hero-slide-content">
           <span class="hero-badge">
-            ⭐ HUYỀN HUYỄN DỊ GIỚI
+            🔥 TOP #6 • HUYỀN HUYỄN DỊ GIỚI
           </span>
           <h2 class="hero-slide-title">
             Thần Thoại Kỷ Nguyên
@@ -609,7 +612,7 @@
         <div class="hero-slide-overlay"></div>
         <div class="hero-slide-content">
           <span class="hero-badge">
-            ⭐ ĐÔNG PHƯƠNG HUYỀN HUYỄN
+            🔥 TOP #7 • ĐÔNG PHƯƠNG HUYỀN HUYỄN
           </span>
           <h2 class="hero-slide-title">
             Vạn Cổ Đệ Nhất Thần
@@ -984,7 +987,7 @@
       </div>
     </section>
 
-    <!-- 3. PHẦN TRUYỆN ĐANG NGHE: Đúng 3 bộ đang nghe gần nhất -->
+    <!-- 3. PHẦN TRUYỆN ĐANG NGHE -->
     <section id="recent-section">
       <div class="flex items-center justify-between mb-4 pb-2 border-b" style="border-color:var(--border)">
         <div class="flex items-center gap-2.5">
@@ -996,117 +999,21 @@
               Truyện Đang Nghe Gần Nhất
             </h2>
             <p class="text-xs sm:text-sm" style="color:var(--text-secondary)">
-              Lịch sử 3 bộ gần nhất — tiếp tục nghe ngay từ điểm dừng
+              Lịch sử các bộ nghe gần đây — tiếp tục nghe ngay từ điểm dừng
             </p>
           </div>
         </div>
-        <button id="clear-history-btn" class="text-xs px-3 py-1 rounded-md border transition-opacity hover:opacity-75" style="border-color:var(--border);color:var(--text-secondary)" title="Làm mới lịch sử">
-          Đặt lại lịch sử
-        </button>
+        <a href="/history.html" class="text-xs px-3 py-1.5 rounded-full border transition-all hover:bg-[var(--accent)] hover:text-white inline-flex items-center gap-1.5 font-semibold" style="border-color:var(--accent);color:var(--accent)">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+          <span>Xem tất cả lịch sử</span>
+        </a>
       </div>
 
-      <!-- Exactly 3 cards grid -->
+      <!-- Recent books grid -->
       <div id="recent-books-grid" class="recent-grid">
-        
-        <!-- Bộ 1 (Google Drive) -->
-        <article class="recent-card group"
-                 onclick="window.location.href='/reader.html?slug=sample-story&chapter=chapter_001'">
-          <img src="/api/books/sample-story/cover" alt="Cho Cậu Học Ở Trường Quý Tộc" class="recent-thumb group-hover:scale-105 transition-transform duration-300" onerror="this.src='/api/books/sample-story/cover'" />
-          <div class="flex-1 min-w-0 flex flex-col justify-between">
-            <div>
-              <h3 class="text-sm sm:text-base font-bold line-clamp-1 group-hover:text-[var(--accent)] transition-colors" style="color:var(--text-primary)">
-                Cho Cậu Học Ở Trường Quý Tộc...
-              </h3>
-              <p class="text-xs flex items-center gap-1 mt-1 font-medium" style="color:var(--accent)">
-                <span>Đang nghe:</span>
-                <span class="truncate">Chương 1</span>
-              </p>
-            </div>
-            <div class="mt-2">
-              <div class="flex items-center justify-between text-[11px] mb-1" style="color:var(--text-secondary)">
-                <span>Tiến độ: <b>35%</b></span>
-                <span class="truncate">Vừa nghe hôm nay</span>
-              </div>
-              <div class="w-full h-1.5 rounded-full overflow-hidden" style="background-color:rgba(128,128,128,0.2)">
-                <div class="h-full rounded-full transition-all duration-500" style="width:35%;background-color:var(--accent)"></div>
-              </div>
-            </div>
-            <div class="mt-2 pt-2 border-t flex items-center justify-between" style="border-color:var(--border)">
-              <span class="text-[11px] opacity-75 truncate" style="color:var(--text-secondary)">Tác Giả Ẩn Danh</span>
-              <a href="/reader.html?slug=sample-story&chapter=chapter_001" class="px-2.5 py-1 rounded-full text-xs font-semibold text-white flex items-center gap-1 shadow-sm transition-opacity hover:opacity-90" style="background-color:var(--accent)">
-                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                Tiếp tục
-              </a>
-            </div>
-          </div>
-        </article>
-
-        <!-- Bộ 2 (Google Drive) -->
-        <article class="recent-card group"
-                 onclick="window.location.href='/reader.html?slug=do-giam-quai-vat&chapter=chapter_001'">
-          <img src="/api/books/do-giam-quai-vat/cover" alt="Đồ Giám Quái Vật" class="recent-thumb group-hover:scale-105 transition-transform duration-300" onerror="this.src='/api/books/do-giam-quai-vat/cover'" />
-          <div class="flex-1 min-w-0 flex flex-col justify-between">
-            <div>
-              <h3 class="text-sm sm:text-base font-bold line-clamp-1 group-hover:text-[var(--accent)] transition-colors" style="color:var(--text-primary)">
-                Đồ Giám Quái Vật: Bắt Đầu...
-              </h3>
-              <p class="text-xs flex items-center gap-1 mt-1 font-medium" style="color:var(--accent)">
-                <span>Đang nghe:</span>
-                <span class="truncate">Chương 1</span>
-              </p>
-            </div>
-            <div class="mt-2">
-              <div class="flex items-center justify-between text-[11px] mb-1" style="color:var(--text-secondary)">
-                <span>Tiến độ: <b>60%</b></span>
-                <span class="truncate">Hôm nay</span>
-              </div>
-              <div class="w-full h-1.5 rounded-full overflow-hidden" style="background-color:rgba(128,128,128,0.2)">
-                <div class="h-full rounded-full transition-all duration-500" style="width:60%;background-color:var(--accent)"></div>
-              </div>
-            </div>
-            <div class="mt-2 pt-2 border-t flex items-center justify-between" style="border-color:var(--border)">
-              <span class="text-[11px] opacity-75 truncate" style="color:var(--text-secondary)">Lâm Ẩn</span>
-              <a href="/reader.html?slug=do-giam-quai-vat&chapter=chapter_001" class="px-2.5 py-1 rounded-full text-xs font-semibold text-white flex items-center gap-1 shadow-sm transition-opacity hover:opacity-90" style="background-color:var(--accent)">
-                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                Tiếp tục
-              </a>
-            </div>
-          </div>
-        </article>
-
-        <!-- Bộ 3 (Google Drive) -->
-        <article class="recent-card group"
-                 onclick="window.location.href='/reader.html?slug=xuyen-khong-1970&chapter=chapter_001'">
-          <img src="/api/books/xuyen-khong-1970/cover" alt="Xuyên Không 1970" class="recent-thumb group-hover:scale-105 transition-transform duration-300" onerror="this.src='/api/books/xuyen-khong-1970/cover'" />
-          <div class="flex-1 min-w-0 flex flex-col justify-between">
-            <div>
-              <h3 class="text-sm sm:text-base font-bold line-clamp-1 group-hover:text-[var(--accent)] transition-colors" style="color:var(--text-primary)">
-                Xuyên Không 1970: Hành Trình...
-              </h3>
-              <p class="text-xs flex items-center gap-1 mt-1 font-medium" style="color:var(--accent)">
-                <span>Đang nghe:</span>
-                <span class="truncate">Chương 1</span>
-              </p>
-            </div>
-            <div class="mt-2">
-              <div class="flex items-center justify-between text-[11px] mb-1" style="color:var(--text-secondary)">
-                <span>Tiến độ: <b>15%</b></span>
-                <span class="truncate">Gần đây</span>
-              </div>
-              <div class="w-full h-1.5 rounded-full overflow-hidden" style="background-color:rgba(128,128,128,0.2)">
-                <div class="h-full rounded-full transition-all duration-500" style="width:15%;background-color:var(--accent)"></div>
-              </div>
-            </div>
-            <div class="mt-2 pt-2 border-t flex items-center justify-between" style="border-color:var(--border)">
-              <span class="text-[11px] opacity-75 truncate" style="color:var(--text-secondary)">Ngẫu Ngộ Nhai Giác</span>
-              <a href="/reader.html?slug=xuyen-khong-1970&chapter=chapter_001" class="px-2.5 py-1 rounded-full text-xs font-semibold text-white flex items-center gap-1 shadow-sm transition-opacity hover:opacity-90" style="background-color:var(--accent)">
-                <svg class="w-3 h-3 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
-                Tiếp tục
-              </a>
-            </div>
-          </div>
-        </article>
-
+        <div class="col-span-full py-8 text-center" style="color:var(--text-secondary)">
+          <p class="text-sm">Đang tải lịch sử nghe...</p>
+        </div>
       </div>
     </section>
 
@@ -1141,18 +1048,59 @@
     </div>
   </footer>
 
+  <!-- Auth Modal -->
+  <div id="auth-modal" class="auth-modal-wrapper" role="dialog" aria-modal="true">
+    <div id="auth-modal-overlay" class="auth-modal-overlay"></div>
+    <div class="auth-modal-card">
+      <div class="auth-modal-header">
+        <h3 class="auth-modal-title">Tài khoản AudioWeb</h3>
+        <button id="auth-modal-close" class="auth-close-btn" type="button" aria-label="Đóng">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      </div>
+      <div class="auth-tabs">
+        <button id="auth-tab-login" class="auth-tab-btn active" type="button">Đăng nhập</button>
+        <button id="auth-tab-register" class="auth-tab-btn" type="button">Đăng ký</button>
+      </div>
+      <div id="auth-error-msg" class="auth-error"></div>
+      <form id="auth-form-login" class="auth-form active">
+        <div class="auth-input-group">
+          <label for="auth-login-username">Tên đăng nhập</label>
+          <input id="auth-login-username" class="auth-input" type="text" placeholder="Nhập tên đăng nhập" required autocomplete="username">
+        </div>
+        <div class="auth-input-group">
+          <label for="auth-login-password">Mật khẩu</label>
+          <input id="auth-login-password" class="auth-input" type="password" placeholder="Nhập mật khẩu" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="auth-submit-btn">Đăng nhập</button>
+      </form>
+      <form id="auth-form-register" class="auth-form">
+        <div class="auth-input-group">
+          <label for="auth-reg-username">Tên đăng nhập (chữ cái, số, _)</label>
+          <input id="auth-reg-username" class="auth-input" type="text" placeholder="user123" required autocomplete="username">
+        </div>
+        <div class="auth-input-group">
+          <label for="auth-reg-displayname">Tên hiển thị</label>
+          <input id="auth-reg-displayname" class="auth-input" type="text" placeholder="Người Đọc Sách" required>
+        </div>
+        <div class="auth-input-group">
+          <label for="auth-reg-password">Mật khẩu (tối thiểu 6 ký tự)</label>
+          <input id="auth-reg-password" class="auth-input" type="password" placeholder="••••••••" required minlength="6" autocomplete="new-password">
+        </div>
+        <button type="submit" class="auth-submit-btn">Đăng ký tài khoản</button>
+      </form>
+    </div>
+  </div>
+
   <script src="/js/navbar.js?v=2"></script>
-  <script src="/js/home.js?v=2"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/home.js?v=3"></script>
   <script>
     // Khởi tạo Theme Plugin Engine & Nạp trang chủ
     window.addEventListener('DOMContentLoaded', () => {
       if (window.themeEngine) window.themeEngine.init();
       if (window.initHomePage) window.initHomePage();
     });
-    // Kích hoạt ngay nếu DOM đã sẵn sàng
-    if (document.readyState !== 'loading') {
-      if (window.initHomePage) window.initHomePage();
-    }
   </script>
 </body>
 </html>

@@ -13,7 +13,9 @@ function setupNavbar() {
     themeToggleBtn.addEventListener('click', () => {
       if (!window.themeEngine) return;
       const current = window.themeEngine.currentThemeId;
-      const next = current === 'tieuthuyetmang-dark' ? 'tieuthuyetmang-light' : 'tieuthuyetmang-dark';
+      const currentTheme = window.themeEngine.themes.get(current);
+      const isLight = currentTheme ? currentTheme.type === 'light' : (current.includes('light') || current.includes('sepia'));
+      const next = isLight ? 'tieuthuyetmang-dark' : 'tieuthuyetmang-light';
       window.themeEngine.apply(next);
       updateThemeIcon(next);
     });
@@ -61,6 +63,11 @@ function setupNavbar() {
         }
       }
     });
+  }
+
+  // Khởi tạo icon theo theme hiện tại
+  if (window.themeEngine) {
+    updateThemeIcon(window.themeEngine.currentThemeId);
   }
 
   // Lắng nghe thay đổi theme từ themeEngine

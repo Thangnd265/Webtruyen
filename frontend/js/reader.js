@@ -125,7 +125,6 @@ function loadSavedSettings() {
 
 function applyReadingSettings() {
   const contentEl = document.getElementById('chapter-content');
-  const textView = document.getElementById('text-reading-view');
 
   if (contentEl) {
     contentEl.style.fontSize = `${state.readingSettings.fontSize}px`;
@@ -133,21 +132,56 @@ function applyReadingSettings() {
     contentEl.style.fontFamily = state.readingSettings.font === 'serif' ? 'var(--font-serif), Georgia, serif' : 'var(--font-sans), Nunito, sans-serif';
   }
 
-  if (textView) {
-    if (state.readingSettings.theme === 'white') {
-      textView.style.backgroundColor = '#ffffff';
-      textView.style.color = '#111827';
-      document.body.style.backgroundColor = '#ffffff';
-    } else if (state.readingSettings.theme === 'sepia') {
-      textView.style.backgroundColor = '#f4ecd8';
-      textView.style.color = '#45321f';
-      document.body.style.backgroundColor = '#f4ecd8';
-    } else {
-      textView.style.backgroundColor = 'transparent';
-      textView.style.color = '#f3f4f6';
-      document.body.style.backgroundColor = '#0b0b0e';
+  updateSettingsButtonsUI();
+}
+
+function updateSettingsButtonsUI() {
+  // Font
+  document.querySelectorAll('[data-set-font]').forEach((btn) => {
+    const isActive = btn.dataset.setFont === state.readingSettings.font;
+    btn.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
+    btn.style.color = isActive ? 'var(--accent)' : 'var(--text-primary)';
+    btn.style.fontWeight = isActive ? '700' : '500';
+  });
+
+  // Size
+  document.querySelectorAll('[data-set-size]').forEach((btn) => {
+    const isActive = parseInt(btn.dataset.setSize, 10) === state.readingSettings.fontSize;
+    btn.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
+    btn.style.color = isActive ? 'var(--accent)' : 'var(--text-primary)';
+    btn.style.fontWeight = isActive ? '700' : '500';
+  });
+
+  // Line
+  document.querySelectorAll('[data-set-line]').forEach((btn) => {
+    const isActive = Math.abs(parseFloat(btn.dataset.setLine) - state.readingSettings.lineHeight) < 0.05;
+    btn.style.borderColor = isActive ? 'var(--accent)' : 'var(--border)';
+    btn.style.color = isActive ? 'var(--accent)' : 'var(--text-primary)';
+    btn.style.fontWeight = isActive ? '700' : '500';
+  });
+
+  // Theme
+  const curTheme = (window.themeEngine && window.themeEngine.currentThemeId) || 'tieuthuyetmang-dark';
+  document.querySelectorAll('[data-set-reading-theme]').forEach((btn) => {
+    const val = btn.dataset.setReadingTheme;
+    let isActive = false;
+    if (val === 'dark' && (curTheme.includes('dark') || curTheme.includes('black'))) {
+      isActive = true;
+    } else if (val === 'sepia' && curTheme.includes('sepia')) {
+      isActive = true;
+    } else if (val === 'white' && curTheme.includes('light')) {
+      isActive = true;
     }
-  }
+
+    if (isActive) {
+      btn.style.outline = '2px solid var(--accent)';
+      btn.style.outlineOffset = '2px';
+      btn.style.fontWeight = '800';
+    } else {
+      btn.style.outline = 'none';
+      btn.style.fontWeight = '500';
+    }
+  });
 }
 
 async function loadBook(slug) {
@@ -285,7 +319,7 @@ function setupAudioEngine() {
     const pauseSvg = `<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>`;
     if (playPauseIcon) playPauseIcon.innerHTML = pauseSvg;
     if (miniPlayPauseIcon) miniPlayPauseIcon.innerHTML = pauseSvg;
-    saveListeningHistory();
+    saveListeningHistory(true);
   });
 
   // Khi tạm dừng
@@ -294,11 +328,12 @@ function setupAudioEngine() {
     const playSvg = `<path d="M8 5v14l11-7z"/>`;
     if (playPauseIcon) playPauseIcon.innerHTML = playSvg;
     if (miniPlayPauseIcon) miniPlayPauseIcon.innerHTML = playSvg;
-    saveListeningHistory();
+    saveListeningHistory(true);
   });
 
   // Cập nhật thời gian & Scrubber & Mini progress
   audio.addEventListener('timeupdate', () => {
+    saveListeningHistory(false);
     const cur = audio.currentTime;
     const dur = audio.duration || 1;
     const curStr = formatSeconds(cur);
@@ -405,7 +440,7 @@ function renderChapterDrawer() {
   list.innerHTML = state.chapters.map((ch, idx) => `
     <div style="padding:10px 12px;border-radius:10px;font-size:13.5px;cursor:pointer;transition:all 0.15s ease;background-color:${
       idx === state.currentChapterIndex ? 'rgba(224,93,68,0.18)' : 'transparent'
-    };color:${idx === state.currentChapterIndex ? '#e05d44' : '#e5e7eb'};font-weight:${idx === state.currentChapterIndex ? '700' : '500'}"
+    };color:${idx === state.currentChapterIndex ? 'var(--accent)' : 'var(--text-primary)'};font-weight:${idx === state.currentChapterIndex ? '700' : '500'}"
     onclick="loadChapterByIndex(${idx})">
       ${ch.title}
     </div>
@@ -534,12 +569,25 @@ function setupSettingsModal() {
     });
   });
 
-  // Reading themes
+  // Reading themes - Đồng bộ trực tiếp với hệ thống ThemeEngine toàn cục
   document.querySelectorAll('[data-set-reading-theme]').forEach((btn) => {
     btn.addEventListener('click', () => {
-      state.readingSettings.theme = btn.dataset.setReadingTheme;
-      saveAndApplySettings();
+      const mode = btn.dataset.setReadingTheme;
+      let targetTheme = 'tieuthuyetmang-dark';
+      if (mode === 'sepia') targetTheme = 'tieuthuyetmang-sepia';
+      else if (mode === 'white') targetTheme = 'tieuthuyetmang-light';
+
+      if (window.themeEngine) {
+        window.themeEngine.apply(targetTheme);
+      }
+      updateSettingsButtonsUI();
     });
+  });
+
+  // Lắng nghe thay đổi theme toàn cục (từ navbar hoặc plugin khác)
+  window.addEventListener('themechanged', () => {
+    updateSettingsButtonsUI();
+    renderChapterDrawer();
   });
 }
 
@@ -557,31 +605,52 @@ function setupReportButton() {
   }
 }
 
-function saveListeningHistory() {
+let lastHistorySaveTime = 0;
+
+function saveListeningHistory(force = false) {
   if (!state.bookSlug || !state.bookData) return;
+  const now = Date.now();
+  if (!force && now - lastHistorySaveTime < 4000) return;
+  lastHistorySaveTime = now;
+
   try {
-    const history = JSON.parse(localStorage.getItem('audioweb-recent-history') || '[]');
     const ch = (state.chapters && state.chapters[state.currentChapterIndex]) || { id: 'chapter_001', title: 'Chương 1' };
     const curTime = audio.currentTime || 0;
     const dur = audio.duration || 1;
     const pct = Math.min(100, Math.max(1, Math.round((curTime / dur) * 100)));
 
-    const entry = {
-      slug: state.bookSlug,
-      title: state.bookData.title || state.bookSlug,
-      author: state.bookData.author || 'Tác Giả Ẩn Danh',
-      cover_url: state.bookData.cover_url || `/api/books/${state.bookSlug}/cover`,
+    const item = {
+      book_slug: state.bookSlug,
+      book_title: state.bookData.title || state.bookSlug,
+      book_author: state.bookData.author || 'Tác Giả Ẩn Danh',
+      book_cover: state.bookData.cover_url || `/api/books/${state.bookSlug}/cover`,
       chapter_id: state.currentChapterId || ch.id,
       chapter_title: ch.title || 'Chương 1',
-      progress: pct,
-      currentTime: curTime,
-      total_chapters: state.bookData.total_chapters || state.chapters.length || 1,
-      updated_at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' hôm nay'
+      current_time: curTime,
+      duration: dur,
+      progress: pct
     };
 
-    const remaining = history.filter((h) => h.slug !== state.bookSlug);
-    remaining.unshift(entry);
-    localStorage.setItem('audioweb-recent-history', JSON.stringify(remaining.slice(0, 10)));
+    if (window.authManager) {
+      window.authManager.saveProgress(item);
+    } else {
+      const history = JSON.parse(localStorage.getItem('audioweb-recent-history') || '[]');
+      const entry = {
+        slug: item.book_slug,
+        title: item.book_title,
+        author: item.book_author,
+        cover_url: item.book_cover,
+        chapter_id: item.chapter_id,
+        chapter_title: item.chapter_title,
+        progress: pct,
+        currentTime: curTime,
+        total_chapters: state.bookData.total_chapters || state.chapters.length || 1,
+        updated_at: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' hôm nay'
+      };
+      const remaining = history.filter((h) => h.slug !== state.bookSlug);
+      remaining.unshift(entry);
+      localStorage.setItem('audioweb-recent-history', JSON.stringify(remaining.slice(0, 10)));
+    }
   } catch (_) {}
 }
 
