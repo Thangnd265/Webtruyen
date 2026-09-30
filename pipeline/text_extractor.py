@@ -18,15 +18,46 @@ CHAPTER_PATTERN = re.compile(
 
 
 def _read_text_file(path: Path) -> str:
-    """Reads a text file trying multiple common encodings."""
-    encodings = ["utf-8", "utf-8-sig", "cp1258", "utf-16", "latin1"]
+    """Reads a text file trying multiple common encodings, detecting declared charset first."""
+    import unicodedata
+
     raw = path.read_bytes()
+
+    # 1. Detect declared charset in HTML/XML header (e.g. charset=windows-1252 or charset=utf-8)
+    header_sample = raw[:4096]
+    match = re.search(rb'charset=["\']?([a-zA-Z0-9_\-]+)', header_sample, re.IGNORECASE)
+    if match:
+        declared = match.group(1).decode("ascii", errors="ignore").lower()
+        charset_map = {
+            "windows-1252": "windows-1252",
+            "cp1252": "windows-1252",
+            "iso-8859-1": "windows-1252",
+            "latin1": "windows-1252",
+            "utf-8": "utf-8",
+            "utf8": "utf-8",
+            "cp1258": "cp1258",
+            "windows-1258": "cp1258",
+        }
+        codec = charset_map.get(declared)
+        if codec:
+            try:
+                decoded = raw.decode(codec)
+                return unicodedata.normalize("NFC", decoded)
+            except Exception:
+                pass
+
+    # 2. Try common encodings: utf-8, utf-8-sig, windows-1252, utf-16, cp1258
+    # Note: windows-1252 must precede cp1258 because Mobipocket/Kindle HTML files use windows-1252
+    encodings = ["utf-8", "utf-8-sig", "windows-1252", "utf-16", "cp1258"]
     for enc in encodings:
         try:
-            return raw.decode(enc)
+            decoded = raw.decode(enc)
+            return unicodedata.normalize("NFC", decoded)
         except (UnicodeDecodeError, LookupError):
             continue
-    return raw.decode("utf-8", errors="replace")
+
+    decoded = raw.decode("utf-8", errors="replace")
+    return unicodedata.normalize("NFC", decoded)
 
 
 def extract_txt_chapters(txt_path: Path) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
