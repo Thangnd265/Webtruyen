@@ -664,6 +664,8 @@
           </div>
         </div>
 
+        <div id="runNowError" class="text-xs text-rose-400 bg-rose-500/10 p-3 rounded-xl border border-rose-500/20 hidden leading-relaxed"></div>
+
         <div class="pt-3 border-t border-zinc-800 flex justify-end gap-2">
           <button type="button" onclick="closeRunNowModal()" class="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white rounded-lg transition-colors">Hủy</button>
           <button type="submit" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg text-xs font-medium transition-all shadow-md shadow-emerald-600/20">
@@ -1194,12 +1196,17 @@
       document.getElementById('runNowStartCh').value = (b.current_rendered_chapter || 0) + 1;
       document.getElementById('runNowMaxCh').value = b.daily_quota || 50;
 
+      const errEl = document.getElementById('runNowError');
+      if (errEl) { errEl.classList.add('hidden'); errEl.innerText = ''; }
+
       document.getElementById('runNowModal').classList.remove('hidden');
       document.getElementById('runNowModal').classList.add('flex');
     }
     function closeRunNowModal() {
       document.getElementById('runNowModal').classList.add('hidden');
       document.getElementById('runNowModal').classList.remove('flex');
+      const errEl = document.getElementById('runNowError');
+      if (errEl) { errEl.classList.add('hidden'); errEl.innerText = ''; }
     }
 
     async function handleRunNowSubmit(e) {
@@ -1207,6 +1214,8 @@
       const slug = document.getElementById('runNowSlug').value;
       const start_ch = parseInt(document.getElementById('runNowStartCh').value) || 1;
       const max_ch = parseInt(document.getElementById('runNowMaxCh').value) || 50;
+      const errEl = document.getElementById('runNowError');
+      if (errEl) { errEl.classList.add('hidden'); errEl.innerText = ''; }
 
       const submitBtn = document.querySelector('#runNowForm button[type="submit"]');
       let originalText = 'Chạy Ngay';
@@ -1233,6 +1242,10 @@
         fetchQueueStatus();
         fetchSystemHealth();
       } catch (err) {
+        if (errEl) {
+          errEl.innerText = err.message || 'Lỗi khi kích hoạt render';
+          errEl.classList.remove('hidden');
+        }
         showToast(err.message || 'Lỗi khi kích hoạt render', true);
       } finally {
         if (submitBtn) {
