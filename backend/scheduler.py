@@ -231,35 +231,6 @@ class QueueManager:
                     if book_slug in f.stem.lower().replace("_", "-").replace(" ", "-"):
                         return f
 
-        # Fallback: check if novel directory itself has chapter_*.html
-        book_dir = audiobooks_dir / book_slug
-        if book_dir.is_dir():
-            html_files = sorted(book_dir.glob("chapter_*.html"), key=lambda p: p.name)
-            if html_files:
-                reconstructed_txt = book_dir / f"{book_slug}_source.txt"
-                if not reconstructed_txt.is_file():
-                    meta_path = book_dir / "metadata.json"
-                    meta_chapters = {}
-                    if meta_path.is_file():
-                        try:
-                            m_data = json.loads(meta_path.read_text(encoding="utf-8"))
-                            for ch in m_data.get("chapters", []):
-                                meta_chapters[ch.get("id")] = ch.get("title")
-                        except Exception:
-                            pass
-
-                    full_content = []
-                    for hf in html_files:
-                        html_text = hf.read_text(encoding="utf-8")
-                        clean_text = re.sub(r"<[^>]+>", "\n", html_text)
-                        clean_text = re.sub(r"\n+", "\n\n", clean_text).strip()
-                        ch_id = hf.stem
-                        ch_title = meta_chapters.get(ch_id) or ch_id.replace("_", " ").title()
-                        full_content.append(f"{ch_title}\n\n{clean_text}")
-
-                    reconstructed_txt.write_text("\n\n\n".join(full_content), encoding="utf-8")
-                return reconstructed_txt
-
         return None
 
     def _execute_job(self, job: Dict[str, Any]):
@@ -287,8 +258,8 @@ class QueueManager:
 
         source_file = self._find_source_file(book_slug)
         if not source_file:
-            err = f"Không tìm thấy file nguồn (.epub/.txt) của '{book_slug}' để tiếp tục render."
-            self.add_log(f"❌ {err}")
+            err = f"❌ Lỗi: Thiếu file truyện gốc! Không tìm thấy file (.epub / .txt) của '{book_title}'. Vui lòng tải file truyện lên trước khi render."
+            self.add_log(err)
             progress.status = "failed"
             progress.message = err
             self._finish_job(progress, success=False, error_msg=err)

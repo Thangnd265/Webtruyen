@@ -593,6 +593,14 @@ def re_render_single_chapter(slug: str, chapter_id: str, req: Optional[ReRenderC
         book_title = row["title"] if row else slug
         voice_to_use = (req.voice if req and req.voice else None) or (row["voice"] if row else "Ngọc Huyền")
 
+    # Kiểm tra file truyện gốc, nếu thiếu phải báo lỗi và yêu cầu tải file
+    source_file = queue_manager._find_source_file(slug)
+    if not source_file:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Thiếu file truyện gốc! Không tìm thấy file (.epub / .txt) của '{book_title}'. Vui lòng tải file truyện lên qua nút 'Tải Truyện Mới' trước khi render lại.",
+        )
+
     success = queue_manager.enqueue(
         book_slug=slug,
         book_title=f"{book_title} (Chương {ch_idx})",
@@ -639,6 +647,14 @@ def run_book_now(slug: str, req: Optional[RunNowRequest] = None):
         max_ch = b["daily_quota"] or 50
 
     voice = (req.voice if req and req.voice else None) or b["voice"] or "Ngọc Huyền"
+
+    # Kiểm tra file truyện gốc, nếu thiếu phải báo lỗi và yêu cầu tải file
+    source_file = queue_manager._find_source_file(slug)
+    if not source_file:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Thiếu file truyện gốc! Không tìm thấy file (.epub / .txt) của '{b['title']}'. Vui lòng tải file truyện lên qua nút 'Tải Truyện Mới' trước khi render.",
+        )
 
     success = queue_manager.enqueue(
         book_slug=slug,
