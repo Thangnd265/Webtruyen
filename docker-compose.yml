@@ -6,7 +6,8 @@ services:
     ports:
       - "3080:3080"
     volumes:
-      - /mnt/gdrive/audiobooks:/mnt/gdrive/audiobooks:ro
+      - /mnt/gdrive/audiobooks:/mnt/gdrive/audiobooks
+      - ./backend:/app/backend
       - ./frontend:/app/frontend
     environment:
       - AUDIOBOOKS_DIR=/mnt/gdrive/audiobooks

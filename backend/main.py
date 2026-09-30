@@ -492,16 +492,34 @@ async def post_book_sync(slug: str, req: SyncProgressRequest):
 try:
     from auth_routes import router as auth_router
     from history_routes import router as history_router
+    from admin_routes import router as admin_router
+    from scheduler import cron_schedule_checker
 except ImportError:
     from backend.auth_routes import router as auth_router
     from backend.history_routes import router as history_router
+    from backend.admin_routes import router as admin_router
+    from backend.scheduler import cron_schedule_checker
 
 app.include_router(auth_router)
 app.include_router(history_router)
+app.include_router(admin_router)
 
 # Mount frontend static files at root
 frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
 frontend_dir.mkdir(parents=True, exist_ok=True)
+
+@app.get("/admin")
+def serve_admin_page():
+    admin_file = frontend_dir / "admin.html"
+    if admin_file.is_file():
+        return FileResponse(str(admin_file))
+    return {"message": "Admin dashboard page not found"}
+
+@app.on_event("startup")
+async def startup_event():
+    import asyncio
+    asyncio.create_task(cron_schedule_checker())
+
 app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
 
 

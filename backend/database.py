@@ -49,3 +49,59 @@ def init_db() -> None:
             CREATE INDEX IF NOT EXISTS idx_history_user_updated 
             ON user_history(user_id, updated_at DESC);
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS admin_books (
+                slug TEXT PRIMARY KEY,
+                title TEXT NOT NULL,
+                author TEXT DEFAULT '',
+                genres TEXT DEFAULT '',
+                cover_url TEXT DEFAULT '',
+                voice TEXT DEFAULT 'Ngọc Huyền',
+                daily_quota INTEGER DEFAULT 50,
+                schedule_time TEXT DEFAULT '02:00',
+                auto_render INTEGER DEFAULT 1,
+                current_rendered_chapter INTEGER DEFAULT 0,
+                total_chapters INTEGER DEFAULT 0,
+                source_filename TEXT DEFAULT '',
+                status TEXT DEFAULT 'idle',
+                last_rendered_at TIMESTAMP,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS render_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                book_slug TEXT NOT NULL,
+                book_title TEXT NOT NULL,
+                started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                finished_at TIMESTAMP,
+                chapter_start INTEGER DEFAULT 1,
+                chapter_end INTEGER DEFAULT 1,
+                chapters_processed INTEGER DEFAULT 0,
+                sentences_processed INTEGER DEFAULT 0,
+                duration_seconds REAL DEFAULT 0.0,
+                status TEXT DEFAULT 'success',
+                log_output TEXT DEFAULT '',
+                error_message TEXT DEFAULT ''
+            );
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_render_logs_started 
+            ON render_logs(started_at DESC);
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS admin_settings (
+                key TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
+        """)
+        # Insert default settings if not exists
+        conn.execute("""
+            INSERT OR IGNORE INTO admin_settings (key, value)
+            VALUES ('admin_pin', '123456');
+        """)
+        conn.execute("""
+            INSERT OR IGNORE INTO admin_settings (key, value)
+            VALUES ('default_voice', 'Ngọc Huyền');
+        """)
