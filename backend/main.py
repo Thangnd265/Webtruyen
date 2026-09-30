@@ -352,7 +352,10 @@ def stream_audio(
     pitch: Optional[str] = None
 ):
     validate_identifier(chapter_id, "chapter_id")
-    book_dir = get_safe_book_dir(slug)
+    primary_dir, remote_dir = get_book_storage_dirs(slug)
+    search_dirs = [primary_dir]
+    if remote_dir and remote_dir != primary_dir:
+        search_dirs.append(remote_dir)
 
     audio_cache_key = f"{slug}:{chapter_id}:{voice or ''}:{pitch or ''}"
     if audio_cache_key in _AUDIO_PATH_CACHE:
@@ -366,10 +369,13 @@ def stream_audio(
         audio_file = None
 
     if not audio_file:
-        direct = (book_dir / chapter_id).resolve()
-        if direct.is_file() and direct.is_relative_to(book_dir):
-            audio_file = direct
-        else:
+        for sdir in search_dirs:
+            direct = (sdir / chapter_id).resolve()
+            if direct.is_file() and direct.is_relative_to(sdir):
+                audio_file = direct
+                break
+
+        if not audio_file:
             candidates_to_try = []
             if voice:
                 v_clean = re.sub(r"[^a-zA-Z0-9_\-]", "", voice.lower())
@@ -403,20 +409,26 @@ def stream_audio(
             candidates_to_try.append(chapter_id)
 
             for name in candidates_to_try:
-                for ext in [".mp3", ".m4b", ".aac", ".ogg", ".wav", ".mp4", ".m4a"]:
-                    candidate = (book_dir / f"{name}{ext}").resolve()
-                    if candidate.is_file() and candidate.is_relative_to(book_dir):
-                        audio_file = candidate
+                for ext in [".m4b", ".mp3", ".aac", ".ogg", ".wav", ".mp4", ".m4a"]:
+                    for sdir in search_dirs:
+                        candidate = (sdir / f"{name}{ext}").resolve()
+                        if candidate.is_file() and candidate.is_relative_to(sdir):
+                            audio_file = candidate
+                            break
+                    if audio_file:
                         break
                 if audio_file:
                     break
 
             # Fallback to default chapter audio
             if not audio_file:
-                for ext in [".mp3", ".m4b", ".aac", ".ogg", ".wav", ".mp4", ".m4a"]:
-                    candidate = (book_dir / f"{chapter_id}{ext}").resolve()
-                    if candidate.is_file() and candidate.is_relative_to(book_dir):
-                        audio_file = candidate
+                for ext in [".m4b", ".mp3", ".aac", ".ogg", ".wav", ".mp4", ".m4a"]:
+                    for sdir in search_dirs:
+                        candidate = (sdir / f"{chapter_id}{ext}").resolve()
+                        if candidate.is_file() and candidate.is_relative_to(sdir):
+                            audio_file = candidate
+                            break
+                    if audio_file:
                         break
 
         if audio_file:
