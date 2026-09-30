@@ -68,7 +68,7 @@
        1. CHẾ ĐỘ CHỈ NGHE AUDIO (AUDIO ONLY VIEW - Ảnh 2)
        ======================================================== */
     #audio-only-view {
-      display: flex;
+      display: none;
       flex-direction: column;
       align-items: center;
       justify-content: center;
@@ -76,6 +76,76 @@
       padding: 10px 16px 95px;
       width: 100%;
       min-height: calc(100vh - 140px);
+    }
+
+    /* Thanh chuyển đổi chế độ đọc / nghe ở Header */
+    .reader-mode-switch {
+      display: flex;
+      align-items: center;
+      background-color: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      padding: 3px;
+      gap: 3px;
+    }
+    .mode-switch-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 6px 14px;
+      border-radius: 9999px;
+      font-size: 12.5px;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+    }
+    .mode-switch-btn:hover {
+      color: var(--text-primary);
+    }
+    .mode-switch-btn.active {
+      background-color: var(--accent);
+      color: #ffffff;
+      box-shadow: 0 2px 10px rgba(224, 93, 68, 0.35);
+    }
+
+    /* Live Karaoke Subtitle Card trên thẻ đĩa than */
+    .vinyl-karaoke-box {
+      width: 100%;
+      max-width: 400px;
+      margin: 14px 0 18px;
+      padding: 12px 16px;
+      background: rgba(224, 93, 68, 0.08);
+      border: 1px solid rgba(224, 93, 68, 0.25);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      text-align: left;
+    }
+    .vinyl-karaoke-box:hover {
+      background: rgba(224, 93, 68, 0.14);
+      border-color: var(--accent);
+      transform: translateY(-1px);
+    }
+    .vinyl-karaoke-tag {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: var(--accent);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .vinyl-karaoke-text {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.5;
+      color: var(--text-primary);
+      margin: 0;
+      min-height: 42px;
     }
 
     .vinyl-player-card {
@@ -396,9 +466,9 @@
     #text-reading-view {
       max-width: 820px;
       margin: 0 auto;
-      padding: 24px 20px 105px;
+      padding: 24px 20px 115px;
       width: 100%;
-      display: none; /* Mặc định ẩn, bật lên khi bấm xem chữ */
+      display: block; /* Mặc định hiển thị văn bản kèm Karaoke audio theo từng câu */
       user-select: text;
       background-color: transparent;
       color: var(--text-primary);
@@ -437,27 +507,33 @@
     }
 
     .reader-paragraph {
-      margin-bottom: 20px;
-      line-height: 1.85;
+      margin-bottom: 22px;
+      line-height: 1.95;
       font-size: 18px;
       color: var(--text-primary);
-      transition: all 0.2s ease;
+      transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, padding 0.15s ease;
       cursor: pointer;
-      border-radius: 6px;
-      padding: 4px 6px;
+      border-radius: 8px;
+      padding: 8px 12px;
+      border-left: 4px solid transparent;
+      user-select: text;
     }
     .reader-paragraph:hover {
-      background-color: rgba(128, 128, 128, 0.08);
+      background-color: rgba(224, 93, 68, 0.08);
+      border-left-color: rgba(224, 93, 68, 0.4);
     }
     .reader-paragraph.active-cue {
-      background-color: var(--active-cue-bg) !important;
-      color: var(--accent) !important;
-      font-weight: 600;
-      border-left: 3px solid var(--accent);
-      padding-left: 10px;
+      background-color: var(--active-cue-bg, rgba(224, 93, 68, 0.18)) !important;
+      color: var(--accent, #e05d44) !important;
+      font-weight: 700;
+      border-left: 4px solid var(--accent, #e05d44) !important;
+      padding-left: 14px;
+      box-shadow: 0 2px 14px rgba(224, 93, 68, 0.12);
     }
     [data-theme="dark"] .reader-paragraph.active-cue {
       color: var(--vip-gold, #fbbf24) !important;
+      background-color: var(--active-cue-bg, rgba(251, 191, 36, 0.14)) !important;
+      border-left-color: var(--vip-gold, #fbbf24) !important;
     }
 
     /* Thanh Mini Player ở đáy màn hình khi đọc chữ (Ảnh 3) */
@@ -643,13 +719,27 @@
       <a class="flex items-center gap-2 font-bold text-xl" href="/" style="color:var(--accent);text-decoration:none">
         🎧 Audio Web
       </a>
-      <nav class="hidden md:flex items-center gap-6">
-        <a class="hover:opacity-80 transition-opacity text-sm font-medium" href="/" style="color:var(--text-secondary);text-decoration:none">Trang chủ</a>
-        <a class="hover:opacity-80 transition-opacity text-sm font-semibold" href="/" style="color:var(--accent);text-decoration:none">Đang Phát Audio</a>
-      </nav>
-      <div class="flex items-center gap-3">
+
+      <!-- Thanh chuyển đổi chế độ: Đọc & Karaoke vs Đĩa Than -->
+      <div class="reader-mode-switch">
+        <button type="button" id="btn-mode-text" class="mode-switch-btn active" title="Chế độ Đọc chữ kèm Audio đồng bộ từng câu">
+          <span>📖</span>
+          <span>Đọc & Karaoke</span>
+        </button>
+        <button type="button" id="btn-mode-audio" class="mode-switch-btn" title="Chế độ Máy đĩa than">
+          <span>🎧</span>
+          <span class="hidden sm:inline">Đĩa Than</span>
+        </button>
+      </div>
+
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- Nút Chọn Giọng Đọc -->
+        <button id="btn-voice-header" class="flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold hover:border-[var(--accent)] transition-colors cursor-pointer" style="border-color:var(--border);color:var(--text-primary);background-color:var(--bg-surface)" title="Chọn giọng đọc AI / LoRA" type="button">
+          <span>🎙️</span>
+          <span id="voice-label" class="hidden sm:inline">Thiện Minh</span>
+        </button>
         <div id="navbar-auth-container"></div>
-        <button id="theme-toggle-btn" aria-label="Chuyển đổi giao diện" class="p-2 rounded-full transition-colors hover:bg-neutral-500/10" title="Chuyển chế độ giao diện" type="button" style="color:var(--text-secondary)">
+        <button id="theme-toggle-btn" aria-label="Chuyển đổi giao diện" class="p-2 rounded-full transition-colors hover:bg-neutral-500/10 cursor-pointer" title="Chuyển chế độ giao diện" type="button" style="color:var(--text-secondary)">
           <svg id="theme-toggle-icon" class="lucide lucide-moon w-5 h-5 stroke-current" fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg">
             <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
           </svg>
@@ -681,6 +771,15 @@
       <!-- Tiêu đề chương & Tên truyện -->
       <h2 class="vinyl-ep-title" id="audio-chapter-title">[ Đang tải chương... ]</h2>
       <p class="vinyl-story-title" id="audio-story-subtitle">Audio Đồng Bộ Đỉnh Cao</p>
+
+      <!-- Live Karaoke Subtitle Box -->
+      <div class="vinyl-karaoke-box" id="vinyl-karaoke-box" title="Bấm để mở chế độ đọc toàn bộ câu văn bản">
+        <div class="vinyl-karaoke-tag">
+          <span>✨ ĐANG ĐỌC TỪNG CÂU:</span>
+          <span style="font-size:11px;opacity:0.85;text-decoration:underline">Xem toàn bộ ↗</span>
+        </div>
+        <p class="vinyl-karaoke-text" id="vinyl-current-cue">Bấm Phát hoặc nhấp vào câu bất kỳ để nghe audio đồng bộ...</p>
+      </div>
 
       <!-- Scrubber -->
       <div class="vinyl-scrubber-container">
@@ -798,12 +897,18 @@
         <span id="text-breadcrumb-book-title" class="truncate font-semibold" style="color:var(--text-primary)">Đang tải tên truyện...</span>
       </a>
 
-      <!-- Nút T Aa Settings -->
-      <div style="position:relative">
-        <button type="button" class="btn-aa-settings" id="btn-reading-settings">
-          <span>T Aa</span>
-          <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button type="button" class="btn-aa-settings" id="btn-text-open-drawer" title="Danh sách chương">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+          <span>Chương</span>
         </button>
+
+        <!-- Nút T Aa Settings -->
+        <div style="position:relative">
+          <button type="button" class="btn-aa-settings" id="btn-reading-settings">
+            <span>T Aa</span>
+            <svg class="w-3.5 h-3.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m19 9-7 7-7-7"/></svg>
+          </button>
 
         <!-- Popover Cài Đặt Đọc -->
         <div id="settings-popover">

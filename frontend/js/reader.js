@@ -46,26 +46,50 @@ async function initReaderPage() {
   setupChapterDrawer();
   setupSpeedAndTimer();
   setupReportButton();
+  setupVoiceModal();
 
   // Đọc slug từ URL
   const params = new URLSearchParams(window.location.search);
-  const slug = params.get('book') || params.get('slug') || 'sample-story';
+  const slug = params.get('book') || params.get('slug') || 'tu-da-quai-bat-dau-tien-hoa-thang-cap-full';
   await loadBook(slug);
 }
 
 /**
  * Quản lý chuyển đổi giữa 2 chế độ:
+ * - 'text': Đọc chữ văn bản kèm Karaoke audio đồng bộ từng câu + Mini Player (MẶC ĐỊNH)
  * - 'audio': Thẻ đĩa than trung tâm (Ảnh 2)
- * - 'text': Đọc chữ văn bản + Mini Player (Ảnh 3)
  */
 function setupViewModeToggle() {
   const savedMode = localStorage.getItem('audioweb-reader-mode');
-  if (savedMode === 'text') {
-    state.viewMode = 'text';
-  } else {
+  // Mặc định luôn là 'text' (Chế độ Đọc chữ kèm Karaoke audio đồng bộ từng câu)
+  if (savedMode === 'audio') {
     state.viewMode = 'audio';
+  } else {
+    state.viewMode = 'text';
   }
   applyViewMode();
+
+  // Nút chuyển chế độ ở Header
+  const headerModeText = document.getElementById('btn-mode-text');
+  const headerModeAudio = document.getElementById('btn-mode-audio');
+  if (headerModeText) {
+    headerModeText.addEventListener('click', () => setViewMode('text'));
+  }
+  if (headerModeAudio) {
+    headerModeAudio.addEventListener('click', () => setViewMode('audio'));
+  }
+
+  // Nút Live Karaoke Subtitle trên thẻ đĩa than (click để nhảy ngay sang chế độ đọc chữ)
+  const vinylKaraokeBox = document.getElementById('vinyl-karaoke-box');
+  if (vinylKaraokeBox) {
+    vinylKaraokeBox.addEventListener('click', () => {
+      setViewMode('text');
+      if (state.currentActiveCueId) {
+        const el = document.getElementById(state.currentActiveCueId);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  }
 
   // Nút chuyển sang Hiện Chữ trên thanh đáy (Ảnh 2)
   const switchToTextBtn = document.getElementById('btn-switch-to-text');
@@ -97,19 +121,32 @@ function setViewMode(mode) {
   applyViewMode();
   if (mode === 'text') {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    // Cuộn đến câu đang active nếu có
+    if (state.currentActiveCueId) {
+      setTimeout(() => {
+        const el = document.getElementById(state.currentActiveCueId);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 100);
+    }
   }
 }
 
 function applyViewMode() {
   const audioView = document.getElementById('audio-only-view');
   const textView = document.getElementById('text-reading-view');
+  const headerModeText = document.getElementById('btn-mode-text');
+  const headerModeAudio = document.getElementById('btn-mode-audio');
 
   if (state.viewMode === 'text') {
     if (audioView) audioView.style.display = 'none';
     if (textView) textView.style.display = 'block';
+    if (headerModeText) headerModeText.classList.add('active');
+    if (headerModeAudio) headerModeAudio.classList.remove('active');
   } else {
     if (audioView) audioView.style.display = 'flex';
     if (textView) textView.style.display = 'none';
+    if (headerModeText) headerModeText.classList.remove('active');
+    if (headerModeAudio) headerModeAudio.classList.add('active');
   }
 }
 
@@ -355,19 +392,37 @@ function setupAudioEngine() {
       miniProgress.style.width = `${(cur / dur) * 100}%`;
     }
 
-    // Karaoke Cues khi đang ở chế độ text
+    // Karaoke Cues khi đang nghe audio (đồng bộ từng câu chuẩn thời gian thực)
     if (state.cues && state.cues.length > 0) {
-      const active = state.cues.find((c) => cur >= c.start && cur < c.end);
-      if (active && active.id !== state.currentActiveCueId) {
-        document.querySelectorAll('.active-cue').forEach((el) => el.classList.remove('active-cue'));
-        const el = document.getElementById(active.id);
-        if (el) {
-          el.classList.add('active-cue');
-          if (state.viewMode === 'text') {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
+      let active = null;
+      for (let i = 0; i < state.cues.length; i++) {
+        const c = state.cues[i];
+        const next = state.cues[i + 1];
+        const nextStart = next ? next.start : c.end + 0.5;
+        if (cur >= c.start && cur < Math.max(c.end, nextStart)) {
+          active = c;
+          break;
         }
-        state.currentActiveCueId = active.id;
+      }
+
+      if (active) {
+        if (active.id !== state.currentActiveCueId) {
+          document.querySelectorAll('.active-cue').forEach((el) => el.classList.remove('active-cue'));
+          const el = document.getElementById(active.id);
+          if (el) {
+            el.classList.add('active-cue');
+            if (state.viewMode === 'text') {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+          }
+          state.currentActiveCueId = active.id;
+        }
+
+        // Đồng bộ câu thoại hiển thị trên thẻ đĩa than (Vinyl Karaoke Subtitle)
+        const vinylCue = document.getElementById('vinyl-current-cue');
+        if (vinylCue && active.text) {
+          vinylCue.textContent = active.text;
+        }
       }
     }
   });
@@ -397,7 +452,7 @@ function setupAudioEngine() {
     }
   });
 
-  // Click vào câu văn bản để nghe từ đó
+  // TÍNH NĂNG AUDIO THEO TỪNG CÂU: Click vào câu văn bản để nghe ngay từ câu đó
   const contentArea = document.getElementById('chapter-content');
   if (contentArea) {
     contentArea.addEventListener('click', (e) => {
@@ -407,6 +462,15 @@ function setupAudioEngine() {
         if (!isNaN(start)) {
           audio.currentTime = start;
           audio.play().catch(() => {});
+          document.querySelectorAll('.active-cue').forEach((el) => el.classList.remove('active-cue'));
+          p.classList.add('active-cue');
+          state.currentActiveCueId = p.id;
+
+          // Cập nhật câu trên thẻ đĩa than
+          const vinylCue = document.getElementById('vinyl-current-cue');
+          if (vinylCue) {
+            vinylCue.textContent = p.textContent.trim();
+          }
         }
       }
     });
@@ -415,6 +479,7 @@ function setupAudioEngine() {
 
 function setupChapterDrawer() {
   const drawerBtn = document.getElementById('btn-open-drawer');
+  const textDrawerBtn = document.getElementById('btn-text-open-drawer');
   const drawer = document.getElementById('chapter-drawer');
   const closeBtn = document.getElementById('btn-close-drawer');
   const backdrop = document.getElementById('drawer-backdrop');
@@ -430,8 +495,51 @@ function setupChapterDrawer() {
   }
 
   if (drawerBtn) drawerBtn.addEventListener('click', openDrawer);
+  if (textDrawerBtn) textDrawerBtn.addEventListener('click', openDrawer);
   if (closeBtn) closeBtn.addEventListener('click', closeDrawer);
   if (backdrop) backdrop.addEventListener('click', closeDrawer);
+}
+
+function setupVoiceModal() {
+  const voiceBtn = document.getElementById('btn-voice-header') || document.getElementById('btn-voice');
+  const voiceModal = document.getElementById('voice-modal');
+  const voiceClose = document.getElementById('voice-modal-close');
+  const voiceLabel = document.getElementById('voice-label');
+
+  if (voiceBtn && voiceModal) {
+    voiceBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      voiceModal.classList.remove('hidden');
+    });
+  }
+  if (voiceClose && voiceModal) {
+    voiceClose.addEventListener('click', () => voiceModal.classList.add('hidden'));
+  }
+  if (voiceModal) {
+    voiceModal.addEventListener('click', (e) => {
+      if (e.target === voiceModal) voiceModal.classList.add('hidden');
+    });
+  }
+
+  document.querySelectorAll('.voice-preset-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const v = card.dataset.voice;
+      state.voice = v;
+      if (voiceLabel) voiceLabel.textContent = card.dataset.label || v;
+      if (voiceModal) voiceModal.classList.add('hidden');
+
+      // Tải lại track audio theo giọng mới mà giữ nguyên vị trí giây hiện tại
+      if (state.currentChapterData) {
+        const curTime = audio.currentTime;
+        const wasPlaying = !audio.paused;
+        loadAudioTrack(state.currentChapterData.audio_url);
+        audio.addEventListener('loadedmetadata', () => {
+          audio.currentTime = curTime;
+          if (wasPlaying) audio.play().catch(() => {});
+        }, { once: true });
+      }
+    });
+  });
 }
 
 function renderChapterDrawer() {
