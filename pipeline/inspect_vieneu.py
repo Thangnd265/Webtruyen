@@ -8,11 +8,14 @@ try:
     engine = vieneu.Vieneu()
     print("Vieneu class instantiated successfully.")
     print("Attributes:", [a for a in dir(engine) if not a.startswith("__")])
-    for attr in ["voices", "available_voices", "preset_voices", "speakers"]:
-        if hasattr(engine, attr):
-            print(f"{attr}:", getattr(engine, attr))
-    # Inspect infer method signature
-    sig = inspect.signature(engine.infer)
-    print("engine.infer signature:", sig)
+    print("Preset voices:", engine.list_preset_voices())
+    if hasattr(engine, '_voice_aliases'):
+        print("Voice aliases:", engine._voice_aliases)
+    
+    import os
+    print("=== VOICES DIR ===")
+    for vdir in ["/root/webtruyen/voices", "/root/webtruyen/models", "voices"]:
+        if os.path.exists(vdir):
+            print(f"{vdir}:", os.listdir(vdir))
 except Exception as e:
     print("Error initializing Vieneu:", e)
