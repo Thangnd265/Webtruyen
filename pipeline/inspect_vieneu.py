@@ -1,21 +1,12 @@
 import inspect
 import vieneu
 
-print("=== VIENEU MODULE ===")
-print("File:", vieneu.__file__)
+engine = vieneu.Vieneu()
+print("--- add_voice source ---")
+print(inspect.getsource(engine.add_voice))
 
-try:
-    engine = vieneu.Vieneu()
-    print("Vieneu class instantiated successfully.")
-    print("Attributes:", [a for a in dir(engine) if not a.startswith("__")])
-    print("Preset voices:", engine.list_preset_voices())
-    if hasattr(engine, '_voice_aliases'):
-        print("Voice aliases:", engine._voice_aliases)
-    
-    import os
-    print("=== VOICES DIR ===")
-    for vdir in ["/root/webtruyen/voices", "/root/webtruyen/models", "voices"]:
-        if os.path.exists(vdir):
-            print(f"{vdir}:", os.listdir(vdir))
-except Exception as e:
-    print("Error initializing Vieneu:", e)
+print("--- _load_voices_from_file source ---")
+print(inspect.getsource(engine._load_voices_from_file))
+
+print("--- _resolve_ref_voice source ---")
+print(inspect.getsource(engine._resolve_ref_voice))
