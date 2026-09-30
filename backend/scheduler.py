@@ -217,18 +217,47 @@ class QueueManager:
             root_dir / "incoming_books" / "done",
         ]
 
-        extensions = [".epub", ".txt", ".mobi", ".pdf", ".docx", ".fb2", ".prc", ".azw3"]
+        # 1. Query source_filename from database
+        try:
+            with get_db() as conn:
+                row = conn.execute("SELECT source_filename FROM admin_books WHERE slug = ?", (book_slug,)).fetchone()
+                if row and row["source_filename"]:
+                    fname = row["source_filename"]
+                    for d in candidates_dirs:
+                        cand = d / fname
+                        if cand.is_file():
+                            return cand
+                        if (d / "done").is_dir():
+                            for f in (d / "done").glob(f"*{fname}*"):
+                                if f.is_file():
+                                    return f
+        except Exception:
+            pass
+
+        # 2. Direct match with slug
+        extensions = [".epub", ".txt", ".mobi", ".pdf", ".docx", ".fb2", ".prc", ".azw", ".azw3"]
         for d in candidates_dirs:
             if not d.is_dir():
                 continue
             for ext in extensions:
-                # Direct match with slug
                 target = d / f"{book_slug}{ext}"
                 if target.is_file():
                     return target
-                # Pattern match
+
+        # 3. Flexible bidirectional substring & token matching
+        slug_clean = book_slug.lower().replace("_", "-").replace(" ", "-")
+        slug_tokens = set(t for t in slug_clean.split("-") if len(t) > 2 and t not in {"con", "duong", "de", "vuong", "full", "tap", "the", "book"})
+
+        for d in candidates_dirs:
+            if not d.is_dir():
+                continue
+            for ext in extensions:
                 for f in d.glob(f"*{ext}"):
-                    if book_slug in f.stem.lower().replace("_", "-").replace(" ", "-"):
+                    f_stem = f.stem.lower().replace("_", "-").replace(" ", "-")
+                    if f_stem in slug_clean or slug_clean in f_stem:
+                        return f
+                    f_tokens = set(t for t in f_stem.split("-") if len(t) > 2)
+                    if len(slug_tokens.intersection(f_tokens)) >= 2:
                         return f
 
         return None
