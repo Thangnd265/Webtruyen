@@ -370,6 +370,25 @@ class QueueManager:
                         """,
                         (chapters_done, progress.book_slug),
                     )
+
+                    # Check if book reached 100% completion
+                    book_row = conn.execute(
+                        "SELECT current_rendered_chapter, total_chapters FROM admin_books WHERE slug = ?",
+                        (progress.book_slug,),
+                    ).fetchone()
+                    if book_row and book_row["total_chapters"] > 0 and (book_row["current_rendered_chapter"] >= book_row["total_chapters"]):
+                        self.add_log(f"🏆 Truyện '{progress.book_title}' đã hoàn tất 100% ({book_row['current_rendered_chapter']}/{book_row['total_chapters']} chương)!")
+                        source_file = self._find_source_file(progress.book_slug)
+                        if source_file and "done" not in source_file.parent.name:
+                            try:
+                                done_dir = source_file.parent / "done"
+                                done_dir.mkdir(parents=True, exist_ok=True)
+                                ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+                                dest = done_dir / f"{ts}_{source_file.name}"
+                                shutil.move(str(source_file), str(dest))
+                                self.add_log(f"📦 Đã lưu trữ file gốc hoàn tất vào: done/{dest.name}")
+                            except Exception as move_err:
+                                logger.warning(f"Could not move completed file to done: {move_err}")
                 else:
                     conn.execute(
                         "UPDATE admin_books SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",

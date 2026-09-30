@@ -231,13 +231,22 @@ def process_incoming_file(
             model_path=model_dir,
         )
 
-        # Move to done
-        done_dir.mkdir(parents=True, exist_ok=True)
-        dest_done = done_dir / f"{ts}_{file_path.name}"
-        shutil.move(str(file_path), str(dest_done))
+        # Only move file to done/ when 100% of chapters have been rendered
+        end_ch = active_start_ch + num_ch - 1
+        is_all_done = (end_ch >= total_in_file)
 
-        logger.info(f"🎉 Chuyển đổi thành công! Truyện '{title}' đã được cập nhật lên Web tại thư mục: {output_dir / slug}")
-        logger.info(f"📦 Đã chuyển file gốc vào: {dest_done.name}")
+        if is_all_done:
+            done_dir.mkdir(parents=True, exist_ok=True)
+            dest_done = done_dir / f"{ts}_{file_path.name}"
+            shutil.move(str(file_path), str(dest_done))
+            logger.info(f"🎉 Hoàn thành 100% truyện '{title}' ({total_in_file}/{total_in_file} chương)!")
+            logger.info(f"📦 Đã chuyển file gốc vào lưu trữ hoàn tất: {dest_done.name}")
+        else:
+            logger.info(
+                f"⏸️ Đã hoàn thành đợt render: Chương {active_start_ch} → {end_ch} "
+                f"({end_ch}/{total_in_file} chương). "
+                f"File gốc được giữ nguyên tại incoming_books/ để tiếp tục các đợt render tiếp theo."
+            )
         return True
 
     except Exception as exc:
