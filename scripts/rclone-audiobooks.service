@@ -12,7 +12,7 @@ ExecStart=/usr/bin/rclone mount gdrive:Audiobooks /mnt/gdrive/audiobooks \
   --allow-other \
   --vfs-cache-mode full \
   --vfs-cache-max-size 30G \
-  --vfs-cache-max-age 720h \
+  --vfs-cache-max-age 120h \
   --vfs-read-ahead 32M \
   --vfs-fast-fingerprint \
   --vfs-read-chunk-size 8M \
