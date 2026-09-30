@@ -414,7 +414,7 @@ def generate_audiobook(
             except Exception as e:
                 logger.warning(f"Could not read existing metadata.json: {e}")
 
-        # Ensure all book chapters are registered
+        # Ensure all book chapters are registered and have latest titles
         for ch in chapters:
             ch_id = ch["id"]
             if ch_id not in existing_chapters_map:
@@ -424,6 +424,8 @@ def generate_audiobook(
                     "chapter_index": ch["chapter_index"],
                     "audio_url": f"/api/books/{slug}/audio/{ch_id}",
                 }
+            else:
+                existing_chapters_map[ch_id]["title"] = ch["title"]
 
         combined_chapters = sorted(
             existing_chapters_map.values(),
