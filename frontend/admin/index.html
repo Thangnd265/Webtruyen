@@ -1203,10 +1203,19 @@
     }
 
     async function handleRunNowSubmit(e) {
-      e.preventDefault();
+      if (e) e.preventDefault();
       const slug = document.getElementById('runNowSlug').value;
-      const start_ch = parseInt(document.getElementById('runNowStartCh').value);
-      const max_ch = parseInt(document.getElementById('runNowMaxCh').value);
+      const start_ch = parseInt(document.getElementById('runNowStartCh').value) || 1;
+      const max_ch = parseInt(document.getElementById('runNowMaxCh').value) || 50;
+
+      const submitBtn = document.querySelector('#runNowForm button[type="submit"]');
+      let originalText = 'Chạy Ngay';
+      if (submitBtn) {
+        originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Đang gửi lệnh...`;
+        if (window.lucide) lucide.createIcons();
+      }
 
       try {
         const res = await fetch(`/api/admin/books/${slug}/run-now`, {
@@ -1222,8 +1231,15 @@
         showToast(d.message);
         closeRunNowModal();
         fetchQueueStatus();
+        fetchSystemHealth();
       } catch (err) {
-        showToast(err.message, true);
+        showToast(err.message || 'Lỗi khi kích hoạt render', true);
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = originalText;
+          if (window.lucide) lucide.createIcons();
+        }
       }
     }
 

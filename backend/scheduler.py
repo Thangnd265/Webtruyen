@@ -80,7 +80,7 @@ class QueueManager:
     def __init__(self):
         self._queue: List[Dict[str, Any]] = []
         self._current_job: Optional[JobProgress] = None
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
         self._worker_thread: Optional[threading.Thread] = None
         self._running = False
         self._recent_logs: List[str] = []
