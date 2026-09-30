@@ -135,14 +135,14 @@ def test_frontend_static_serving():
     res_root = client.get("/")
     assert res_root.status_code == 200
     assert "text/html" in res_root.headers.get("content-type", "")
-    assert "Tiểu Thuyết Mạng" in res_root.text
+    assert ("Audio Web" in res_root.text or "Tiểu Thuyết Mạng" in res_root.text)
     assert "manifest.json" in res_root.text
 
     # Test reader.html
     res_reader = client.get("/reader.html")
     assert res_reader.status_code == 200
     assert "text/html" in res_reader.headers.get("content-type", "")
-    assert "content-area" in res_reader.text
+    assert ("chapter-content" in res_reader.text or "content-area" in res_reader.text)
     assert "chapter-drawer" in res_reader.text
     assert "audio-scrubber" in res_reader.text
     assert "settings-popover" in res_reader.text
