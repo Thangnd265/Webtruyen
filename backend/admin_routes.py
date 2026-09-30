@@ -268,6 +268,7 @@ def get_system_health():
         "ram_disk": shm_info,
         "storage": storage_info,
         "queue": q_stat,
+        "gpu_worker": q_stat.get("worker"),
     }
 
 

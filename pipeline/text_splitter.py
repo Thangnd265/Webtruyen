@@ -43,8 +43,17 @@ DOT_PLACEHOLDER = "__DOT_TOKEN__"
 ELLIPSIS_PLACEHOLDER = "__ELLIPSIS_TOKEN__"
 
 
+try:
+    from english_normalizer import normalize_english_for_tts
+except ImportError:
+    try:
+        from pipeline.english_normalizer import normalize_english_for_tts
+    except ImportError:
+        from apps.web_reader.pipeline.english_normalizer import normalize_english_for_tts
+
+
 def normalize_vietnamese_text(text: str) -> str:
-    """Normalizes unusual whitespace, HTML entities, and unicode characters."""
+    """Normalizes unusual whitespace, HTML entities, unicode characters, and English terms for TTS."""
     if not text:
         return ""
     text = html.unescape(text)
@@ -52,6 +61,11 @@ def normalize_vietnamese_text(text: str) -> str:
     text = re.sub(r"[\u00a0\u1680\u2000-\u200a\u202f\u205f\u3000]", " ", text)
     # Collapse consecutive spaces
     text = re.sub(r"[ \t]+", " ", text)
+    # Apply English pronunciation normalizer
+    try:
+        text = normalize_english_for_tts(text)
+    except Exception:
+        pass
     return text.strip()
 
 

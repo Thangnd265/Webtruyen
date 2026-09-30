@@ -493,16 +493,19 @@ try:
     from auth_routes import router as auth_router
     from history_routes import router as history_router
     from admin_routes import router as admin_router
+    from worker_routes import router as worker_router
     from scheduler import cron_schedule_checker
 except ImportError:
     from backend.auth_routes import router as auth_router
     from backend.history_routes import router as history_router
     from backend.admin_routes import router as admin_router
+    from backend.worker_routes import router as worker_router
     from backend.scheduler import cron_schedule_checker
 
 app.include_router(auth_router)
 app.include_router(history_router)
 app.include_router(admin_router)
+app.include_router(worker_router)
 
 # Mount frontend static files at root
 frontend_dir = Path(__file__).resolve().parent.parent / "frontend"

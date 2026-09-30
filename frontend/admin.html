@@ -110,7 +110,13 @@
         <!-- Live status pill -->
         <div id="engineStatusPill" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-300">
           <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>VieNeu Engine: Sẵn sàng</span>
+          <span>Server Điều Phối: Sẵn sàng</span>
+        </div>
+
+        <!-- GPU Worker status pill -->
+        <div id="gpuWorkerPill" class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-300 transition-all" title="Trạng thái GPU Render Worker">
+          <span id="gpuWorkerDot" class="w-2 h-2 rounded-full bg-zinc-500"></span>
+          <span id="gpuWorkerText" class="font-medium">GPU PC: Đang kiểm tra...</span>
         </div>
 
         <button onclick="openUploadModal()" class="px-3.5 py-1.5 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-medium transition-all shadow-md shadow-brand-600/20 flex items-center gap-1.5">
@@ -808,6 +814,23 @@
         document.getElementById('storageFreeVal').innerHTML = `${data.storage.free_gb} <span class="text-xs font-normal text-zinc-400">GB</span>`;
         document.getElementById('storageBar').style.width = `${data.storage.percent}%`;
 
+        // GPU Worker Status
+        const worker = data.gpu_worker || (data.queue && data.queue.worker);
+        const workerPill = document.getElementById('gpuWorkerPill');
+        const workerDot = document.getElementById('gpuWorkerDot');
+        const workerText = document.getElementById('gpuWorkerText');
+        if (worker && worker.online) {
+          workerDot.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+          workerText.innerText = `GPU RTX 5060: Sẵn sàng`;
+          workerPill.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-xs text-emerald-300 transition-all shadow-sm shadow-emerald-500/10';
+          workerPill.title = `PC Worker: ${worker.worker_name} | Card: ${worker.gpu_name} (${worker.vram_gb} GB VRAM) | Online`;
+        } else {
+          workerDot.className = 'w-2 h-2 rounded-full bg-zinc-500';
+          workerText.innerText = `GPU PC: Chờ bật máy`;
+          workerPill.className = 'flex items-center gap-2 px-3 py-1.5 rounded-full bg-zinc-900 border border-zinc-800 text-xs text-zinc-400 transition-all';
+          workerPill.title = 'Máy tính cá nhân đang tắt hoặc chưa mở worker. Khởi chạy Chay-Worker-RTX5060.bat để render.';
+        }
+
         // Update queue
         updateQueueUI(data.queue);
       } catch (err) {}
@@ -826,21 +849,37 @@
 
     function updateQueueUI(q) {
       const qSection = document.getElementById('liveQueueSection');
-      if (!q || !q.is_busy || !q.current_job) {
+      if (!q) {
         qSection.classList.add('hidden');
         return;
       }
-      qSection.classList.remove('hidden');
-      const job = q.current_job;
-      document.getElementById('liveBookTitle').innerText = job.book_title;
-      document.getElementById('liveVoiceBadge').innerText = `Giọng: ${job.voice}`;
-      document.getElementById('liveChCount').innerText = `Chương ${job.current_chapter}`;
-      document.getElementById('liveElapsed').innerText = `${job.elapsed_seconds}s`;
-      document.getElementById('liveEta').innerText = job.eta_seconds ? `~${job.eta_seconds}s` : 'Đang tính...';
-      document.getElementById('liveQueueLen').innerText = `${q.pending_queue.length} truyện`;
-      document.getElementById('liveStatusMsg').innerText = job.message || 'Đang tổng hợp âm thanh bằng VieNeu...';
-      document.getElementById('livePercentVal').innerText = `${job.percent}%`;
-      document.getElementById('liveProgressBar').style.width = `${job.percent}%`;
+      if (q.is_busy && q.current_job) {
+        qSection.classList.remove('hidden');
+        const job = q.current_job;
+        document.getElementById('liveBookTitle').innerText = job.book_title;
+        document.getElementById('liveVoiceBadge').innerText = `Giọng: ${job.voice}`;
+        document.getElementById('liveChCount').innerText = `Chương ${job.current_chapter}`;
+        document.getElementById('liveElapsed').innerText = `${job.elapsed_seconds}s`;
+        document.getElementById('liveEta').innerText = job.eta_seconds ? `~${job.eta_seconds}s` : 'Đang tính...';
+        document.getElementById('liveQueueLen').innerText = `${q.pending_queue.length} truyện`;
+        document.getElementById('liveStatusMsg').innerText = job.message || 'Đang tổng hợp âm thanh bằng VieNeu...';
+        document.getElementById('livePercentVal').innerText = `${job.percent}%`;
+        document.getElementById('liveProgressBar').style.width = `${job.percent}%`;
+      } else if (q.pending_queue && q.pending_queue.length > 0) {
+        qSection.classList.remove('hidden');
+        const first = q.pending_queue[0];
+        document.getElementById('liveBookTitle').innerText = first.book_title;
+        document.getElementById('liveVoiceBadge').innerText = `Giọng: ${first.voice}`;
+        document.getElementById('liveChCount').innerText = `Chương ${first.start_ch}`;
+        document.getElementById('liveElapsed').innerText = `Chờ...`;
+        document.getElementById('liveEta').innerText = `Đang chờ PC`;
+        document.getElementById('liveQueueLen').innerText = `${q.pending_queue.length} truyện`;
+        document.getElementById('liveStatusMsg').innerText = `⏳ Đang trong hàng đợi: Mở file Chay-Worker-RTX5060.bat trên máy tính để tự động render...`;
+        document.getElementById('livePercentVal').innerText = `0%`;
+        document.getElementById('liveProgressBar').style.width = `0%`;
+      } else {
+        qSection.classList.add('hidden');
+      }
     }
 
     async function cancelActiveJob() {

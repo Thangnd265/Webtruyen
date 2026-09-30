@@ -76,6 +76,53 @@ class JobProgress:
         }
 
 
+class WorkerCoordinator:
+    """Tracks connected GPU workers and delegates jobs from QueueManager."""
+
+    def __init__(self, timeout_seconds: float = 30.0):
+        self._lock = threading.RLock()
+        self.timeout_seconds = timeout_seconds
+        self.last_heartbeat: float = 0.0
+        self.worker_info: Dict[str, Any] = {
+            "name": "Chưa kết nối",
+            "gpu_name": "Không có",
+            "vram_gb": 0.0,
+            "status": "offline",
+        }
+
+    def record_heartbeat(self, name: str, gpu_name: str, vram_gb: float, status: str = "idle"):
+        with self._lock:
+            self.last_heartbeat = time.time()
+            self.worker_info = {
+                "name": name,
+                "gpu_name": gpu_name,
+                "vram_gb": vram_gb,
+                "status": status,
+            }
+
+    def is_online(self) -> bool:
+        with self._lock:
+            if self.last_heartbeat == 0:
+                return False
+            return (time.time() - self.last_heartbeat) <= self.timeout_seconds
+
+    def get_status(self) -> Dict[str, Any]:
+        with self._lock:
+            online = self.is_online()
+            seconds_ago = round(time.time() - self.last_heartbeat, 1) if self.last_heartbeat > 0 else None
+            return {
+                "online": online,
+                "worker_name": self.worker_info["name"] if online else "Offline",
+                "gpu_name": self.worker_info["gpu_name"] if online else "Chờ bật máy",
+                "vram_gb": self.worker_info["vram_gb"] if online else 0.0,
+                "worker_status": self.worker_info["status"] if online else "offline",
+                "last_seen_seconds_ago": seconds_ago,
+            }
+
+
+coordinator = WorkerCoordinator()
+
+
 class QueueManager:
     def __init__(self):
         self._queue: List[Dict[str, Any]] = []
@@ -115,6 +162,7 @@ class QueueManager:
                     for item in self._queue
                 ],
                 "queue_length": len(self._queue),
+                "worker": coordinator.get_status(),
             }
 
     def enqueue(
@@ -201,6 +249,13 @@ class QueueManager:
 
     def _worker_loop(self):
         while self._running:
+            # Check if local server CPU execution is explicitly enabled
+            # Default is False: All TTS render jobs are offloaded to remote PC GPU Worker (RTX 5060)
+            enable_local_cpu = os.getenv("ENABLE_SERVER_CPU_RENDER", "0") == "1"
+            if not enable_local_cpu:
+                time.sleep(3)
+                continue
+
             job = None
             with self._lock:
                 if self._queue:
