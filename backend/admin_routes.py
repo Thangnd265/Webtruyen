@@ -289,101 +289,17 @@ class UpdateBookRequest(BaseModel):
 
 @router.get("/books")
 def list_admin_books():
-    books_dir = Path(settings.AUDIOBOOKS_DIR).resolve()
-
-    # 1. Fetch all books registered in DB
+    """Returns all books directly from SQLite database for instantaneous sub-millisecond response."""
     with get_db() as conn:
         db_rows = conn.execute("SELECT * FROM admin_books ORDER BY created_at DESC").fetchall()
-        books_by_slug = {r["slug"]: dict(r) for r in db_rows}
-
-    # 2. Sync folders on disk with database
-    if books_dir.is_dir():
-        for d in books_dir.iterdir():
-            if not d.is_dir() or d.name.startswith(".") or d.name in {"incoming_books", "voices", "lost+found"}:
-                continue
-            slug = d.name
-            meta_file = d / "metadata.json"
-            title = slug.replace("-", " ").title()
-            author = "Chưa rõ"
-            cover_url = f"/api/books/{slug}/cover" if (d / "cover.jpg").is_file() else None
-            total_chapters = 0
-            genres = "Huyền Huyễn, Đô Thị"
-
-            if meta_file.is_file():
-                try:
-                    data = json.loads(meta_file.read_text(encoding="utf-8"))
-                    title = data.get("title", title)
-                    author = data.get("author", author)
-                    cover_url = data.get("cover_url", cover_url)
-                    chapters = data.get("chapters", [])
-                    total_chapters = len(chapters)
-                    genres = data.get("genres", genres)
-                except Exception:
-                    pass
-
-            # Count chapters with audio files on disk
-            rendered_chapters = 0
-            for item in d.glob("chapter_*"):
-                if item.suffix in [".mp3", ".m4b", ".aac", ".wav"]:
-                    rendered_chapters += 1
-
-            if slug in books_by_slug:
-                b = books_by_slug[slug]
-                b["rendered_chapters"] = rendered_chapters
-                if total_chapters > 0:
-                    b["total_chapters"] = max(b.get("total_chapters", 0), total_chapters)
-                if cover_url and not b.get("cover_url"):
-                    b["cover_url"] = cover_url
-                if author != "Chưa rõ" and b.get("author") in {"", "Chưa rõ"}:
-                    b["author"] = author
-                if title != slug.replace("-", " ").title() and b.get("title") == slug:
-                    b["title"] = title
-            else:
-                # Discovered a novel directory on disk not yet tracked in DB
-                with get_db() as conn:
-                    conn.execute(
-                        """
-                        INSERT INTO admin_books (
-                            slug, title, author, genres, cover_url, voice,
-                            daily_quota, schedule_time, auto_render,
-                            current_rendered_chapter, total_chapters, status
-                        ) VALUES (?, ?, ?, ?, ?, 'Ngọc Huyền', 50, '02:00', 1, ?, ?, 'idle')
-                        ON CONFLICT(slug) DO NOTHING
-                        """,
-                        (slug, title, author, genres, cover_url, rendered_chapters, max(total_chapters, rendered_chapters)),
-                    )
-                books_by_slug[slug] = {
-                    "slug": slug,
-                    "title": title,
-                    "author": author,
-                    "genres": genres,
-                    "cover_url": cover_url,
-                    "voice": "Ngọc Huyền",
-                    "daily_quota": 50,
-                    "schedule_time": "02:00",
-                    "auto_render": 1,
-                    "current_rendered_chapter": rendered_chapters,
-                    "total_chapters": max(total_chapters, rendered_chapters),
-                    "rendered_chapters": rendered_chapters,
-                    "status": "idle",
-                    "source_filename": "",
-                }
-
-    # 3. For any DB book that has no folder or wasn't iterated, calculate rendered count
-    for slug, b in books_by_slug.items():
-        if "rendered_chapters" not in b:
-            d = books_dir / slug
-            rendered_chapters = 0
-            if d.is_dir():
-                for item in d.glob("chapter_*"):
-                    if item.suffix in [".mp3", ".m4b", ".aac", ".wav"]:
-                        rendered_chapters += 1
-            b["rendered_chapters"] = rendered_chapters
-
-        if not b.get("cover_url") and (books_dir / slug / "cover.jpg").is_file():
-            b["cover_url"] = f"/api/books/{slug}/cover"
-
-    return list(books_by_slug.values())
+        books = []
+        for r in db_rows:
+            b = dict(r)
+            b["rendered_chapters"] = b.get("current_rendered_chapter", 0)
+            if not b.get("cover_url"):
+                b["cover_url"] = f"/api/books/{b['slug']}/cover"
+            books.append(b)
+        return books
 
 
 @router.post("/books/upload")

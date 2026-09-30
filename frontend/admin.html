@@ -903,9 +903,16 @@
           headers: { 'Authorization': `Bearer ${adminToken}` }
         });
         if (res.status === 401) { lockDashboard(); return; }
+        if (!res.ok) {
+          document.getElementById('bookCountSummary').innerText = 'Không thể tải danh sách truyện';
+          return;
+        }
         currentBooks = await res.json();
         renderBooksList();
-      } catch (e) {}
+      } catch (e) {
+        console.error('Error fetching books:', e);
+        document.getElementById('bookCountSummary').innerText = 'Lỗi kết nối máy chủ';
+      }
     }
 
     function renderBooksList() {
