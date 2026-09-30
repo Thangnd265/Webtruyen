@@ -19,12 +19,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 pipeline_dir = Path(__file__).resolve().parent
-if str(pipeline_dir) not in sys.path:
-    sys.path.insert(0, str(pipeline_dir))
-
-backend_dir = pipeline_dir.parent / "backend"
-if str(backend_dir) not in sys.path:
-    sys.path.insert(0, str(backend_dir))
+root_dir = pipeline_dir.parent
+for p in [str(pipeline_dir), str(root_dir), str(root_dir / "backend")]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 try:
     from config import settings

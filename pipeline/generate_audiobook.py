@@ -22,8 +22,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 pipeline_dir = Path(__file__).resolve().parent
-if str(pipeline_dir) not in sys.path:
-    sys.path.insert(0, str(pipeline_dir))
+root_dir = pipeline_dir.parent
+for p in [str(pipeline_dir), str(root_dir)]:
+    if p not in sys.path:
+        sys.path.insert(0, p)
 
 try:
     from apps.web_reader.pipeline.text_splitter import format_cues_html, split_into_cues
