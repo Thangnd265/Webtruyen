@@ -11,6 +11,7 @@ htmlcov/
 # Environments
 .env
 .venv
+.py312/
 env/
 venv/
 ENV/
@@ -33,9 +34,25 @@ voices/
 *.swp
 *.swo
 
-# OS files
+# OS files & temp files
 .DS_Store
 Thumbs.db
+*.log
+screenshot*.png
+git_out*.txt
+git_log*.txt
+test_*.txt
+winget_*.txt
+pacman_*.txt
+venv_create.txt
+chrome_dump.html
+
+# Database & local data
+backend/data/*.db
+backend/data/*.db-journal
+backend/data/*.db-wal
+backend/data/*.db-shm
+.superpowers/
 
 # Incoming books temporary files
 incoming_books/done/

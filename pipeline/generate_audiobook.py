@@ -89,10 +89,7 @@ class TTSEngine:
             from vieneu import Vieneu
 
             logger.info("VieNeu-TTS v3 engine successfully loaded.")
-            kwargs = {}
-            if self.model_path:
-                kwargs["backbone_repo"] = str(self.model_path)
-            self._model = Vieneu(**kwargs)
+            self._model = Vieneu()
         except ImportError:
             logger.warning(
                 "VieNeu-TTS ('vieneu') is not installed. Real synthesis will fail unless dry_run=True."
@@ -125,11 +122,7 @@ class TTSEngine:
             raise RuntimeError(
                 "VieNeu-TTS engine is not available. Please install 'vieneu' or use --dry-run."
             )
-        voice_path = Path(str(self.voice))
-        if voice_path.is_file() or str(self.voice).lower().endswith((".wav", ".mp3", ".ogg", ".flac", ".m4a")):
-            audio = self._model.infer(text, ref_audio=str(voice_path))
-        else:
-            audio = self._model.infer(text, voice=self.voice)
+        audio = self._model.infer(text, voice=self.voice)
         self._model.save(audio, str(output_wav_path))
         return get_wav_duration(output_wav_path)
 
@@ -377,7 +370,7 @@ def generate_audiobook(
     if ram_dir is None:
         ram_dir = get_default_ram_dir()
 
-    tts = TTSEngine(voice=voice, dry_run=dry_run, model_path=model_path)
+    tts = TTSEngine(voice=voice, dry_run=dry_run)
 
     # Save cover if present
     if "cover_bytes" in metadata_info:
@@ -455,7 +448,6 @@ def main() -> None:
         help="Force re-generation of already existing chapters",
     )
     parser.add_argument("--max-chapters", type=int, default=None, help="Limit number of chapters to process")
-    parser.add_argument("--model-dir", type=str, default=None, help="Path to fine-tuned merged LoRA model directory")
 
     args = parser.parse_args()
 
@@ -489,7 +481,6 @@ def main() -> None:
         dry_run=args.dry_run,
         skip_existing=not args.no_skip_existing,
         max_chapters=args.max_chapters,
-        model_path=args.model_dir,
     )
 
 

@@ -4,14 +4,17 @@ from pathlib import Path
 class Settings:
     @property
     def AUDIOBOOKS_DIR(self) -> str:
-        env_val = os.environ.get("AUDIOBOOKS_DIR")
-        if env_val:
-            return env_val
-        default_gdrive = Path("/mnt/gdrive/audiobooks")
-        if default_gdrive.exists() or os.name != "nt":
-            return str(default_gdrive)
-        local_samples = Path(__file__).resolve().parent.parent / "samples"
-        return str(local_samples)
+        val = os.environ.get("AUDIOBOOKS_DIR")
+        if val:
+            if Path(val).exists() or os.name != "nt":
+                return val
+        audiobooks_dir = Path(__file__).resolve().parent.parent / "audiobooks"
+        if audiobooks_dir.exists():
+            return str(audiobooks_dir)
+        if Path("/mnt/gdrive/audiobooks").exists() or os.name != "nt":
+            return "/mnt/gdrive/audiobooks"
+        return str(Path(__file__).resolve().parent.parent / "samples")
+
 
     @AUDIOBOOKS_DIR.setter
     def AUDIOBOOKS_DIR(self, value: str):

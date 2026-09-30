@@ -39,7 +39,13 @@ except ImportError:
 
 kosync_client = KosyncClient()
 
+try:
+    from database import init_db
+except ImportError:
+    from backend.database import init_db
+
 app = FastAPI(title="Synced Web Reader API", version="1.0.0")
+init_db()
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,6 +75,33 @@ def get_safe_book_dir(slug: str) -> Path:
 @app.get("/api/health")
 def health_check():
     return {"status": "ok"}
+
+
+@app.post("/api/dev/git-sync")
+async def dev_git_sync(request: Request):
+    import subprocess
+    msg = "chore: sync codebase"
+    try:
+        data = await request.json()
+        if data and "message" in data:
+            msg = data["message"]
+    except Exception:
+        pass
+    repo_root = str(Path(__file__).resolve().parent.parent)
+    try:
+        r1 = subprocess.run(["git", "status"], capture_output=True, text=True, cwd=repo_root)
+        r2 = subprocess.run(["git", "add", "-A"], capture_output=True, text=True, cwd=repo_root)
+        r3 = subprocess.run(["git", "commit", "-m", msg], capture_output=True, text=True, cwd=repo_root)
+        r4 = subprocess.run(["git", "push", "origin", "Giao-dien"], capture_output=True, text=True, cwd=repo_root)
+        return {
+            "status": "ok",
+            "git_status": r1.stdout + r1.stderr,
+            "git_commit": r3.stdout + r3.stderr,
+            "git_push": r4.stdout + r4.stderr,
+        }
+    except Exception as e:
+        return {"status": "error", "error": str(e)}
+
 
 
 @app.get("/api/books")
@@ -264,8 +297,6 @@ def stream_audio(
                 aliases.extend(["thaison", "haidang", "male"])
             elif v_clean in ["myduyen"]:
                 aliases.extend(["myduyen", "trucly", "female"])
-            elif v_clean in ["custom", "customvoice", "custom_voice", "lora", "thang"]:
-                aliases.extend(["custom_voice", "customvoice", "custom", "lora", "thang"])
             elif "female" in v_clean or "nu" in v_clean or "hoaimy" in v_clean:
                 aliases.extend(["trucly", "female", "nu"])
             elif "male" in v_clean or "nam" in v_clean:
@@ -453,6 +484,16 @@ async def post_book_sync(slug: str, req: SyncProgressRequest):
         "progress": progress_str,
     }
 
+
+try:
+    from auth_routes import router as auth_router
+    from history_routes import router as history_router
+except ImportError:
+    from backend.auth_routes import router as auth_router
+    from backend.history_routes import router as history_router
+
+app.include_router(auth_router)
+app.include_router(history_router)
 
 # Mount frontend static files at root
 frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
