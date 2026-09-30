@@ -104,61 +104,102 @@ async def dev_git_sync(request: Request):
 
 
 
+import time
+from typing import Tuple
+
+# In-memory caching to avoid repeated remote Google Drive FUSE lookups
+_METADATA_CACHE: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+_BOOKS_CACHE: Dict[str, Any] = {"time": 0.0, "data": []}
+_CHAPTER_CACHE: Dict[str, Tuple[float, Dict[str, Any]]] = {}
+_AUDIO_PATH_CACHE: Dict[str, str] = {}
+
+
+def get_cached_metadata(book_dir: Path, ttl: float = 30.0) -> Dict[str, Any]:
+    meta_file = book_dir / "metadata.json"
+    key = str(meta_file)
+    now = time.time()
+    if key in _METADATA_CACHE:
+        cached_time, data = _METADATA_CACHE[key]
+        if now - cached_time < ttl:
+            return data
+    if not meta_file.exists():
+        return {}
+    try:
+        with open(meta_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        _METADATA_CACHE[key] = (now, data)
+        return data
+    except Exception:
+        return {}
+
+
+def clear_api_caches(slug: Optional[str] = None):
+    """Clears in-memory caches when new chapters or books are generated."""
+    global _BOOKS_CACHE, _METADATA_CACHE, _CHAPTER_CACHE, _AUDIO_PATH_CACHE
+    _BOOKS_CACHE = {"time": 0.0, "data": []}
+    if slug:
+        for k in list(_METADATA_CACHE.keys()):
+            if slug in k:
+                _METADATA_CACHE.pop(k, None)
+        for k in list(_CHAPTER_CACHE.keys()):
+            if k.startswith(f"{slug}:"):
+                _CHAPTER_CACHE.pop(k, None)
+        for k in list(_AUDIO_PATH_CACHE.keys()):
+            if k.startswith(f"{slug}:"):
+                _AUDIO_PATH_CACHE.pop(k, None)
+    else:
+        _METADATA_CACHE.clear()
+        _CHAPTER_CACHE.clear()
+        _AUDIO_PATH_CACHE.clear()
+
+
 @app.get("/api/books")
 def list_books():
+    now = time.time()
+    if now - _BOOKS_CACHE["time"] < 15.0 and _BOOKS_CACHE["data"]:
+        return _BOOKS_CACHE["data"]
+
     books_dir = Path(settings.AUDIOBOOKS_DIR)
     if not books_dir.exists():
         return []
 
     books = []
-    for item in sorted(books_dir.iterdir(), key=lambda p: p.name):
-        if item.is_dir():
-            if item.name.startswith(".") or item.name in ("voices", "models", "lost+found", "incoming_books"):
-                continue
-            slug = item.name
-            meta_file = item / "metadata.json"
-            meta: Dict[str, Any] = {}
-            if meta_file.exists():
-                try:
-                    with open(meta_file, "r", encoding="utf-8") as f:
-                        meta = json.load(f)
-                except Exception:
-                    pass
+    try:
+        for item in sorted(books_dir.iterdir(), key=lambda p: p.name):
+            if item.is_dir():
+                if item.name.startswith(".") or item.name in ("voices", "models", "lost+found", "incoming_books"):
+                    continue
+                slug = item.name
+                meta = get_cached_metadata(item, ttl=30.0)
+                chapters = get_book_chapters(item, meta.get("chapters"))
+                if not meta and len(chapters) == 0:
+                    continue
+                total_chapters = meta.get("total_chapters", len(chapters))
 
-            chapters = get_book_chapters(item, meta.get("chapters"))
-            if not meta_file.exists() and len(chapters) == 0:
-                continue
-            total_chapters = meta.get("total_chapters", len(chapters))
-
-            books.append({
-                "slug": slug,
-                "title": meta.get("title", slug.replace("-", " ").title()),
-                "author": meta.get("author", "Unknown"),
-                "description": meta.get("description", ""),
-                "cover_url": meta.get("cover_url", f"/api/books/{slug}/cover"),
-                "total_chapters": total_chapters,
-                "genres": meta.get("genres", meta.get("genre", "Huyền Huyễn, Đô Thị")),
-                "status": meta.get("status", "Đang ra"),
-                "views": meta.get("views", "18.5k"),
-                "rating": meta.get("rating", 4.8),
-                "updated_at": meta.get("updated_at", "28/09/2026"),
-            })
+                books.append({
+                    "slug": slug,
+                    "title": meta.get("title", slug.replace("-", " ").title()),
+                    "author": meta.get("author", "Unknown"),
+                    "description": meta.get("description", ""),
+                    "cover_url": meta.get("cover_url", f"/api/books/{slug}/cover"),
+                    "total_chapters": total_chapters,
+                    "genres": meta.get("genres", meta.get("genre", "Huyền Huyễn, Đô Thị")),
+                    "status": meta.get("status", "Đang ra"),
+                    "views": meta.get("views", "18.5k"),
+                    "rating": meta.get("rating", 4.8),
+                    "updated_at": meta.get("updated_at", "28/09/2026"),
+                })
+        _BOOKS_CACHE["time"] = now
+        _BOOKS_CACHE["data"] = books
+    except Exception:
+        pass
     return books
 
 
 @app.get("/api/books/{slug}")
 def get_book(slug: str):
     book_dir = get_safe_book_dir(slug)
-
-    meta_file = book_dir / "metadata.json"
-    meta: Dict[str, Any] = {}
-    if meta_file.exists():
-        try:
-            with open(meta_file, "r", encoding="utf-8") as f:
-                meta = json.load(f)
-        except Exception:
-            pass
-
+    meta = get_cached_metadata(book_dir, ttl=30.0)
     chapters = get_book_chapters(book_dir, meta.get("chapters"))
     total_chapters = meta.get("total_chapters", len(chapters))
 
@@ -193,6 +234,13 @@ def get_book_cover(slug: str):
 @app.get("/api/books/{slug}/chapters/{chapter_id}")
 def get_chapter(slug: str, chapter_id: str, voice: Optional[str] = None):
     validate_identifier(chapter_id, "chapter_id")
+    cache_key = f"{slug}:{chapter_id}:{voice or 'default'}"
+    now = time.time()
+    if cache_key in _CHAPTER_CACHE:
+        cached_time, cached_val = _CHAPTER_CACHE[cache_key]
+        if now - cached_time < 300.0:
+            return cached_val
+
     book_dir = get_safe_book_dir(slug)
 
     # Locate cues file
@@ -245,25 +293,21 @@ def get_chapter(slug: str, chapter_id: str, voice: Optional[str] = None):
     num = int(num_match.group(0)) if num_match else 1
     chapter_title = f"Chương {num}"
 
-    meta_file = book_dir / "metadata.json"
-    if meta_file.exists():
-        try:
-            with open(meta_file, "r", encoding="utf-8") as f:
-                meta = json.load(f)
-                for ch in meta.get("chapters", []):
-                    if ch.get("id") == chapter_id and "title" in ch:
-                        chapter_title = ch["title"]
-                        break
-        except Exception:
-            pass
+    meta = get_cached_metadata(book_dir, ttl=30.0)
+    for ch in meta.get("chapters", []):
+        if ch.get("id") == chapter_id and "title" in ch:
+            chapter_title = ch["title"]
+            break
 
-    return {
+    result = {
         "chapter_id": chapter_id,
         "title": chapter_title,
         "html": html_content,
         "cues": cues,
         "audio_url": f"/api/books/{slug}/audio/{chapter_id}",
     }
+    _CHAPTER_CACHE[cache_key] = (now, result)
+    return result
 
 
 @app.api_route("/api/books/{slug}/audio/{chapter_id}", methods=["GET", "HEAD"])
@@ -277,59 +321,73 @@ def stream_audio(
     validate_identifier(chapter_id, "chapter_id")
     book_dir = get_safe_book_dir(slug)
 
-    audio_file = None
-    direct = (book_dir / chapter_id).resolve()
-    if direct.is_file() and direct.is_relative_to(book_dir):
-        audio_file = direct
+    audio_cache_key = f"{slug}:{chapter_id}:{voice or ''}:{pitch or ''}"
+    if audio_cache_key in _AUDIO_PATH_CACHE:
+        cached_p = Path(_AUDIO_PATH_CACHE[audio_cache_key])
+        if cached_p.is_file():
+            audio_file = cached_p
+        else:
+            _AUDIO_PATH_CACHE.pop(audio_cache_key, None)
+            audio_file = None
     else:
-        candidates_to_try = []
-        if voice:
-            v_clean = re.sub(r"[^a-zA-Z0-9_\-]", "", voice.lower())
-            p_clean = re.sub(r"[^a-zA-Z0-9_\-+]", "", pitch) if pitch else ""
-            aliases = [v_clean]
-            if v_clean in ["thienminh", "default"]:
-                aliases.extend(["thienminh", "chapter_001", "male"])
-            elif v_clean in ["trucly", "female", "nu"]:
-                aliases.extend(["trucly", "female", "nu"])
-            elif v_clean in ["haidang", "male", "nam"]:
-                aliases.extend(["haidang", "male", "nam"])
-            elif v_clean in ["ngochuyen", "ngoc_huyen"]:
-                aliases.extend(["ngochuyen", "ngoc_huyen", "female", "nu"])
-            elif v_clean in ["quynhanh"]:
-                aliases.extend(["quynhanh", "trucly", "female"])
-            elif v_clean in ["thaison"]:
-                aliases.extend(["thaison", "haidang", "male"])
-            elif v_clean in ["myduyen"]:
-                aliases.extend(["myduyen", "trucly", "female"])
-            elif "female" in v_clean or "nu" in v_clean or "hoaimy" in v_clean:
-                aliases.extend(["trucly", "female", "nu"])
-            elif "male" in v_clean or "nam" in v_clean:
-                aliases.extend(["thienminh", "haidang", "male", "nam"])
+        audio_file = None
 
-            pitch_variants = [p_clean, p_clean.lower(), p_clean.upper(), p_clean.replace("hz", "Hz")] if p_clean else []
-            for a in dict.fromkeys(aliases):
-                for p_var in dict.fromkeys(pitch_variants):
-                    candidates_to_try.append(f"{chapter_id}_{a}_{p_var}")
-                candidates_to_try.append(f"{chapter_id}_{a}")
+    if not audio_file:
+        direct = (book_dir / chapter_id).resolve()
+        if direct.is_file() and direct.is_relative_to(book_dir):
+            audio_file = direct
+        else:
+            candidates_to_try = []
+            if voice:
+                v_clean = re.sub(r"[^a-zA-Z0-9_\-]", "", voice.lower())
+                p_clean = re.sub(r"[^a-zA-Z0-9_\-+]", "", pitch) if pitch else ""
+                aliases = [v_clean]
+                if v_clean in ["thienminh", "default"]:
+                    aliases.extend(["thienminh", "chapter_001", "male"])
+                elif v_clean in ["trucly", "female", "nu"]:
+                    aliases.extend(["trucly", "female", "nu"])
+                elif v_clean in ["haidang", "male", "nam"]:
+                    aliases.extend(["haidang", "male", "nam"])
+                elif v_clean in ["ngochuyen", "ngoc_huyen"]:
+                    aliases.extend(["ngochuyen", "ngoc_huyen", "female", "nu"])
+                elif v_clean in ["quynhanh"]:
+                    aliases.extend(["quynhanh", "trucly", "female"])
+                elif v_clean in ["thaison"]:
+                    aliases.extend(["thaison", "haidang", "male"])
+                elif v_clean in ["myduyen"]:
+                    aliases.extend(["myduyen", "trucly", "female"])
+                elif "female" in v_clean or "nu" in v_clean or "hoaimy" in v_clean:
+                    aliases.extend(["trucly", "female", "nu"])
+                elif "male" in v_clean or "nam" in v_clean:
+                    aliases.extend(["thienminh", "haidang", "male", "nam"])
 
-        candidates_to_try.append(chapter_id)
+                pitch_variants = [p_clean, p_clean.lower(), p_clean.upper(), p_clean.replace("hz", "Hz")] if p_clean else []
+                for a in dict.fromkeys(aliases):
+                    for p_var in dict.fromkeys(pitch_variants):
+                        candidates_to_try.append(f"{chapter_id}_{a}_{p_var}")
+                    candidates_to_try.append(f"{chapter_id}_{a}")
 
-        for name in candidates_to_try:
-            for ext in [".mp3", ".m4b", ".aac", ".ogg", ".wav", ".mp4", ".m4a"]:
-                candidate = (book_dir / f"{name}{ext}").resolve()
-                if candidate.is_file() and candidate.is_relative_to(book_dir):
-                    audio_file = candidate
+            candidates_to_try.append(chapter_id)
+
+            for name in candidates_to_try:
+                for ext in [".mp3", ".m4b", ".aac", ".ogg", ".wav", ".mp4", ".m4a"]:
+                    candidate = (book_dir / f"{name}{ext}").resolve()
+                    if candidate.is_file() and candidate.is_relative_to(book_dir):
+                        audio_file = candidate
+                        break
+                if audio_file:
                     break
-            if audio_file:
-                break
 
-        # Fallback to default chapter audio
-        if not audio_file:
-            for ext in [".mp3", ".m4b", ".aac", ".ogg", ".wav", ".mp4", ".m4a"]:
-                candidate = (book_dir / f"{chapter_id}{ext}").resolve()
-                if candidate.is_file() and candidate.is_relative_to(book_dir):
-                    audio_file = candidate
-                    break
+            # Fallback to default chapter audio
+            if not audio_file:
+                for ext in [".mp3", ".m4b", ".aac", ".ogg", ".wav", ".mp4", ".m4a"]:
+                    candidate = (book_dir / f"{chapter_id}{ext}").resolve()
+                    if candidate.is_file() and candidate.is_relative_to(book_dir):
+                        audio_file = candidate
+                        break
+
+        if audio_file:
+            _AUDIO_PATH_CACHE[audio_cache_key] = str(audio_file)
 
     if not audio_file or not audio_file.is_file():
         raise HTTPException(status_code=404, detail="Audio file not found")
