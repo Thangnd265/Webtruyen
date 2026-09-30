@@ -368,6 +368,20 @@ function setupAudioEngine() {
     saveListeningHistory(true);
   });
 
+  // Khi metadata audio nạp xong -> cập nhật ngay thời lượng chương
+  const updateDurationUI = () => {
+    const dur = audio.duration || 0;
+    if (dur > 0) {
+      const durStr = formatSeconds(dur);
+      if (timeTot) timeTot.textContent = durStr;
+      if (miniTime) miniTime.textContent = `${formatSeconds(audio.currentTime)} / ${durStr}`;
+      if (scrubber) scrubber.max = dur;
+    }
+  };
+  audio.addEventListener('loadedmetadata', updateDurationUI);
+  audio.addEventListener('durationchange', updateDurationUI);
+  audio.addEventListener('canplay', updateDurationUI);
+
   // Cập nhật thời gian & Scrubber & Mini progress
   audio.addEventListener('timeupdate', () => {
     saveListeningHistory(false);
