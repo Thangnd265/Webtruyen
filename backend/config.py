@@ -21,6 +21,23 @@ class Settings:
         os.environ["AUDIOBOOKS_DIR"] = value
 
     @property
+    def LOCAL_DATA_DIR(self) -> str:
+        val = os.environ.get("LOCAL_DATA_DIR")
+        if val:
+            return val
+        if os.name != "nt":
+            p = Path("/var/lib/webtruyen/books")
+            p.mkdir(parents=True, exist_ok=True)
+            return str(p)
+        p = Path(__file__).resolve().parent.parent / "local_books"
+        p.mkdir(parents=True, exist_ok=True)
+        return str(p)
+
+    @LOCAL_DATA_DIR.setter
+    def LOCAL_DATA_DIR(self, value: str):
+        os.environ["LOCAL_DATA_DIR"] = value
+
+    @property
     def KOSYNC_URL(self) -> str:
         return os.environ.get("KOSYNC_URL", "http://192.168.1.103:8085")
 

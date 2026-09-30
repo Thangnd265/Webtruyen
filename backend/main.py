@@ -65,11 +65,33 @@ def validate_identifier(val: str, name: str = "identifier") -> str:
 
 def get_safe_book_dir(slug: str) -> Path:
     validate_identifier(slug, "slug")
+    local_base = Path(settings.LOCAL_DATA_DIR).resolve()
+    local_dir = (local_base / slug).resolve()
+    if local_dir.is_relative_to(local_base) and local_dir.is_dir():
+        return local_dir
+
     books_dir = Path(settings.AUDIOBOOKS_DIR).resolve()
     book_dir = (books_dir / slug).resolve()
     if not book_dir.is_relative_to(books_dir) or not book_dir.is_dir():
         raise HTTPException(status_code=404, detail="Book not found")
     return book_dir
+
+
+def get_book_storage_dirs(slug: str) -> Tuple[Path, Optional[Path]]:
+    """Returns (primary_text_dir, optional_audio_dir)."""
+    validate_identifier(slug, "slug")
+    local_base = Path(settings.LOCAL_DATA_DIR).resolve()
+    local_dir = (local_base / slug).resolve()
+
+    audio_base = Path(settings.AUDIOBOOKS_DIR).resolve()
+    audio_dir = (audio_base / slug).resolve()
+
+    primary_dir = local_dir if (local_dir.is_relative_to(local_base) and local_dir.is_dir()) else audio_dir
+    remote_dir = audio_dir if (audio_dir.is_relative_to(audio_base) and audio_dir.is_dir()) else None
+
+    if not primary_dir.is_dir() and not (remote_dir and remote_dir.is_dir()):
+        raise HTTPException(status_code=404, detail="Book not found")
+    return primary_dir, remote_dir
 
 
 @app.get("/api/health")
@@ -159,17 +181,28 @@ def list_books():
     if now - _BOOKS_CACHE["time"] < 15.0 and _BOOKS_CACHE["data"]:
         return _BOOKS_CACHE["data"]
 
-    books_dir = Path(settings.AUDIOBOOKS_DIR)
-    if not books_dir.exists():
-        return []
-
     books = []
+    seen_slugs = set()
     try:
-        for item in sorted(books_dir.iterdir(), key=lambda p: p.name):
-            if item.is_dir():
+        search_roots = []
+        local_base = Path(settings.LOCAL_DATA_DIR)
+        if local_base.exists():
+            search_roots.append(local_base)
+        audio_base = Path(settings.AUDIOBOOKS_DIR)
+        if audio_base.exists() and audio_base != local_base:
+            search_roots.append(audio_base)
+
+        for base_path in search_roots:
+            for item in sorted(base_path.iterdir(), key=lambda p: p.name):
+                if not item.is_dir():
+                    continue
                 if item.name.startswith(".") or item.name in ("voices", "models", "lost+found", "incoming_books"):
                     continue
                 slug = item.name
+                if slug in seen_slugs:
+                    continue
+                seen_slugs.add(slug)
+
                 meta = get_cached_metadata(item, ttl=30.0)
                 chapters = get_book_chapters(item, meta.get("chapters"))
                 if not meta and len(chapters) == 0:

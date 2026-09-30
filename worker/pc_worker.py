@@ -335,9 +335,32 @@ class PCGPUWorker:
                     except Exception as parse_err:
                         logger.debug(f"Progress parse error: {parse_err}")
 
-                elif "Successfully processed chapter_" in line_str:
+                elif "Successfully processed" in line_str:
                     ch_processed += 1
                     logger.info(f"✅ Hoàn tất chương {start_ch + ch_processed - 1} thành công!")
+                    # Instantly push chapter text and cues to Server local SSD
+                    try:
+                        m_ch = re.search(r"chapter_\d+", line_str)
+                        if m_ch:
+                            ch_done_id = m_ch.group(0)
+                            book_folder = self.audiobooks_dir / book_slug
+                            html_file = book_folder / f"{ch_done_id}.html"
+                            cues_file = book_folder / f"{ch_done_id}_cues.json"
+                            if html_file.is_file():
+                                html_txt = html_file.read_text(encoding="utf-8")
+                                cues_data = json.loads(cues_file.read_text(encoding="utf-8")) if cues_file.is_file() else None
+                                http_post(
+                                    f"{self.server_url}/api/worker/upload-chapter",
+                                    {
+                                        "book_slug": book_slug,
+                                        "chapter_id": ch_done_id,
+                                        "html": html_txt,
+                                        "cues": cues_data,
+                                    },
+                                )
+                                logger.info(f"⚡ Đã đồng bộ text {ch_done_id} lên SSD server (Đọc tức thì)!")
+                    except Exception as upload_err:
+                        logger.debug(f"Could not push chapter text to server: {upload_err}")
 
             process.wait()
 

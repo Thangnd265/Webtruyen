@@ -167,6 +167,39 @@ def report_progress(payload: ProgressPayload):
         return {"status": "ok", "cancelled": False}
 
 
+class UploadChapterPayload(BaseModel):
+    book_slug: str
+    chapter_id: str
+    html: str
+    cues: Optional[List[Dict[str, Any]]] = None
+    title: Optional[str] = None
+    chapter_index: Optional[int] = None
+
+
+@router.post("/upload-chapter")
+def upload_chapter_text(payload: UploadChapterPayload):
+    """Directly pushes chapter text and cues to server local SSD for instant web reading."""
+    local_base = Path(settings.LOCAL_DATA_DIR)
+    book_dir = local_base / payload.book_slug
+    book_dir.mkdir(parents=True, exist_ok=True)
+
+    html_path = book_dir / f"{payload.chapter_id}.html"
+    html_path.write_text(payload.html, encoding="utf-8")
+
+    if payload.cues:
+        import json
+        cues_path = book_dir / f"{payload.chapter_id}_cues.json"
+        cues_path.write_text(json.dumps(payload.cues, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    try:
+        from main import clear_api_caches
+        clear_api_caches(payload.book_slug)
+    except Exception:
+        pass
+
+    return {"status": "ok", "chapter_id": payload.chapter_id}
+
+
 @router.post("/complete")
 def report_complete(payload: CompletePayload):
     """Receives completion notification from remote GPU worker."""
@@ -182,6 +215,16 @@ def report_complete(payload: CompletePayload):
                 f"🎉 GPU Worker đã hoàn thành xuất sắc render '{job.book_title}' ({payload.chapters_done} chương)!"
             )
             queue_manager._finish_job(job, success=True, chapters_done=payload.chapters_done)
+            try:
+                src_meta = Path(settings.AUDIOBOOKS_DIR) / payload.book_slug / "metadata.json"
+                dst_meta = Path(settings.LOCAL_DATA_DIR) / payload.book_slug / "metadata.json"
+                if src_meta.is_file():
+                    dst_meta.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src_meta, dst_meta)
+                from main import clear_api_caches
+                clear_api_caches(payload.book_slug)
+            except Exception:
+                pass
         else:
             job.status = "failed"
             queue_manager.add_log(f"❌ GPU Worker báo lỗi khi render '{job.book_title}': {payload.error_msg}")
