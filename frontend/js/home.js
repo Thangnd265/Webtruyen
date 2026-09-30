@@ -17,19 +17,15 @@ async function initHomePage() {
   await loadAllSections();
 }
 
-// Banners map cho từng bộ truyện
+// Banners map cho từng bộ truyện từ Google Drive
 const BANNER_MAP = {
   'sample-story': '/images/banners/banner_sample-story.jpg',
   'do-giam-quai-vat': '/images/banners/banner_do-giam-quai-vat.jpg',
   'xuyen-khong-1970': '/images/banners/banner_xuyen-khong-1970.jpg',
-  'dai-phung-da-canh-nhan': '/images/banners/banner_dai-phung-da-canh-nhan.jpg',
-  'ta-co-mot-than-bi-dong-ky': '/images/banners/banner_ta-co-mot-than-bi-dong-ky.jpg',
-  'than-thoai-ky-nguyen': '/images/banners/banner_than-thoai-ky-nguyen.jpg',
-  'van-co-de-nhat-than': '/images/banners/banner_van-co-de-nhat-than.jpg',
 };
 
 let currentHeroIndex = 0;
-let totalHeroSlides = 7;
+let totalHeroSlides = 3;
 let heroAutoplayTimer = null;
 let sliderControlsInitialized = false;
 let homePageInitialized = false;
@@ -246,10 +242,6 @@ function renderFeaturedSlider(books) {
     'sample-story': 'ĐỀ CỬ ĐẶC BIỆT',
     'do-giam-quai-vat': 'TÂY HUYỄN HOT',
     'xuyen-khong-1970': 'ĐÔ THỊ TRÙNG SINH',
-    'dai-phung-da-canh-nhan': 'TIÊN HIỆP ĐỈNH CAO',
-    'ta-co-mot-than-bi-dong-ky': 'HÀI HƯỚC DỊ NĂNG',
-    'than-thoai-ky-nguyen': 'HUYỀN HUYỄN DỊ GIỚI',
-    'van-co-de-nhat-than': 'ĐÔNG PHƯƠNG HUYỀN HUYỄN',
   };
 
   track.innerHTML = featuredBooks.map((b, idx) => {
@@ -307,10 +299,6 @@ const BOOK_DESCRIPTIONS = {
   'sample-story': 'Được gia đình gom góp cho theo học tại trường quý tộc hàng đầu, thế nhưng mục tiêu của cậu không phải danh vọng mà lại là chinh phục trái tim đại tiểu thư lạnh lùng kiêu sa...',
   'do-giam-quai-vat': 'Thế giới dị biến, quái vật hoành hành. Lâm Ẩn thức tỉnh Đồ Giám Quái Vật vô thượng, bắt đầu con đường tiến hóa nghịch thiên từ huyết mạch Goblin yếu ớt nhất...',
   'xuyen-khong-1970': 'Trùng sinh về những năm 1970 đầy biến động, mang theo tri thức hiện đại cùng không gian bí ẩn, chàng thanh niên từng bước làm giàu, đổi vận bản thân và gia tộc...',
-  'dai-phung-da-canh-nhan': 'Hứa Thất An xuyên không vào vương triều Đại Phụng, làm tuần tra viên ban đêm phá giải các kỳ án chấn động giang hồ và triều đình, trừ yêu diệt ma bảo vệ bách tính...',
-  'ta-co-mot-than-bi-dong-ky': 'Thế giới tu tiên hung hiểm, Từ Tiểu Thụ chỉ muốn khiêm tốn tu luyện nhưng mỗi lần bị đánh trúng lại kích hoạt một loại thần kỹ bị động nghịch thiên chấn động tam giới...',
-  'than-thoai-ky-nguyen': 'Thời đại vũ trụ dị biến, linh khí hồi phục, nhân loại mở ra kỷ nguyên thần thoại mới với những chiến binh siêu phàm chiến đấu bảo vệ nền văn minh...',
-  'van-co-de-nhat-than': 'Lý Thiên Mệnh cùng mười đầu Thái Cổ Hỗn Độn Cự Thú kề vai tác chiến, bước lên con đường chinh phục vạn giới, trở thành đệ nhất thần thoại muôn đời...',
 };
 
 function setupLatestControls() {

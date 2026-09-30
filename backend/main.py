@@ -77,14 +77,14 @@ def health_check():
     return {"status": "ok"}
 
 
-@app.post("/api/dev/git-push")
-def dev_git_push():
+@app.post("/api/dev/git-sync")
+def dev_git_sync():
     import subprocess
     repo_root = str(Path(__file__).resolve().parent.parent)
     try:
         r1 = subprocess.run(["git", "status"], capture_output=True, text=True, cwd=repo_root)
-        r2 = subprocess.run(["git", "add", "."], capture_output=True, text=True, cwd=repo_root)
-        r3 = subprocess.run(["git", "commit", "-m", "feat: cap nhat giao dien dang nhap, dang ky va trang lich su nghe moi nhat"], capture_output=True, text=True, cwd=repo_root)
+        r2 = subprocess.run(["git", "add", "-A"], capture_output=True, text=True, cwd=repo_root)
+        r3 = subprocess.run(["git", "commit", "-m", "feat: dong bo du lieu truyen tu google drive, chi giu lai 3 bo truyen goc"], capture_output=True, text=True, cwd=repo_root)
         r4 = subprocess.run(["git", "push", "origin", "Giao-dien"], capture_output=True, text=True, cwd=repo_root)
         return {
             "status": "ok",
