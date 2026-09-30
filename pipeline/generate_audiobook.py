@@ -359,12 +359,13 @@ def generate_audiobook(
     output_base_dir: Path,
     chapters: List[Dict[str, Any]],
     metadata_info: Dict[str, Any],
-    voice: str = "vie_neu_v3_female",
+    voice: str = "Ngọc Huyền",
     ram_dir: Optional[Path] = None,
     bitrate: str = "64k",
     dry_run: bool = False,
     skip_existing: bool = True,
     max_chapters: Optional[int] = None,
+    start_chapter: int = 1,
     model_path: Optional[str] = None,
     voice_tag: Optional[str] = None,
 ) -> Dict[str, Any]:
@@ -375,17 +376,21 @@ def generate_audiobook(
     if ram_dir is None:
         ram_dir = get_default_ram_dir()
 
-    tts = TTSEngine(voice=voice, dry_run=dry_run)
+    tts = TTSEngine(voice=voice, dry_run=dry_run, model_path=model_path)
 
     # Save cover if present
     if "cover_bytes" in metadata_info:
         cover_path = target_book_dir / "cover.jpg"
         cover_path.write_bytes(metadata_info["cover_bytes"])
 
-    # Process chapters
-    processed_chapters = []
-    active_chapters = chapters[:max_chapters] if max_chapters else chapters
+    # Slice chapters by start_chapter and max_chapters
+    start_idx = max(0, start_chapter - 1) if start_chapter else 0
+    if max_chapters:
+        active_chapters = chapters[start_idx : start_idx + max_chapters]
+    else:
+        active_chapters = chapters[start_idx:]
 
+    processed_chapters = []
     for ch in active_chapters:
         res = process_chapter(
             chapter=ch,
@@ -399,34 +404,50 @@ def generate_audiobook(
         )
         processed_chapters.append(res)
 
-    # Build and save metadata.json directly in target output dir
+    # Build and merge metadata.json directly in target output dir
+    meta_path = target_book_dir / "metadata.json"
+    existing_chapters_map = {}
+    if meta_path.exists():
+        try:
+            with open(meta_path, "r", encoding="utf-8") as f:
+                old_meta = json.load(f)
+                for ch in old_meta.get("chapters", []):
+                    existing_chapters_map[ch["id"]] = ch
+        except Exception as e:
+            logger.warning(f"Could not read existing metadata.json: {e}")
+
+    # Add or update active_chapters
+    for ch in active_chapters:
+        existing_chapters_map[ch["id"]] = {
+            "id": ch["id"],
+            "title": ch["title"],
+            "chapter_index": ch["chapter_index"],
+            "audio_url": f"/api/books/{slug}/audio/{ch['id']}",
+        }
+
+    combined_chapters = sorted(
+        existing_chapters_map.values(),
+        key=lambda c: c.get("chapter_index", 0)
+    )
+
     book_metadata = {
         "title": metadata_info.get("title", slug),
         "author": metadata_info.get("author", "Unknown"),
         "description": metadata_info.get("description", ""),
         "slug": slug,
         "cover_url": f"/api/books/{slug}/cover" if (target_book_dir / "cover.jpg").exists() else None,
-        "total_chapters": len(active_chapters),
-        "chapters": [
-            {
-                "id": ch["id"],
-                "title": ch["title"],
-                "chapter_index": ch["chapter_index"],
-                "audio_url": f"/api/books/{slug}/audio/{ch['id']}",
-            }
-            for ch in active_chapters
-        ],
+        "total_chapters": len(combined_chapters),
+        "chapters": combined_chapters,
     }
 
-    meta_path = target_book_dir / "metadata.json"
     meta_path.write_text(json.dumps(book_metadata, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    logger.info(f"Audiobook generation completed for '{slug}' at {target_book_dir}")
+    logger.info(f"Audiobook generation completed for '{slug}' at {target_book_dir} (Total chapters on web: {len(combined_chapters)})")
     return {
         "slug": slug,
         "output_dir": str(target_book_dir),
         "chapters": processed_chapters,
-        "total_chapters": len(active_chapters),
+        "total_chapters": len(combined_chapters),
     }
 
 

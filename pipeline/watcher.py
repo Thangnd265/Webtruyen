@@ -97,6 +97,78 @@ def is_file_ready(file_path: Path, check_delay: float = 1.5) -> bool:
         return False
 
 
+def parse_book_options(file_path: Path) -> Dict[str, Any]:
+    """Extracts custom rendering options from sidecar JSON or filename patterns.
+
+    Supported patterns:
+      - Vo-Luyen-Dinh-Phong_100ch.epub -> max_chapters=100, start_chapter=1
+      - Pham-Nhan-Tu-Tien_50_chuong.txt -> max_chapters=50, start_chapter=1
+      - Dau-Pha-Thuong-Khung[80].epub -> max_chapters=80, start_chapter=1
+      - Tien-Nghich_ch101-200.epub -> start_chapter=101, max_chapters=100
+      - Kiem-Hiep_100ch_thienminh.epub -> max_chapters=100, voice='Thiện Minh'
+    """
+    stem = file_path.stem
+    voice_override = None
+    start_chapter = 1
+    max_chapters = None
+
+    # Check sidecar JSON
+    sidecar_json = file_path.with_suffix(".json")
+    if sidecar_json.is_file():
+        try:
+            with open(sidecar_json, "r", encoding="utf-8") as f:
+                cfg = json.load(f)
+                if "max_chapters" in cfg:
+                    max_chapters = int(cfg["max_chapters"])
+                if "start_chapter" in cfg:
+                    start_chapter = int(cfg["start_chapter"])
+                if "voice" in cfg:
+                    voice_override = cfg["voice"]
+        except Exception as e:
+            logger.warning(f"Lỗi đọc file cấu hình {sidecar_json.name}: {e}")
+
+    # Check voice suffix
+    voice_map = {
+        "thienminh": "Thiện Minh",
+        "ngochuyen": "Ngọc Huyền",
+        "quynhanh": "Quỳnh Anh",
+        "haidang": "Hải Đăng",
+        "thaison": "Thái Sơn",
+        "myduyen": "Mỹ Duyên",
+        "quangson": "Quang Sơn",
+        "custom": "Custom Voice",
+    }
+    for v_key, v_name in voice_map.items():
+        v_pattern = re.compile(rf"[_\-\s]+{v_key}$", re.IGNORECASE)
+        if v_pattern.search(stem):
+            if not voice_override:
+                voice_override = v_name
+            stem = v_pattern.sub("", stem)
+            break
+
+    # Check chapter range: _ch101-200
+    range_match = re.search(r"[_\-\s\(\[]+ch(?:apter)?[\s_-]*(\d+)[-_](\d+)[\]\)]*$", stem, re.IGNORECASE)
+    if range_match:
+        start_chapter = int(range_match.group(1))
+        end_chapter = int(range_match.group(2))
+        max_chapters = max(1, end_chapter - start_chapter + 1)
+        stem = stem[:range_match.start()]
+    else:
+        # Check count: _100ch, _50c, _100_chuong, [80], (50)
+        count_match = re.search(r"[_\-\s\(\[]+(?:limit[_\s-]*)?(\d+)[_\s]*(?:ch|c|chuong|chương)?[\]\)]*$", stem, re.IGNORECASE)
+        if count_match:
+            max_chapters = int(count_match.group(1))
+            stem = stem[:count_match.start()]
+
+    clean_title = re.sub(r"[_\s]+", " ", stem).strip()
+    return {
+        "clean_title": clean_title,
+        "start_chapter": start_chapter,
+        "max_chapters": max_chapters,
+        "voice": voice_override,
+    }
+
+
 def process_incoming_file(
     file_path: Path,
     output_dir: Path,
@@ -115,26 +187,45 @@ def process_incoming_file(
     ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
     try:
+        opts = parse_book_options(file_path)
+        active_voice = opts["voice"] if opts["voice"] else voice
+        active_start_ch = opts["start_chapter"]
+        active_max_ch = opts["max_chapters"] if opts["max_chapters"] is not None else max_chapters
+
         metadata_info, chapters = extract_book_chapters(file_path)
 
         if not chapters:
             raise ValueError("Không tìm thấy chương truyện nào trong file.")
 
-        title = metadata_info.get("title", file_path.stem)
+        title = metadata_info.get("title")
+        if not title or title.strip() == file_path.stem:
+            title = opts["clean_title"]
+            metadata_info["title"] = title
+
         slug = slugify(title)
-        num_ch = len(chapters) if max_chapters is None else min(len(chapters), max_chapters)
-        logger.info(f"📖 Bắt đầu chuyển đổi: '{title}' ({num_ch}/{len(chapters)} chương) với giọng đọc '{voice}'...")
+        
+        # Calculate chapter count for logging
+        total_in_file = len(chapters)
+        start_idx = max(0, active_start_ch - 1)
+        num_ch = min(total_in_file - start_idx, active_max_ch) if active_max_ch else (total_in_file - start_idx)
+
+        logger.info(
+            f"📖 Bắt đầu chuyển đổi: '{title}' "
+            f"(Chương {active_start_ch} → {active_start_ch + num_ch - 1}, tổng {num_ch}/{total_in_file} chương) "
+            f"với giọng đọc '{active_voice}'..."
+        )
 
         generate_audiobook(
             slug=slug,
             output_base_dir=output_dir,
             chapters=chapters,
             metadata_info=metadata_info,
-            voice=voice,
+            voice=active_voice,
             bitrate=bitrate,
             dry_run=dry_run,
             skip_existing=skip_existing,
-            max_chapters=max_chapters,
+            max_chapters=active_max_ch,
+            start_chapter=active_start_ch,
             model_path=model_dir,
         )
 
