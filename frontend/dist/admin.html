@@ -601,6 +601,28 @@
 
         <div class="grid grid-cols-2 gap-3">
           <div>
+            <label class="block text-xs font-medium text-zinc-300 mb-1">Thể Loại</label>
+            <input type="text" id="editGenres" placeholder="Huyền Huyễn, Tiên Hiệp"
+              class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-zinc-300 mb-1">Trạng Thái Truyện</label>
+            <select id="editPublicationStatus" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
+              <option value="Đang ra">Đang ra</option>
+              <option value="Hoàn thành">Hoàn thành</option>
+              <option value="Tạm dừng">Tạm dừng</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-zinc-300 mb-1">Giới Thiệu / Tóm Tắt Truyện</label>
+          <textarea id="editDescription" rows="3" placeholder="Nhập tóm tắt / giới thiệu nội dung truyện..."
+            class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 resize-none"></textarea>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
             <label class="block text-xs font-medium text-zinc-300 mb-1">Quota / Ngày (Số chương)</label>
             <input type="number" id="editQuota" min="1" max="1000"
               class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 font-mono">
@@ -1198,6 +1220,9 @@
       document.getElementById('editSlug').value = b.slug;
       document.getElementById('editTitle').value = b.title || '';
       document.getElementById('editAuthor').value = b.author || '';
+      document.getElementById('editGenres').value = b.genres || '';
+      document.getElementById('editPublicationStatus').value = b.publication_status || b.status || 'Đang ra';
+      document.getElementById('editDescription').value = b.description || '';
       document.getElementById('editVoice').value = b.voice || 'Ngọc Huyền';
       document.getElementById('editQuota').value = b.daily_quota || 50;
       document.getElementById('editScheduleTime').value = b.schedule_time || '02:00';
@@ -1218,6 +1243,9 @@
       const payload = {
         title: document.getElementById('editTitle').value.trim(),
         author: document.getElementById('editAuthor').value.trim(),
+        genres: document.getElementById('editGenres').value.trim(),
+        publication_status: document.getElementById('editPublicationStatus').value,
+        description: document.getElementById('editDescription').value.trim(),
         voice: document.getElementById('editVoice').value,
         daily_quota: parseInt(document.getElementById('editQuota').value),
         schedule_time: document.getElementById('editScheduleTime').value,

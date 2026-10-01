@@ -40,12 +40,16 @@ except ImportError:
 kosync_client = KosyncClient()
 
 try:
-    from database import init_db, get_db
+    from database import init_db, get_db, sync_disk_books_to_sql
 except ImportError:
-    from backend.database import init_db, get_db
+    from backend.database import init_db, get_db, sync_disk_books_to_sql
 
 app = FastAPI(title="Synced Web Reader API", version="1.0.0")
 init_db()
+try:
+    sync_disk_books_to_sql(Path(settings.AUDIOBOOKS_DIR), Path(settings.LOCAL_DATA_DIR))
+except Exception:
+    pass
 
 
 def get_admin_books_map() -> Dict[str, Dict[str, Any]]:
@@ -208,96 +212,139 @@ def clear_api_caches(slug: Optional[str] = None):
 
 @app.get("/api/books")
 def list_books():
-    now = time.time()
-    if now - _BOOKS_CACHE["time"] < 15.0 and _BOOKS_CACHE["data"]:
-        return _BOOKS_CACHE["data"]
-
     books = []
-    seen_slugs = set()
     try:
-        admin_map = get_admin_books_map()
-        search_roots = []
-        local_base = Path(settings.LOCAL_DATA_DIR)
-        if local_base.exists():
-            search_roots.append(local_base)
-        audio_base = Path(settings.AUDIOBOOKS_DIR)
-        if audio_base.exists() and audio_base != local_base:
-            search_roots.append(audio_base)
-
-        for base_path in search_roots:
-            for item in sorted(base_path.iterdir(), key=lambda p: p.name):
-                if not item.is_dir():
-                    continue
-                if item.name.startswith(".") or item.name in ("voices", "models", "lost+found", "incoming_books"):
-                    continue
-                slug = item.name
-                if slug in seen_slugs:
-                    continue
-                seen_slugs.add(slug)
-
-                meta = get_cached_metadata(item, ttl=30.0)
-                chapters = get_book_chapters(item, meta.get("chapters"))
-                if not meta and len(chapters) == 0:
-                    continue
-                total_chapters = meta.get("total_chapters", len(chapters))
-
-                adm = admin_map.get(slug, {})
-                title = adm.get("title") or meta.get("title") or slug.replace("-", " ").title()
-                author = adm.get("author") or meta.get("author") or "Unknown"
-                cover_url = adm.get("cover_url") or meta.get("cover_url") or f"/api/books/{slug}/cover"
-                genres = adm.get("genres") or meta.get("genres") or meta.get("genre") or "Huyền Huyễn, Đô Thị"
-                book_status = adm.get("status") or meta.get("status") or "Đang ra"
-                book_total_ch = adm.get("total_chapters") or total_chapters
-
+        with get_db() as conn:
+            rows = conn.execute(
+                """
+                SELECT slug, title, author, description, genres, cover_url,
+                       total_chapters, current_rendered_chapter,
+                       publication_status, views, rating, updated_at
+                FROM admin_books
+                ORDER BY updated_at DESC
+                """
+            ).fetchall()
+            for r in rows:
+                cover_url = r["cover_url"]
+                if not cover_url:
+                    cover_url = f"/api/books/{r['slug']}/cover"
                 books.append({
-                    "slug": slug,
-                    "title": title,
-                    "author": author,
-                    "description": meta.get("description", ""),
+                    "slug": r["slug"],
+                    "title": r["title"] or r["slug"].replace("-", " ").title(),
+                    "author": r["author"] or "Unknown",
+                    "description": r["description"] or "",
                     "cover_url": cover_url,
-                    "total_chapters": book_total_ch,
-                    "genres": genres,
-                    "status": book_status,
-                    "views": meta.get("views", "18.5k"),
-                    "rating": meta.get("rating", 4.8),
-                    "updated_at": meta.get("updated_at", "28/09/2026"),
+                    "total_chapters": r["total_chapters"] or 0,
+                    "genres": r["genres"] or "Huyền Huyễn, Đô Thị",
+                    "status": r["publication_status"] or "Đang ra",
+                    "views": r["views"] or 18500,
+                    "rating": r["rating"] or 4.8,
+                    "updated_at": str(r["updated_at"])[:10] if r["updated_at"] else "Vừa xong",
                 })
-        _BOOKS_CACHE["time"] = now
-        _BOOKS_CACHE["data"] = books
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Error querying admin_books: {e}")
+
+    # Fallback if DB had 0 books: sync once and retry
+    if not books:
+        try:
+            sync_disk_books_to_sql(Path(settings.AUDIOBOOKS_DIR), Path(settings.LOCAL_DATA_DIR))
+            with get_db() as conn:
+                rows = conn.execute("SELECT * FROM admin_books ORDER BY updated_at DESC").fetchall()
+                for r in rows:
+                    cover_url = r["cover_url"] or f"/api/books/{r['slug']}/cover"
+                    books.append({
+                        "slug": r["slug"],
+                        "title": r["title"] or r["slug"].replace("-", " ").title(),
+                        "author": r["author"] or "Unknown",
+                        "description": r["description"] or "",
+                        "cover_url": cover_url,
+                        "total_chapters": r["total_chapters"] or 0,
+                        "genres": r["genres"] or "Huyền Huyễn, Đô Thị",
+                        "status": r["publication_status"] or "Đang ra",
+                        "views": r["views"] or 18500,
+                        "rating": r["rating"] or 4.8,
+                        "updated_at": str(r["updated_at"])[:10] if r["updated_at"] else "Vừa xong",
+                    })
+        except Exception:
+            pass
+
     return books
 
 
 @app.get("/api/books/{slug}")
 def get_book(slug: str):
-    book_dir = get_safe_book_dir(slug)
-    meta = get_cached_metadata(book_dir, ttl=30.0)
-    chapters = get_book_chapters(book_dir, meta.get("chapters"))
-    total_chapters = meta.get("total_chapters", len(chapters))
+    validate_identifier(slug, "slug")
+    with get_db() as conn:
+        row = conn.execute(
+            """
+            SELECT slug, title, author, description, genres, cover_url,
+                   total_chapters, current_rendered_chapter,
+                   publication_status, views, rating, updated_at
+            FROM admin_books
+            WHERE slug = ?
+            """,
+            (slug,),
+        ).fetchone()
 
-    adm = get_admin_book_meta(slug)
-    title = adm.get("title") or meta.get("title") or slug.replace("-", " ").title()
-    author = adm.get("author") or meta.get("author") or "Unknown"
-    cover_url = adm.get("cover_url") or meta.get("cover_url") or f"/api/books/{slug}/cover"
-    genres = adm.get("genres") or meta.get("genres") or meta.get("genre") or "Huyền Huyễn, Đô Thị"
-    book_status = adm.get("status") or meta.get("status") or "Đang ra"
-    book_total_ch = adm.get("total_chapters") or total_chapters
+        if not row:
+            # Sync once from disk
+            try:
+                sync_disk_books_to_sql(Path(settings.AUDIOBOOKS_DIR), Path(settings.LOCAL_DATA_DIR))
+                row = conn.execute("SELECT * FROM admin_books WHERE slug = ?", (slug,)).fetchone()
+            except Exception:
+                pass
+            if not row:
+                raise HTTPException(status_code=404, detail="Book not found")
 
-    return {
-        "slug": slug,
-        "title": title,
-        "author": author,
-        "description": meta.get("description", ""),
-        "cover_url": cover_url,
-        "total_chapters": book_total_ch,
-        "genres": genres,
-        "status": book_status,
-        "views": meta.get("views", "18.5k"),
-        "rating": meta.get("rating", 4.8),
-        "updated_at": meta.get("updated_at", "28/09/2026"),
-        "chapters": chapters,
-    }
+        ch_rows = conn.execute(
+            """
+            SELECT chapter_id as id, title, chapter_index, has_audio, audio_url
+            FROM book_chapters
+            WHERE book_slug = ?
+            ORDER BY chapter_index ASC
+            """,
+            (slug,),
+        ).fetchall()
+        chapters = [dict(c) for c in ch_rows]
+
+        # If chapters not in SQL yet, populate from disk
+        if not chapters:
+            try:
+                book_dir = get_safe_book_dir(slug)
+                meta = get_cached_metadata(book_dir, ttl=30.0)
+                disk_chapters = get_book_chapters(book_dir, meta.get("chapters"))
+                if disk_chapters:
+                    conn.executemany(
+                        """
+                        INSERT OR IGNORE INTO book_chapters (book_slug, chapter_id, chapter_index, title, has_audio, audio_url)
+                        VALUES (?, ?, ?, ?, 0, ?)
+                        """,
+                        [
+                            (slug, ch["id"], ch.get("chapter_index", i + 1), ch.get("title", f"Chương {i + 1}"), f"/api/books/{slug}/audio/{ch['id']}")
+                            for i, ch in enumerate(disk_chapters)
+                        ],
+                    )
+                    chapters = disk_chapters
+            except Exception:
+                pass
+
+        total_chapters = row["total_chapters"] or len(chapters)
+        cover_url = row["cover_url"] or f"/api/books/{slug}/cover"
+
+        return {
+            "slug": slug,
+            "title": row["title"],
+            "author": row["author"] or "Unknown",
+            "description": row["description"] or "",
+            "cover_url": cover_url,
+            "total_chapters": total_chapters,
+            "genres": row["genres"] or "Huyền Huyễn, Đô Thị",
+            "status": row["publication_status"] or "Đang ra",
+            "views": row["views"] or 18500,
+            "rating": row["rating"] or 4.8,
+            "updated_at": str(row["updated_at"])[:10] if row["updated_at"] else "Vừa xong",
+            "chapters": chapters,
+        }
 
 
 @app.get("/api/books/{slug}/cover")
@@ -374,11 +421,16 @@ def get_chapter(slug: str, chapter_id: str, voice: Optional[str] = None):
     num = int(num_match.group(0)) if num_match else 1
     chapter_title = f"Chương {num}"
 
-    meta = get_cached_metadata(book_dir, ttl=30.0)
-    for ch in meta.get("chapters", []):
-        if ch.get("id") == chapter_id and "title" in ch:
-            chapter_title = ch["title"]
-            break
+    try:
+        with get_db() as conn:
+            ch_row = conn.execute(
+                "SELECT title FROM book_chapters WHERE book_slug = ? AND chapter_id = ?",
+                (slug, chapter_id),
+            ).fetchone()
+            if ch_row and ch_row["title"]:
+                chapter_title = ch_row["title"]
+    except Exception:
+        pass
 
     result = {
         "chapter_id": chapter_id,

@@ -193,6 +193,25 @@ def upload_chapter_text(payload: UploadChapterPayload):
         cues_path.write_text(json.dumps(payload.cues, ensure_ascii=False, indent=2), encoding="utf-8")
 
     try:
+        with get_db() as conn:
+            ch_idx = payload.chapter_index or 1
+            ch_title = payload.title or f"Chương {ch_idx}"
+            audio_url = f"/api/books/{payload.book_slug}/audio/{payload.chapter_id}"
+            conn.execute(
+                """
+                INSERT INTO book_chapters (book_slug, chapter_id, chapter_index, title, has_audio, audio_url)
+                VALUES (?, ?, ?, ?, 1, ?)
+                ON CONFLICT(book_slug, chapter_id) DO UPDATE SET
+                    has_audio = 1,
+                    title = COALESCE(excluded.title, book_chapters.title),
+                    audio_url = excluded.audio_url
+                """,
+                (payload.book_slug, payload.chapter_id, ch_idx, ch_title, audio_url),
+            )
+    except Exception as e:
+        logger.error(f"Error updating book_chapters in DB: {e}")
+
+    try:
         from main import clear_api_caches
         clear_api_caches(payload.book_slug)
     except Exception:

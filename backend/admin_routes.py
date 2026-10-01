@@ -279,12 +279,14 @@ def get_system_health():
 class UpdateBookRequest(BaseModel):
     title: Optional[str] = None
     author: Optional[str] = None
+    description: Optional[str] = None
     genres: Optional[str] = None
     cover_url: Optional[str] = None
     voice: Optional[str] = None
     daily_quota: Optional[int] = None
     schedule_time: Optional[str] = None
     auto_render: Optional[bool] = None
+    publication_status: Optional[str] = None
 
 
 @router.get("/books")
@@ -425,6 +427,21 @@ async def upload_book(
             ),
         )
 
+        if ch_list:
+            conn.executemany(
+                """
+                INSERT INTO book_chapters (book_slug, chapter_id, chapter_index, title, has_audio, audio_url)
+                VALUES (?, ?, ?, ?, 0, ?)
+                ON CONFLICT(book_slug, chapter_id) DO UPDATE SET
+                    chapter_index = excluded.chapter_index,
+                    title = excluded.title
+                """,
+                [
+                    (canonical_slug, ch["id"], ch.get("chapter_index", i + 1), ch.get("title", f"Chương {i + 1}"), f"/api/books/{canonical_slug}/audio/{ch['id']}")
+                    for i, ch in enumerate(ch_list)
+                ],
+            )
+
     queue_manager.add_log(f"📥 Đã tải lên truyện mới: '{extracted_title}' ({total_chapters} chương).")
 
     if run_now:
@@ -465,6 +482,12 @@ def update_book_settings(slug: str, req: UpdateBookRequest):
         if req.genres is not None:
             updates.append("genres = ?")
             params.append(req.genres)
+        if req.description is not None:
+            updates.append("description = ?")
+            params.append(req.description)
+        if req.publication_status is not None:
+            updates.append("publication_status = ?")
+            params.append(req.publication_status)
         if req.cover_url is not None:
             updates.append("cover_url = ?")
             params.append(req.cover_url)
@@ -509,6 +532,11 @@ def update_book_settings(slug: str, req: UpdateBookRequest):
                 m_data["cover_url"] = req.cover_url
             if req.genres:
                 m_data["genres"] = req.genres
+            if req.description is not None:
+                m_data["description"] = req.description
+            if req.publication_status is not None:
+                m_data["publication_status"] = req.publication_status
+                m_data["status"] = req.publication_status
             meta_path.write_text(json.dumps(m_data, ensure_ascii=False, indent=2), encoding="utf-8")
         except Exception as e:
             logger.warning(f"Error syncing metadata.json for {slug} in {b_dir}: {e}")
@@ -531,6 +559,7 @@ def update_book_settings(slug: str, req: UpdateBookRequest):
 def delete_book(slug: str, delete_files: bool = Query(False)):
     with get_db() as conn:
         conn.execute("DELETE FROM admin_books WHERE slug = ?", (slug,))
+        conn.execute("DELETE FROM book_chapters WHERE book_slug = ?", (slug,))
     if delete_files:
         book_dir = Path(settings.AUDIOBOOKS_DIR).resolve() / slug
         if book_dir.is_dir():
@@ -544,80 +573,86 @@ def delete_book(slug: str, delete_files: bool = Query(False)):
 
 @router.get("/books/{slug}/chapters")
 def list_book_chapters(slug: str):
-    books_dir = Path(settings.AUDIOBOOKS_DIR).resolve()
-    book_dir = books_dir / slug
+    """Retrieves all chapters directly from SQLite book_chapters table for instant response."""
+    with get_db() as conn:
+        rows = conn.execute(
+            """
+            SELECT chapter_id as id, title, chapter_index, has_audio, audio_url
+            FROM book_chapters
+            WHERE book_slug = ?
+            ORDER BY chapter_index ASC
+            """,
+            (slug,),
+        ).fetchall()
 
-    meta_file = book_dir / "metadata.json"
-    chapters = []
-    if meta_file.is_file():
-        try:
-            m_data = json.loads(meta_file.read_text(encoding="utf-8"))
-            chapters = m_data.get("chapters", [])
-        except Exception:
-            pass
+        if not rows:
+            try:
+                from database import sync_disk_books_to_sql
+                sync_disk_books_to_sql(Path(settings.AUDIOBOOKS_DIR), Path(settings.LOCAL_DATA_DIR))
+                rows = conn.execute(
+                    """
+                    SELECT chapter_id as id, title, chapter_index, has_audio, audio_url
+                    FROM book_chapters
+                    WHERE book_slug = ?
+                    ORDER BY chapter_index ASC
+                    """,
+                    (slug,),
+                ).fetchall()
+            except Exception:
+                pass
 
-    # If chapters not in metadata.json, try reading from source file in incoming_books
-    if not chapters:
-        incoming_dir = books_dir / "incoming_books"
-        candidates = list(incoming_dir.glob(f"{slug}.*")) + list(incoming_dir.glob(f"*{slug}*"))
-        with get_db() as conn:
+        if not rows:
+            books_dir = Path(settings.AUDIOBOOKS_DIR).resolve()
+            incoming_dir = books_dir / "incoming_books"
+            candidates = list(incoming_dir.glob(f"{slug}.*")) + list(incoming_dir.glob(f"*{slug}*"))
             row = conn.execute("SELECT source_filename FROM admin_books WHERE slug = ?", (slug,)).fetchone()
             if row and row["source_filename"]:
                 db_source = incoming_dir / row["source_filename"]
                 if db_source.is_file() and db_source not in candidates:
                     candidates.insert(0, db_source)
 
-        for cand in candidates:
-            if cand.is_file() and extract_book_chapters:
-                try:
-                    meta_info, ch_list = extract_book_chapters(cand)
-                    chapters = [
-                        {
-                            "id": ch.get("id", f"chapter_{i+1:03d}"),
-                            "title": ch.get("title", f"Chương {i+1}"),
-                            "chapter_index": ch.get("chapter_index", i + 1),
-                        }
-                        for i, ch in enumerate(ch_list)
-                    ]
-                    break
-                except Exception:
-                    pass
+            for cand in candidates:
+                if cand.is_file() and extract_book_chapters:
+                    try:
+                        meta_info, ch_list = extract_book_chapters(cand)
+                        if ch_list:
+                            conn.executemany(
+                                """
+                                INSERT OR IGNORE INTO book_chapters (book_slug, chapter_id, chapter_index, title, has_audio, audio_url)
+                                VALUES (?, ?, ?, ?, 0, ?)
+                                """,
+                                [
+                                    (slug, ch.get("id", f"chapter_{i+1:03d}"), ch.get("chapter_index", i + 1), ch.get("title", f"Chương {i+1}"), f"/api/books/{slug}/audio/{ch.get('id', f'chapter_{i+1:03d}')}")
+                                    for i, ch in enumerate(ch_list)
+                                ],
+                            )
+                            rows = conn.execute(
+                                """
+                                SELECT chapter_id as id, title, chapter_index, has_audio, audio_url
+                                FROM book_chapters
+                                WHERE book_slug = ?
+                                ORDER BY chapter_index ASC
+                                """,
+                                (slug,),
+                            ).fetchall()
+                            break
+                    except Exception:
+                        pass
 
-    if not chapters and not book_dir.is_dir():
-        raise HTTPException(status_code=404, detail="Thư mục truyện không tồn tại")
-
-    chapter_details = []
-    for ch in chapters:
-        ch_id = ch.get("id", "")
-        ch_title = ch.get("title", "")
-        ch_idx = ch.get("chapter_index", 0)
-
-        # Check audio existence (.m4b, .mp3, .wav, .aac)
-        has_audio = False
-        audio_file_size = 0
-        if book_dir.is_dir():
-            for ext in [".mp3", ".m4b", ".aac", ".wav"]:
-                audio_p = book_dir / f"{ch_id}{ext}"
-                if audio_p.is_file():
-                    has_audio = True
-                    audio_file_size = audio_p.stat().st_size
-                    break
-
-        # Check VTT subtitle existence
-        has_vtt = (book_dir / f"{ch_id}.vtt").is_file() if book_dir.is_dir() else False
-
-        chapter_details.append({
-            "id": ch_id,
-            "title": ch_title,
-            "index": ch_idx,
-            "has_audio": has_audio,
-            "audio_url": f"/api/books/{slug}/audio/{ch_id}" if has_audio else None,
-            "has_vtt": has_vtt,
-            "vtt_url": f"/api/books/{slug}/vtt/{ch_id}" if has_vtt else None,
-            "file_size": audio_file_size,
-        })
-
-    return chapter_details
+        chapter_details = [
+            {
+                "id": r["id"],
+                "title": r["title"],
+                "index": r["chapter_index"],
+                "has_audio": bool(r["has_audio"]),
+                "audio_url": r["audio_url"] or f"/api/books/{slug}/audio/{r['id']}",
+                "has_vtt": True,
+                "vtt_url": f"/api/books/{slug}/vtt/{r['id']}",
+                "file_size": 0,
+            }
+            for r in rows
+        ]
+        return chapter_details
 
 
 class ReRenderChapterRequest(BaseModel):

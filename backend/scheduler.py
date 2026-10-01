@@ -497,6 +497,14 @@ class QueueManager:
                         """,
                         (chapters_done, progress.book_slug),
                     )
+                    conn.execute(
+                        """
+                        UPDATE book_chapters
+                        SET has_audio = 1
+                        WHERE book_slug = ? AND chapter_index >= ? AND chapter_index < ?
+                        """,
+                        (progress.book_slug, progress.start_ch, progress.start_ch + chapters_done),
+                    )
 
                     # Check if book reached 100% completion
                     book_row = conn.execute(
