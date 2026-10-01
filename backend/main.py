@@ -230,26 +230,30 @@ def resolve_voice_info(tag: str, default_name: str = "Ngọc Huyền") -> Dict[s
     return {"id": tag_clean, "name": default_name or tag, "gender": "Tùy chọn", "region": "Toàn quốc", "desc": ""}
 
 
-def get_available_voices_for_chapter(book_dir: Path, chapter_id: str, default_book_voice: str = "Ngọc Huyền") -> List[Dict[str, str]]:
+def get_available_voices_for_chapter(book_dirs: Any, chapter_id: str, default_book_voice: str = "Ngọc Huyền") -> List[Dict[str, str]]:
     found: Dict[str, Dict[str, str]] = {}
     exts = (".m4b", ".mp3", ".wav", ".aac", ".ogg")
     def_tag = "omnivoice" if "omni" in (default_book_voice or "").lower() else "ngochuyen"
 
-    try:
-        for f in book_dir.glob(f"{chapter_id}*"):
-            if f.suffix.lower() in exts:
-                stem = f.stem
-                if stem == chapter_id:
-                    v_info = resolve_voice_info(def_tag, default_book_voice)
-                    if v_info["id"] not in found:
-                        found[v_info["id"]] = v_info
-                elif stem.startswith(f"{chapter_id}_"):
-                    tag_part = stem[len(chapter_id) + 1:].lower()
-                    v_info = resolve_voice_info(tag_part)
-                    if v_info["id"] not in found:
-                        found[v_info["id"]] = v_info
-    except Exception:
-        pass
+    dirs = book_dirs if isinstance(book_dirs, (list, tuple)) else [book_dirs]
+    for bdir in dirs:
+        if not bdir or not isinstance(bdir, Path) or not bdir.is_dir():
+            continue
+        try:
+            for f in bdir.glob(f"{chapter_id}*"):
+                if f.suffix.lower() in exts:
+                    stem = f.stem
+                    if stem == chapter_id:
+                        v_info = resolve_voice_info(def_tag, default_book_voice)
+                        if v_info["id"] not in found:
+                            found[v_info["id"]] = v_info
+                    elif stem.startswith(f"{chapter_id}_"):
+                        tag_part = stem[len(chapter_id) + 1:].lower()
+                        v_info = resolve_voice_info(tag_part)
+                        if v_info["id"] not in found:
+                            found[v_info["id"]] = v_info
+        except Exception:
+            pass
 
     if not found:
         v_info = resolve_voice_info(def_tag, default_book_voice)
@@ -258,27 +262,31 @@ def get_available_voices_for_chapter(book_dir: Path, chapter_id: str, default_bo
     return list(found.values())
 
 
-def get_available_voices_for_book(book_dir: Path, default_book_voice: str = "Ngọc Huyền") -> List[Dict[str, str]]:
+def get_available_voices_for_book(book_dirs: Any, default_book_voice: str = "Ngọc Huyền") -> List[Dict[str, str]]:
     found: Dict[str, Dict[str, str]] = {}
     exts = (".m4b", ".mp3", ".wav", ".aac", ".ogg")
     def_tag = "omnivoice" if "omni" in (default_book_voice or "").lower() else "ngochuyen"
 
-    try:
-        for f in book_dir.glob("chapter_*"):
-            if f.suffix.lower() in exts:
-                stem = f.stem
-                parts = stem.split("_")
-                if len(parts) == 2:
-                    v_info = resolve_voice_info(def_tag, default_book_voice)
-                    if v_info["id"] not in found:
-                        found[v_info["id"]] = v_info
-                elif len(parts) >= 3:
-                    tag_part = "_".join(parts[2:]).lower()
-                    v_info = resolve_voice_info(tag_part)
-                    if v_info["id"] not in found:
-                        found[v_info["id"]] = v_info
-    except Exception:
-        pass
+    dirs = book_dirs if isinstance(book_dirs, (list, tuple)) else [book_dirs]
+    for bdir in dirs:
+        if not bdir or not isinstance(bdir, Path) or not bdir.is_dir():
+            continue
+        try:
+            for f in bdir.glob("chapter_*"):
+                if f.suffix.lower() in exts:
+                    stem = f.stem
+                    parts = stem.split("_")
+                    if len(parts) == 2:
+                        v_info = resolve_voice_info(def_tag, default_book_voice)
+                        if v_info["id"] not in found:
+                            found[v_info["id"]] = v_info
+                    elif len(parts) >= 3:
+                        tag_part = "_".join(parts[2:]).lower()
+                        v_info = resolve_voice_info(tag_part)
+                        if v_info["id"] not in found:
+                            found[v_info["id"]] = v_info
+        except Exception:
+            pass
 
     if not found:
         v_info = resolve_voice_info(def_tag, default_book_voice)
@@ -411,8 +419,11 @@ def get_book(slug: str):
         cover_url = row["cover_url"] or f"/api/books/{slug}/cover"
         banner_url = row["banner_url"] or f"/api/books/{slug}/banner"
         default_voice = row["voice"] if "voice" in row.keys() and row["voice"] else "Ngọc Huyền"
-        book_dir = get_safe_book_dir(slug)
-        available_voices = get_available_voices_for_book(book_dir, default_voice)
+        primary_dir, remote_dir = get_book_storage_dirs(slug)
+        search_dirs = [primary_dir]
+        if remote_dir and remote_dir != primary_dir:
+            search_dirs.append(remote_dir)
+        available_voices = get_available_voices_for_book(search_dirs, default_voice)
 
         return {
             "slug": slug,
@@ -479,7 +490,10 @@ def get_chapter(slug: str, chapter_id: str, voice: Optional[str] = None):
         if now - cached_time < 300.0:
             return cached_val
 
-    book_dir = get_safe_book_dir(slug)
+    primary_dir, remote_dir = get_book_storage_dirs(slug)
+    search_dirs = [primary_dir]
+    if remote_dir and remote_dir != primary_dir:
+        search_dirs.append(remote_dir)
 
     # Query default book voice
     default_book_voice = "Ngọc Huyền"
@@ -491,7 +505,7 @@ def get_chapter(slug: str, chapter_id: str, voice: Optional[str] = None):
     except Exception:
         pass
 
-    available_voices = get_available_voices_for_chapter(book_dir, chapter_id, default_book_voice)
+    available_voices = get_available_voices_for_chapter(search_dirs, chapter_id, default_book_voice)
 
     # Resolve selected voice
     selected_voice_tag = None
@@ -519,10 +533,13 @@ def get_chapter(slug: str, chapter_id: str, voice: Optional[str] = None):
         names_to_try.extend([f"{chapter_id}_ngochuyen_cues.json", f"{chapter_id}_cues.json"])
     names_to_try.extend([f"{chapter_id}_cues.json", f"{chapter_id}.cues.json", f"{chapter_id}.json"])
 
-    for name in names_to_try:
-        candidate = book_dir / name
-        if candidate.exists() and candidate.is_file():
-            cues_file = candidate
+    for sdir in search_dirs:
+        for name in names_to_try:
+            candidate = sdir / name
+            if candidate.exists() and candidate.is_file():
+                cues_file = candidate
+                break
+        if cues_file:
             break
 
     if cues_file:
@@ -534,10 +551,13 @@ def get_chapter(slug: str, chapter_id: str, voice: Optional[str] = None):
 
     # Locate HTML file
     html_file = None
-    for name in [f"{chapter_id}.html", f"{chapter_id}.htm"]:
-        candidate = book_dir / name
-        if candidate.exists() and candidate.is_file():
-            html_file = candidate
+    for sdir in search_dirs:
+        for name in [f"{chapter_id}.html", f"{chapter_id}.htm"]:
+            candidate = sdir / name
+            if candidate.exists() and candidate.is_file():
+                html_file = candidate
+                break
+        if html_file:
             break
 
     html_content = ""
