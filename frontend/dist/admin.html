@@ -1070,8 +1070,14 @@
           headers: { 'Authorization': `Bearer ${adminToken}` },
           body: formData,
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Lỗi tải lên');
+        let data = {};
+        try {
+          data = await res.json();
+        } catch {
+          const rawText = await res.text().catch(() => '');
+          throw new Error(`Lỗi máy chủ (${res.status}): ${rawText || res.statusText || 'Không thể xử lý'}`);
+        }
+        if (!res.ok) throw new Error(data.detail || data.message || 'Lỗi tải lên');
 
         showToast(data.message);
         closeUploadModal();

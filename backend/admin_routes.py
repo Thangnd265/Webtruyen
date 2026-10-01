@@ -397,7 +397,7 @@ async def upload_book(
                 daily_quota, schedule_time, auto_render,
                 current_rendered_chapter, total_chapters,
                 source_filename, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'idle')
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'idle')
             ON CONFLICT(slug) DO UPDATE SET
                 title = excluded.title,
                 author = excluded.author,
