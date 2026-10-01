@@ -10,7 +10,7 @@ export function Carousel({ slides, stories }: { slides: HeroSlide[]; stories: St
   const activeIndex = index % slides.length;
   const slide = slides[activeIndex];
   const story = stories.find((entry) => entry.id === slide.storyId);
-  const heroImage = story?.cover.replace("w=480", "w=1600");
+  const heroImage = story?.banner || story?.cover.replace("w=480", "w=1600");
   const next = (step: number) => setIndex((activeIndex + step + slides.length) % slides.length);
 
   return <section className="hero-carousel hero-carousel-full-bleed" aria-label="Truyện nổi bật" aria-roledescription="carousel">

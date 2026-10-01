@@ -282,6 +282,7 @@ class UpdateBookRequest(BaseModel):
     description: Optional[str] = None
     genres: Optional[str] = None
     cover_url: Optional[str] = None
+    banner_url: Optional[str] = None
     voice: Optional[str] = None
     daily_quota: Optional[int] = None
     schedule_time: Optional[str] = None
@@ -300,6 +301,8 @@ def list_admin_books():
             b["rendered_chapters"] = b.get("current_rendered_chapter", 0)
             if not b.get("cover_url"):
                 b["cover_url"] = f"/api/books/{b['slug']}/cover"
+            if not b.get("banner_url"):
+                b["banner_url"] = f"/api/books/{b['slug']}/banner"
             books.append(b)
         return books
 
@@ -491,6 +494,9 @@ def update_book_settings(slug: str, req: UpdateBookRequest):
         if req.cover_url is not None:
             updates.append("cover_url = ?")
             params.append(req.cover_url)
+        if req.banner_url is not None:
+            updates.append("banner_url = ?")
+            params.append(req.banner_url)
         if req.voice is not None:
             updates.append("voice = ?")
             params.append(req.voice)
@@ -530,6 +536,8 @@ def update_book_settings(slug: str, req: UpdateBookRequest):
                 m_data["author"] = req.author
             if req.cover_url:
                 m_data["cover_url"] = req.cover_url
+            if req.banner_url:
+                m_data["banner_url"] = req.banner_url
             if req.genres:
                 m_data["genres"] = req.genres
             if req.description is not None:
@@ -553,6 +561,92 @@ def update_book_settings(slug: str, req: UpdateBookRequest):
             pass
 
     return {"status": "ok", "message": f"Đã cập nhật cấu hình cho truyện '{slug}'"}
+
+
+@router.post("/books/{slug}/upload-cover")
+async def upload_cover_image(slug: str, file: UploadFile = File(...)):
+    """Uploads a portrait cover image for a book."""
+    ext = Path(file.filename or "cover.jpg").suffix.lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+        raise HTTPException(status_code=400, detail="Chỉ hỗ trợ định dạng ảnh: .jpg, .jpeg, .png, .webp")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="File ảnh rỗng")
+
+    for base in [settings.AUDIOBOOKS_DIR, settings.LOCAL_DATA_DIR]:
+        b_dir = Path(base).resolve() / slug
+        b_dir.mkdir(parents=True, exist_ok=True)
+        for old_ext in [".jpg", ".jpeg", ".png", ".webp"]:
+            old_f = b_dir / f"cover{old_ext}"
+            if old_f.is_file():
+                try:
+                    old_f.unlink()
+                except Exception:
+                    pass
+        dest = b_dir / f"cover{ext}"
+        try:
+            dest.write_bytes(content)
+        except Exception as e:
+            logger.warning(f"Could not write cover to {dest}: {e}")
+
+    new_url = f"/api/books/{slug}/cover?v={int(time.time())}"
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE admin_books SET cover_url = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+            (new_url, slug),
+        )
+
+    try:
+        from main import clear_api_caches
+        clear_api_caches(slug)
+    except Exception:
+        pass
+
+    return {"status": "ok", "cover_url": new_url, "message": "Tải lên ảnh bìa thành công!"}
+
+
+@router.post("/books/{slug}/upload-banner")
+async def upload_banner_image(slug: str, file: UploadFile = File(...)):
+    """Uploads a horizontal landscape banner image for a book."""
+    ext = Path(file.filename or "banner.jpg").suffix.lower()
+    if ext not in [".jpg", ".jpeg", ".png", ".webp"]:
+        raise HTTPException(status_code=400, detail="Chỉ hỗ trợ định dạng ảnh: .jpg, .jpeg, .png, .webp")
+
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="File ảnh rỗng")
+
+    for base in [settings.AUDIOBOOKS_DIR, settings.LOCAL_DATA_DIR]:
+        b_dir = Path(base).resolve() / slug
+        b_dir.mkdir(parents=True, exist_ok=True)
+        for old_ext in [".jpg", ".jpeg", ".png", ".webp"]:
+            old_f = b_dir / f"banner{old_ext}"
+            if old_f.is_file():
+                try:
+                    old_f.unlink()
+                except Exception:
+                    pass
+        dest = b_dir / f"banner{ext}"
+        try:
+            dest.write_bytes(content)
+        except Exception as e:
+            logger.warning(f"Could not write banner to {dest}: {e}")
+
+    new_url = f"/api/books/{slug}/banner?v={int(time.time())}"
+    with get_db() as conn:
+        conn.execute(
+            "UPDATE admin_books SET banner_url = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+            (new_url, slug),
+        )
+
+    try:
+        from main import clear_api_caches
+        clear_api_caches(slug)
+    except Exception:
+        pass
+
+    return {"status": "ok", "banner_url": new_url, "message": "Tải lên ảnh banner ngang thành công!"}
 
 
 @router.delete("/books/{slug}")

@@ -217,7 +217,7 @@ def list_books():
         with get_db() as conn:
             rows = conn.execute(
                 """
-                SELECT slug, title, author, description, genres, cover_url,
+                SELECT slug, title, author, description, genres, cover_url, banner_url,
                        total_chapters, current_rendered_chapter,
                        publication_status, views, rating, updated_at
                 FROM admin_books
@@ -225,15 +225,15 @@ def list_books():
                 """
             ).fetchall()
             for r in rows:
-                cover_url = r["cover_url"]
-                if not cover_url:
-                    cover_url = f"/api/books/{r['slug']}/cover"
+                cover_url = r["cover_url"] or f"/api/books/{r['slug']}/cover"
+                banner_url = r["banner_url"] or f"/api/books/{r['slug']}/banner"
                 books.append({
                     "slug": r["slug"],
                     "title": r["title"] or r["slug"].replace("-", " ").title(),
                     "author": r["author"] or "Unknown",
                     "description": r["description"] or "",
                     "cover_url": cover_url,
+                    "banner_url": banner_url,
                     "total_chapters": r["total_chapters"] or 0,
                     "genres": r["genres"] or "Huyền Huyễn, Đô Thị",
                     "status": r["publication_status"] or "Đang ra",
@@ -252,12 +252,14 @@ def list_books():
                 rows = conn.execute("SELECT * FROM admin_books ORDER BY updated_at DESC").fetchall()
                 for r in rows:
                     cover_url = r["cover_url"] or f"/api/books/{r['slug']}/cover"
+                    banner_url = r.get("banner_url") or f"/api/books/{r['slug']}/banner"
                     books.append({
                         "slug": r["slug"],
                         "title": r["title"] or r["slug"].replace("-", " ").title(),
                         "author": r["author"] or "Unknown",
                         "description": r["description"] or "",
                         "cover_url": cover_url,
+                        "banner_url": banner_url,
                         "total_chapters": r["total_chapters"] or 0,
                         "genres": r["genres"] or "Huyền Huyễn, Đô Thị",
                         "status": r["publication_status"] or "Đang ra",
@@ -277,7 +279,7 @@ def get_book(slug: str):
     with get_db() as conn:
         row = conn.execute(
             """
-            SELECT slug, title, author, description, genres, cover_url,
+            SELECT slug, title, author, description, genres, cover_url, banner_url,
                    total_chapters, current_rendered_chapter,
                    publication_status, views, rating, updated_at
             FROM admin_books
@@ -330,6 +332,7 @@ def get_book(slug: str):
 
         total_chapters = row["total_chapters"] or len(chapters)
         cover_url = row["cover_url"] or f"/api/books/{slug}/cover"
+        banner_url = row["banner_url"] or f"/api/books/{slug}/banner"
 
         return {
             "slug": slug,
@@ -337,6 +340,7 @@ def get_book(slug: str):
             "author": row["author"] or "Unknown",
             "description": row["description"] or "",
             "cover_url": cover_url,
+            "banner_url": banner_url,
             "total_chapters": total_chapters,
             "genres": row["genres"] or "Huyền Huyễn, Đô Thị",
             "status": row["publication_status"] or "Đang ra",
@@ -363,6 +367,25 @@ def get_book_cover(slug: str):
 
     svg_placeholder = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300"><rect width="200" height="300" fill="#27272a"/><text x="100" y="150" fill="#a1a1aa" font-family="sans-serif" font-size="14" text-anchor="middle">No Cover</text></svg>'
     return Response(content=svg_placeholder, media_type="image/svg+xml")
+
+
+@app.api_route("/api/books/{slug}/banner", methods=["GET", "HEAD"])
+def get_book_banner(slug: str):
+    primary_dir, remote_dir = get_book_storage_dirs(slug)
+    search_dirs = [primary_dir]
+    if remote_dir and remote_dir != primary_dir:
+        search_dirs.append(remote_dir)
+
+    for sdir in search_dirs:
+        for ext in [".jpg", ".jpeg", ".png", ".webp", ".svg"]:
+            for prefix in ["banner", "cover_landscape", "cover_horizontal"]:
+                candidate = sdir / f"{prefix}{ext}"
+                if candidate.is_file():
+                    media_type = "image/svg+xml" if ext == ".svg" else None
+                    return FileResponse(candidate, media_type=media_type)
+
+    # Auto fallback: if no dedicated horizontal banner exists, use the cover image!
+    return get_book_cover(slug)
 
 
 @app.get("/api/books/{slug}/chapters/{chapter_id}")

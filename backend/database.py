@@ -58,6 +58,7 @@ def init_db() -> None:
                 description TEXT DEFAULT '',
                 genres TEXT DEFAULT '',
                 cover_url TEXT DEFAULT '',
+                banner_url TEXT DEFAULT '',
                 voice TEXT DEFAULT 'Ngọc Huyền',
                 daily_quota INTEGER DEFAULT 50,
                 schedule_time TEXT DEFAULT '02:00',
@@ -93,6 +94,8 @@ def init_db() -> None:
         """)
         # Auto-migrate existing admin_books table if columns are missing
         cols = [r["name"] for r in conn.execute("PRAGMA table_info(admin_books)").fetchall()]
+        if "banner_url" not in cols:
+            conn.execute("ALTER TABLE admin_books ADD COLUMN banner_url TEXT DEFAULT '';")
         if "description" not in cols:
             conn.execute("ALTER TABLE admin_books ADD COLUMN description TEXT DEFAULT '';")
         if "publication_status" not in cols:

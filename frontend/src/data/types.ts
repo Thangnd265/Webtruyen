@@ -6,6 +6,7 @@ export interface Story {
   title: string;
   author: string;
   cover: string;
+  banner?: string;
   category: string;
   tags: string[];
   status: StoryStatus;
