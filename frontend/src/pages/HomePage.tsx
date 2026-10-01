@@ -29,7 +29,7 @@ export function HomePage() {
 
   return (
     <div className="home-page">
-      <h1 className="sr-only">Trang chủ Tiểu Thuyết Mạng</h1>
+      <h1 className="sr-only">Trang chủ Người Yêu Cũ</h1>
       <Carousel slides={slides} stories={stories} />
       <div className="home-layout">
         <div className="home-content">

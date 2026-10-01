@@ -35,7 +35,7 @@ export function Header() {
 
   return <header className="site-header" onKeyDown={(event) => { if (event.key === "Escape") setMenuOpen(false); }}>
     <div className="header-inner container">
-      <Link className="brand" to="/" aria-label="Tiểu Thuyết Mạng, trang chủ"><Icon icon={BookOpen} size={24} /><span>Tiểu Thuyết <strong>Mạng</strong></span></Link>
+      <Link className="brand" to="/" aria-label="Người Yêu Cũ, trang chủ"><Icon icon={BookOpen} size={24} /><span>Người Yêu <strong>Cũ</strong></span></Link>
       <nav className="desktop-nav" aria-label="Điều hướng chính">{links.map(({ label, href }) => <NavLink key={href} to={href} end={href === "/"}>{label}</NavLink>)}</nav>
       <form className="header-search" role="search" onSubmit={search}>
         <label className="sr-only" htmlFor="site-search">Tìm truyện</label>

@@ -60,7 +60,7 @@ export function CatalogPage({ title = "Danh sách truyện", audioOnly = false }
       <header className="page-heading">
         <p className="eyebrow">KHÁM PHÁ TRUYỆN</p>
         <h1>{title}</h1>
-        <p>Lựa chọn câu chuyện hợp với bạn từ kho truyện của Tiểu Thuyết Mạng.</p>
+        <p>Lựa chọn câu chuyện hợp với bạn từ kho truyện của Người Yêu Cũ.</p>
       </header>
       <FilterPanel filters={filters} onChange={changeFilters} categories={categories} showAudioFilter={!audioOnly} showReset={results.length > 0} />
       <div className="catalog-summary">

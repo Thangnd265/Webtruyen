@@ -24,7 +24,7 @@ export function App() {
     <Route path="/truyen/:slug/doc/:chapter" element={<ReaderPage />} />
     <Route path="/truyen/:slug/nghe/:chapter" element={<AudioPage />} />
     <Route path="/gioi-thieu" element={<InfoPage key="about" title="Giới thiệu" introduction="Một góc nhỏ dành cho những câu chuyện và người yêu đọc sách." sections={[
-      { heading: "Khám phá câu chuyện của bạn", text: "Tiểu Thuyết Mạng mang đến trải nghiệm khám phá truyện theo thể loại, theo dõi bảng xếp hạng và đọc từng chương trong không gian gọn gàng, dễ sử dụng.", items: ["Tìm truyện theo tên, thể loại và trạng thái hoàn thành.", "Tùy chỉnh chủ đề, cỡ chữ và giãn dòng khi đọc.", "Khám phá giao diện nghe truyện với trình phát mẫu."] },
+      { heading: "Khám phá câu chuyện của bạn", text: "Người Yêu Cũ mang đến trải nghiệm khám phá truyện theo thể loại, theo dõi bảng xếp hạng và đọc từng chương trong không gian gọn gàng, dễ sử dụng.", items: ["Tìm truyện theo tên, thể loại và trạng thái hoàn thành.", "Tùy chỉnh chủ đề, cỡ chữ và giãn dòng khi đọc.", "Khám phá giao diện nghe truyện với trình phát mẫu."] },
       { heading: "Về bản xem trước", text: "Đây là bản dựng giao diện với truyện và nội dung minh họa. Tài khoản, thanh toán và phát âm thanh thực tế chưa được kết nối. Các gói hội viên chỉ dùng để trải nghiệm giao diện." },
     ]} />} />
     <Route path="/lien-he" element={<InfoPage key="contact" title="Liên hệ" introduction="Chia sẻ góp ý để trải nghiệm đọc truyện ngày một dễ chịu hơn." contact sections={[

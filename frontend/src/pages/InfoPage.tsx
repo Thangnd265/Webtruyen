@@ -26,7 +26,7 @@ export function InfoPage({ title, introduction, sections, contact = false }: { t
   }
 
   return <article className="info-page" aria-labelledby="info-title">
-    <header className="page-heading"><p className="eyebrow">TIỂU THUYẾT MẠNG</p><h1 id="info-title">{title}</h1><p>{introduction}</p></header>
+    <header className="page-heading"><p className="eyebrow">NGƯỜI YÊU CŨ</p><h1 id="info-title">{title}</h1><p>{introduction}</p></header>
     <div className="info-content">{sections.map(({ heading, text, items }) => <section key={heading}><h2>{heading}</h2><p>{text}</p>{items && <ul>{items.map((item) => <li key={item}>{item}</li>)}</ul>}</section>)}</div>
     {contact && <form className="contact-form" aria-labelledby="contact-title" noValidate onSubmit={submit} onChange={() => setSubmitted(false)}>
       <h2 id="contact-title">Gửi lời nhắn</h2><p id="contact-note">Biểu mẫu minh họa chỉ kiểm tra thông tin trên thiết bị. Tin nhắn không được gửi hay lưu lại sau khi rời trang.</p>
