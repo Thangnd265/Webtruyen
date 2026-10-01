@@ -199,8 +199,8 @@
 .reader-chapter-nav { justify-content: space-between; margin-top: 16px; }
 .reader-chapter-nav label { display: flex; align-items: center; gap: 8px; font-weight: 700; }
 .reader-chapter-nav select, .audio-settings select { min-height: 44px; padding: 8px 12px; color: var(--color-text); background: var(--color-bg); border: 1px solid var(--color-border); border-radius: 8px; }
-.reader-article { margin: 24px 0; padding: clamp(24px, 5vw, 56px); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); font-size: calc(18px * var(--font-scale, 1)); line-height: var(--reader-line-height, 1.8); }
-.reader-article p { max-width: 68ch; margin: 0 auto 1.5em; }
+.reader-article { max-width: 860px; margin: 24px auto; padding: clamp(24px, 5vw, 56px); background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); font-size: calc(18px * var(--font-scale, 1)); line-height: var(--reader-line-height, 1.85); text-align: justify; text-justify: inter-word; }
+.reader-article p { width: 100%; margin: 0 0 1.25em 0; text-align: justify; text-justify: inter-word; word-break: normal; overflow-wrap: break-word; }
 .reader-article p:last-child { margin-bottom: 0; }
 .audio-layout { display: grid; gap: 32px; align-items: start; max-width: 920px; margin: 32px auto; }
 .audio-art { max-width: 320px; width: 100%; margin-inline: auto; box-shadow: var(--shadow-card); }
@@ -753,13 +753,20 @@
 }
 
 .reader-paragraph {
+  width: 100%;
   cursor: pointer;
   border-radius: 8px;
-  padding: 8px 12px;
-  margin-bottom: 14px;
+  padding: 10px 16px;
+  margin: 0 0 14px 0;
   border-left: 4px solid transparent;
-  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, padding 0.15s ease, box-shadow 0.15s ease;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
   user-select: text;
+  text-align: justify;
+  text-justify: inter-word;
+  word-break: normal;
+  overflow-wrap: break-word;
+  line-height: var(--reader-line-height, 1.85);
+  box-sizing: border-box;
 }
 
 .reader-paragraph:hover {
@@ -772,8 +779,10 @@
   color: var(--color-accent-hover) !important;
   font-weight: 700;
   border-left: 4px solid var(--color-accent-hover) !important;
-  padding-left: 14px;
+  padding: 10px 16px;
   box-shadow: 0 2px 14px color-mix(in srgb, var(--color-accent) 15%, transparent);
+  text-align: justify;
+  text-justify: inter-word;
 }
 
 .mini-player-bar {

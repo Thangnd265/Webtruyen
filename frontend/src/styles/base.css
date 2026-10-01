@@ -8,7 +8,7 @@ textarea { resize: vertical; }
 input::placeholder, textarea::placeholder { color: var(--color-muted); opacity: 1; }
 [data-mode="dark"] { color-scheme: dark; }
 fieldset { min-width: 0; }
-h1, h2, h3, p, a { overflow-wrap: anywhere; }
+h1, h2, h3, p, a { overflow-wrap: break-word; word-break: normal; }
 button { cursor: pointer; }
 a { color: inherit; text-decoration: none; }
 img { display: block; max-width: 100%; }
