@@ -1120,7 +1120,7 @@
             <button onclick="openEditModal('${b.slug}')" class="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors" title="Cấu hình">
               <i data-lucide="settings-2" class="w-4 h-4"></i>
             </button>
-            <button onclick="handleDeleteBook('${b.slug}', '${(b.title || '').replace(/'/g, \"\\\\'\")}')" class="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors" title="Xóa truyện">
+            <button onclick="handleDeleteBook('${b.slug}')" class="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors" title="Xóa truyện">
               <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
           </div>
@@ -1489,7 +1489,9 @@
       }
     }
 
-    async function handleDeleteBook(slug, title) {
+    async function handleDeleteBook(slug, maybeTitle) {
+      const b = currentBooks.find(item => item.slug === slug);
+      const title = maybeTitle || (b ? b.title : slug);
       if (!confirm(`Bạn có chắc chắn muốn xóa truyện "${title}" không?`)) {
         return;
       }
