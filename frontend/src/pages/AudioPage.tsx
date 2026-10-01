@@ -1,16 +1,117 @@
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AudioPlayer } from "../components/AudioPlayer";
-import { chapters } from "../data/site";
-import { stories } from "../data/stories";
+import { getStoryDetail, getChapterContent, type BackendChapter, type ChapterContent } from "../data/api";
+import { stories as fallbackStories } from "../data/stories";
+import type { Story } from "../data/types";
 import { NotFoundPage } from "./NotFoundPage";
 
 export function AudioPage() {
   const { slug, chapter } = useParams();
-  const story = stories.find((item) => item.slug === slug);
-  const number = chapter && /^[1-9]\d*$/.test(chapter) ? Number(chapter) : NaN;
-  if (!story || !story.hasAudio || !Number.isSafeInteger(number) || number > story.chapters) return <NotFoundPage />;
+  const [story, setStory] = useState<Story | null>(null);
+  const [chapters, setChapters] = useState<BackendChapter[]>([]);
+  const [content, setContent] = useState<ChapterContent | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeIdx, setActiveIdx] = useState(0);
+
+  useEffect(() => {
+    if (!slug) return;
+    let active = true;
+    setLoading(true);
+
+    getStoryDetail(slug).then((detail) => {
+      if (!active) return;
+      if (!detail) {
+        setStory(fallbackStories.find((s) => s.slug === slug) || null);
+        setLoading(false);
+        return;
+      }
+
+      setStory(detail.story);
+      const chList = detail.chapters || [];
+      setChapters(chList);
+
+      let targetIdx = 0;
+      if (chapter) {
+        const found = chList.findIndex(
+          (c, i) =>
+            c.id === chapter ||
+            String(c.chapter_index) === chapter ||
+            String(i + 1) === chapter
+        );
+        if (found >= 0) targetIdx = found;
+      }
+      setActiveIdx(targetIdx);
+
+      const targetChapter = chList[targetIdx];
+      if (targetChapter) {
+        getChapterContent(slug, targetChapter.id).then((cData) => {
+          if (!active) return;
+          setContent(cData);
+          setLoading(false);
+        });
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [slug, chapter]);
+
+  if (loading) {
+    return (
+      <div className="audio-page" style={{ padding: "48px 16px", textAlign: "center" }}>
+        <p className="eyebrow">ĐANG TẢI</p>
+        <h2>Đang tải thông tin audio...</h2>
+      </div>
+    );
+  }
+
+  if (!story) return <NotFoundPage />;
 
   const path = `/truyen/${story.slug}`;
-  const named = chapters.find((item) => item.storyId === story.id && item.number === number);
-  return <div className="audio-page"><nav className="reading-breadcrumb" aria-label="Đường dẫn"><Link to={path}>{story.title}</Link><span aria-hidden="true">/</span><span>Nghe truyện</span></nav><div className="audio-layout"><div className="audio-art"><img src={story.cover} alt={`Bìa truyện ${story.title}`} /></div><div className="audio-content"><p className="eyebrow">BẢN NGHE MẪU</p><h1>Chương {number}{named ? `: ${named.title}` : ""}</h1><p>{story.title} · {story.author}</p><p className="audio-note">Các nút phát minh họa trải nghiệm nghe. Trang này chưa có tệp âm thanh.</p><AudioPlayer key={`${story.id}-${number}`} storyPath={path} chapter={number} totalChapters={story.chapters} locked={named?.audioLocked} /><Link className="button" to={`${path}/doc/${number}`}>Đọc chương này</Link></div></div></div>;
+  const currentChapter = chapters[activeIdx];
+  const chapterTitle = content?.title || currentChapter?.title || `Chương ${activeIdx + 1}`;
+  const audioSrc =
+    content?.audio_url ||
+    (currentChapter ? `/api/books/${story.slug}/audio/${currentChapter.id}` : undefined);
+  const docLink = `${path}/doc/${currentChapter ? currentChapter.id : activeIdx + 1}`;
+
+  return (
+    <div className="audio-page">
+      <nav className="reading-breadcrumb" aria-label="Đường dẫn">
+        <Link to={path}>{story.title}</Link>
+        <span aria-hidden="true">/</span>
+        <span>Nghe truyện</span>
+      </nav>
+
+      <div className="audio-layout">
+        <div className="audio-art">
+          <img src={story.cover} alt={`Bìa truyện ${story.title}`} />
+        </div>
+        <div className="audio-content">
+          <p className="eyebrow">AUDIO ĐỒNG BỘ</p>
+          <h1>{chapterTitle}</h1>
+          <p>
+            {story.title} · {story.author}
+          </p>
+
+          <AudioPlayer
+            storyPath={path}
+            chapterIndex={activeIdx}
+            chapters={chapters}
+            audioSrc={audioSrc}
+          />
+
+          <div style={{ marginTop: "16px" }}>
+            <Link className="button" to={docLink}>
+              📖 Đọc chương này dạng chữ
+            </Link>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
