@@ -647,11 +647,17 @@
           </label>
         </div>
 
-        <div class="pt-3 border-t border-zinc-800 flex justify-end gap-2">
-          <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white rounded-lg transition-colors">Hủy</button>
-          <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-medium transition-all shadow-md shadow-brand-600/20">
-            Lưu Thay Đổi
+        <div class="pt-3 border-t border-zinc-800 flex items-center justify-between gap-2">
+          <button type="button" onclick="handleDeleteFromEditModal()" class="px-3 py-2 text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors flex items-center gap-1.5">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            <span>Xóa Truyện</span>
           </button>
+          <div class="flex items-center gap-2">
+            <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white rounded-lg transition-colors">Hủy</button>
+            <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-medium transition-all shadow-md shadow-brand-600/20">
+              Lưu Thay Đổi
+            </button>
+          </div>
         </div>
       </form>
     </div>
@@ -1032,6 +1038,9 @@
             <button onclick="openEditModal('${b.slug}')" class="p-1.5 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors" title="Cấu hình">
               <i data-lucide="settings-2" class="w-4 h-4"></i>
             </button>
+            <button onclick="handleDeleteBook('${b.slug}', '${(b.title || '').replace(/'/g, \"\\\\'\")}')" class="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors" title="Xóa truyện">
+              <i data-lucide="trash-2" class="w-4 h-4"></i>
+            </button>
           </div>
         `;
         grid.appendChild(card);
@@ -1269,6 +1278,31 @@
       } catch (err) {
         showToast('Lỗi khi lưu cấu hình', true);
       }
+    }
+
+    async function handleDeleteBook(slug, title) {
+      if (!confirm(`Bạn có chắc chắn muốn xóa truyện "${title}" không?`)) {
+        return;
+      }
+      const deleteFiles = confirm(`Bạn có muốn xóa TOÀN BỘ file âm thanh và dữ liệu trên ổ đĩa của "${title}" không?\n- OK: Xóa sạch file trên đĩa.\n- Cancel: Chỉ xóa bản ghi khỏi danh sách.`);
+      try {
+        const res = await fetch(`/api/admin/books/${slug}?delete_files=${deleteFiles}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const data = await res.json();
+        showToast(data.message || 'Đã xóa truyện thành công');
+        closeEditModal();
+        fetchBooks();
+      } catch (err) {
+        showToast('Lỗi khi xóa truyện', true);
+      }
+    }
+
+    function handleDeleteFromEditModal() {
+      const slug = document.getElementById('editSlug').value;
+      const title = document.getElementById('editTitle').value;
+      handleDeleteBook(slug, title);
     }
 
     // 8. RUN NOW MODAL

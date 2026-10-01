@@ -561,9 +561,15 @@ def delete_book(slug: str, delete_files: bool = Query(False)):
         conn.execute("DELETE FROM admin_books WHERE slug = ?", (slug,))
         conn.execute("DELETE FROM book_chapters WHERE book_slug = ?", (slug,))
     if delete_files:
-        book_dir = Path(settings.AUDIOBOOKS_DIR).resolve() / slug
-        if book_dir.is_dir():
-            shutil.rmtree(str(book_dir), ignore_errors=True)
+        for base in [settings.AUDIOBOOKS_DIR, settings.LOCAL_DATA_DIR]:
+            b_dir = Path(base).resolve() / slug
+            if b_dir.is_dir():
+                shutil.rmtree(str(b_dir), ignore_errors=True)
+    try:
+        from main import clear_api_caches
+        clear_api_caches(slug)
+    except Exception:
+        pass
     return {"status": "ok", "message": f"Đã xoá truyện '{slug}'"}
 
 

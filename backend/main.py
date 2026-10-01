@@ -349,12 +349,18 @@ def get_book(slug: str):
 
 @app.get("/api/books/{slug}/cover")
 def get_book_cover(slug: str):
-    book_dir = get_safe_book_dir(slug)
-    for ext in [".jpg", ".jpeg", ".png", ".webp", ".svg"]:
-        candidate = book_dir / f"cover{ext}"
-        if candidate.is_file():
-            media_type = "image/svg+xml" if ext == ".svg" else None
-            return FileResponse(candidate, media_type=media_type)
+    primary_dir, remote_dir = get_book_storage_dirs(slug)
+    search_dirs = [primary_dir]
+    if remote_dir and remote_dir != primary_dir:
+        search_dirs.append(remote_dir)
+
+    for sdir in search_dirs:
+        for ext in [".jpg", ".jpeg", ".png", ".webp", ".svg"]:
+            candidate = sdir / f"cover{ext}"
+            if candidate.is_file():
+                media_type = "image/svg+xml" if ext == ".svg" else None
+                return FileResponse(candidate, media_type=media_type)
+
     svg_placeholder = '<svg xmlns="http://www.w3.org/2000/svg" width="200" height="300" viewBox="0 0 200 300"><rect width="200" height="300" fill="#27272a"/><text x="100" y="150" fill="#a1a1aa" font-family="sans-serif" font-size="14" text-anchor="middle">No Cover</text></svg>'
     return Response(content=svg_placeholder, media_type="image/svg+xml")
 
