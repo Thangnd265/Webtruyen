@@ -41,7 +41,7 @@ export function HomePage() {
               </div>
               <Link to="/truyen/audio">Xem tất cả</Link>
             </div>
-            <StoryGrid stories={filterStories(stories, { audioOnly: true }).slice(0, 4)} />
+            <StoryGrid stories={filterStories(stories, { audioOnly: true }).slice(0, 4)} variant="horizontal" />
           </section>
           <section className="discovery-section">
             <div className="section-heading">

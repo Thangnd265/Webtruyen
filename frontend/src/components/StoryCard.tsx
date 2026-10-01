@@ -1,20 +1,155 @@
 import { useState } from "react";
-import { BookOpen, Headphones, Star } from "lucide-react";
+import { BookOpen, Clock, Eye, Flag, Folder, Headphones, Star, User } from "lucide-react";
 import { Link } from "react-router-dom";
 import type { Story } from "../data/types";
 import { Icon } from "./Icon";
 
-export function StoryCard({ story, variant = "compact", rank }: { story: Story; variant?: "horizontal" | "compact" | "ranked"; rank?: number }) {
+function formatViews(views?: number): string {
+  if (!views) return "3,2k";
+  if (views >= 1000000) return `${(views / 1000000).toFixed(1).replace(".", ",")}M`;
+  if (views >= 1000) return `${(views / 1000).toFixed(1).replace(".", ",")}k`;
+  return views.toString();
+}
+
+function formatDate(dateStr?: string): string {
+  if (!dateStr || dateStr === "Vừa xong") {
+    const today = new Date();
+    const d = String(today.getDate()).padStart(2, "0");
+    const m = String(today.getMonth() + 1).padStart(2, "0");
+    const y = today.getFullYear();
+    return `${d}/${m}/${y}`;
+  }
+  if (/^\d{4}-\d{2}-\d{2}/.test(dateStr)) {
+    const [y, m, d] = dateStr.slice(0, 10).split("-");
+    return `${d}/${m}/${y}`;
+  }
+  return dateStr;
+}
+
+export function StoryCard({
+  story,
+  variant = "compact",
+  rank,
+}: {
+  story: Story;
+  variant?: "horizontal" | "compact" | "ranked";
+  rank?: number;
+}) {
   const [coverFailed, setCoverFailed] = useState(false);
-  return <article className={`story-card story-card-${variant}`}>
-    {rank !== undefined && <span className="story-rank" aria-label={`Hạng ${rank}`}>{rank}</span>}
-    <Link className="story-cover" to={`/truyen/${story.slug}`} tabIndex={-1} aria-hidden="true">{!coverFailed && <img src={story.cover} alt="" loading="lazy" onError={() => setCoverFailed(true)} />}</Link>
-    <div className="story-body">
-      <span className="story-category">{story.category}</span>
-      <h3><Link to={`/truyen/${story.slug}`}>{story.title}</Link></h3>
-      <p className="story-author">{story.author}</p>
-      {variant === "horizontal" && <p className="story-description">{story.description}</p>}
-      <div className="story-meta"><span><Icon icon={BookOpen} size={16} /> {story.chapters} chương</span><span><Icon icon={Star} size={16} /> {story.rating.toFixed(1)}</span>{story.hasAudio && <span><Icon icon={Headphones} size={16} /> Audio</span>}</div>
-    </div>
-  </article>;
+
+  if (variant === "horizontal") {
+    const isCompleted = story.status === "completed";
+    const statusText = isCompleted ? "Hoàn thành" : "Đang ra";
+    const tagsText =
+      story.tags && story.tags.length > 0 ? story.tags.slice(0, 2).join(", ") : story.category;
+    const audioUrl = `/truyen/${story.slug}/nghe/1`;
+
+    return (
+      <article className="story-card story-card-horizontal">
+        {rank !== undefined && (
+          <span className="story-rank" aria-label={`Hạng ${rank}`}>
+            {rank}
+          </span>
+        )}
+        <div className="story-cover-wrapper">
+          <span className="story-audio-badge">
+            <Icon icon={Headphones} size={11} />
+            <span>Audio</span>
+          </span>
+          <Link className="story-cover" to={`/truyen/${story.slug}`} tabIndex={-1} aria-hidden="true">
+            {!coverFailed ? (
+              <img src={story.cover} alt={story.title} loading="lazy" onError={() => setCoverFailed(true)} />
+            ) : (
+              <div className="story-cover-placeholder">
+                <Icon icon={BookOpen} size={28} />
+              </div>
+            )}
+          </Link>
+        </div>
+
+        <div className="story-body">
+          <h3 className="story-title">
+            <Link to={`/truyen/${story.slug}`}>{story.title}</Link>
+          </h3>
+
+          <div className="story-meta-row">
+            <span className="meta-item">
+              <Icon icon={User} size={13} />
+              <span>{story.author || "Tác Giả Ẩn Danh"}</span>
+            </span>
+            <span className="meta-item">
+              <Icon icon={Folder} size={13} />
+              <span>{tagsText}</span>
+            </span>
+            <span className={`meta-item meta-status ${isCompleted ? "status-completed" : "status-ongoing"}`}>
+              <Icon icon={Flag} size={13} />
+              <span>{statusText}</span>
+            </span>
+          </div>
+
+          <div className="story-meta-row">
+            <span className="meta-item">
+              <Icon icon={BookOpen} size={13} />
+              <span>{story.chapters} chương</span>
+            </span>
+            <span className="meta-item">
+              <Icon icon={Eye} size={13} />
+              <span>{formatViews(story.views)}</span>
+            </span>
+            <span className="meta-item">
+              <Icon icon={Clock} size={13} />
+              <span>{formatDate(story.updatedAt)}</span>
+            </span>
+          </div>
+
+          {story.description && (
+            <p className="story-description">{story.description}</p>
+          )}
+
+          <div className="story-actions">
+            <Link to={audioUrl} className="story-audio-btn">
+              <Icon icon={Headphones} size={14} />
+              <span>Nghe Audio</span>
+            </Link>
+          </div>
+        </div>
+      </article>
+    );
+  }
+
+  // compact & ranked fallback
+  return (
+    <article className={`story-card story-card-${variant}`}>
+      {rank !== undefined && (
+        <span className="story-rank" aria-label={`Hạng ${rank}`}>
+          {rank}
+        </span>
+      )}
+      <Link className="story-cover" to={`/truyen/${story.slug}`} tabIndex={-1} aria-hidden="true">
+        {!coverFailed && (
+          <img src={story.cover} alt="" loading="lazy" onError={() => setCoverFailed(true)} />
+        )}
+      </Link>
+      <div className="story-body">
+        <span className="story-category">{story.category}</span>
+        <h3>
+          <Link to={`/truyen/${story.slug}`}>{story.title}</Link>
+        </h3>
+        <p className="story-author">{story.author}</p>
+        <div className="story-meta">
+          <span>
+            <Icon icon={BookOpen} size={16} /> {story.chapters} chương
+          </span>
+          <span>
+            <Icon icon={Star} size={16} /> {story.rating.toFixed(1)}
+          </span>
+          {story.hasAudio && (
+            <span>
+              <Icon icon={Headphones} size={16} /> Audio
+            </span>
+          )}
+        </div>
+      </div>
+    </article>
+  );
 }

@@ -63,6 +63,247 @@
 .story-meta { display: flex; flex-wrap: wrap; gap: 8px 12px; color: var(--color-muted); font-size: 12px; }
 .story-meta span { display: inline-flex; align-items: center; gap: 4px; }
 .story-rank { position: absolute; left: 12px; top: 16px; width: 32px; height: 32px; display: grid; place-items: center; color: var(--color-accent-hover); background: var(--color-bg); border-radius: 8px; font-weight: 800; }
+
+/* ======================================================== */
+/* STORY CARD HORIZONTAL (GIỚI THIỆU TRUYỆN MỚI)            */
+/* ======================================================== */
+
+.story-grid-horizontal {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .story-grid-horizontal,
+  .home-content .story-grid-horizontal {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+.story-card-horizontal {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: stretch;
+  background: #0f1013;
+  background-color: var(--color-surface, #111216);
+  border: 1px solid var(--color-border, #1f2229);
+  border-radius: 16px;
+  overflow: hidden;
+  padding: 0;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s cubic-bezier(0.23, 1, 0.32, 1),
+              border-color 0.2s ease,
+              box-shadow 0.2s ease;
+}
+
+.story-card-horizontal:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Cover Image Wrapper */
+.story-card-horizontal .story-cover-wrapper {
+  position: relative;
+  width: 140px;
+  min-width: 140px;
+  max-width: 155px;
+  align-self: stretch;
+  overflow: hidden;
+  background: #16181d;
+  flex-shrink: 0;
+}
+
+@media (min-width: 1024px) {
+  .story-card-horizontal .story-cover-wrapper {
+    width: 155px;
+    min-width: 155px;
+  }
+}
+
+@media (max-width: 639px) {
+  .story-card-horizontal .story-cover-wrapper {
+    width: 110px;
+    min-width: 110px;
+  }
+}
+
+.story-card-horizontal .story-cover {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.story-card-horizontal .story-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.35s ease;
+  display: block;
+}
+
+.story-card-horizontal:hover .story-cover img {
+  transform: scale(1.04);
+}
+
+.story-card-horizontal .story-cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  background: #16181d;
+}
+
+/* Audio Badge on Cover (Top-Left) */
+.story-card-horizontal .story-audio-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2.5px 8px;
+  background: #00bcd4;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(0, 188, 212, 0.4);
+  pointer-events: none;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+/* Story Body on the Right */
+.story-card-horizontal .story-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 14px 16px;
+  min-width: 0;
+}
+
+@media (max-width: 639px) {
+  .story-card-horizontal .story-body {
+    padding: 10px 12px;
+  }
+}
+
+/* Title */
+.story-card-horizontal .story-title {
+  margin: 0 0 6px 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: #ffffff;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.story-card-horizontal .story-title a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.story-card-horizontal .story-title a:hover {
+  color: #60a5fa;
+}
+
+/* Meta Rows (Author, Category, Status, Chapters, Views, Date) */
+.story-card-horizontal .story-meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 5px 12px;
+  font-size: 11.5px;
+  color: #94a3b8;
+  margin-bottom: 5px;
+  line-height: 1.4;
+}
+
+.story-card-horizontal .meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4.5px;
+  color: #94a3b8;
+}
+
+.story-card-horizontal .meta-item svg {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+/* Status flags */
+.story-card-horizontal .meta-status.status-ongoing {
+  color: #f87171;
+  font-weight: 600;
+}
+.story-card-horizontal .meta-status.status-ongoing svg {
+  color: #ef4444;
+}
+
+.story-card-horizontal .meta-status.status-completed {
+  color: #34d399;
+  font-weight: 600;
+}
+.story-card-horizontal .meta-status.status-completed svg {
+  color: #10b981;
+}
+
+/* Description / Intro snippet */
+.story-card-horizontal .story-description {
+  margin: 6px 0 10px 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #94a3b8;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Actions Row - Nghe Audio Button */
+.story-card-horizontal .story-actions {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+}
+
+.story-card-horizontal .story-audio-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6.5px 14px;
+  background-color: #d9534f;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9px;
+  text-decoration: none;
+  box-shadow: 0 2px 10px rgba(217, 83, 79, 0.3);
+  transition: all 0.15s ease;
+}
+
+.story-card-horizontal .story-audio-btn:hover {
+  background-color: #c94541;
+  box-shadow: 0 4px 14px rgba(217, 83, 79, 0.45);
+  transform: translateY(-1px);
+}
+
+.story-card-horizontal .story-audio-btn:active {
+  transform: translateY(0);
+}
 .hero-carousel { position: relative; min-height: clamp(420px, 58svh, 620px); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 48px 80px 88px; color: #fff; background: #0d0d0d; box-shadow: var(--shadow-card); }
 .hero-carousel-full-bleed { width: 100dvw; margin-top: -32px; margin-inline: calc(50% - 50dvw); }
 .hero-carousel::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgb(0 0 0 / 78%), rgb(0 0 0 / 42%) 50%, rgb(0 0 0 / 72%)), linear-gradient(0deg, rgb(0 0 0 / 78%), transparent 55%); }
