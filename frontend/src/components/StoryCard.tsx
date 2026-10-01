@@ -125,11 +125,22 @@ export function StoryCard({
           {rank}
         </span>
       )}
-      <Link className="story-cover" to={`/truyen/${story.slug}`} tabIndex={-1} aria-hidden="true">
-        {!coverFailed && (
-          <img src={story.cover} alt="" loading="lazy" onError={() => setCoverFailed(true)} />
+      <div className="story-cover-wrapper-compact">
+        {story.hasAudio && (
+          <span className="story-audio-badge-compact" title="Có Audio">
+            <Icon icon={Headphones} size={11} />
+          </span>
         )}
-      </Link>
+        <Link className="story-cover" to={`/truyen/${story.slug}`} tabIndex={-1} aria-hidden="true">
+          {!coverFailed ? (
+            <img src={story.cover} alt={story.title} loading="lazy" onError={() => setCoverFailed(true)} />
+          ) : (
+            <div className="story-cover-placeholder">
+              <Icon icon={BookOpen} size={20} />
+            </div>
+          )}
+        </Link>
+      </div>
       <div className="story-body">
         <span className="story-category">{story.category}</span>
         <h3>
@@ -138,16 +149,11 @@ export function StoryCard({
         <p className="story-author">{story.author}</p>
         <div className="story-meta">
           <span>
-            <Icon icon={BookOpen} size={16} /> {story.chapters} chương
+            <Icon icon={BookOpen} size={13} /> {story.chapters} ch
           </span>
           <span>
-            <Icon icon={Star} size={16} /> {story.rating.toFixed(1)}
+            <Icon icon={Star} size={13} /> {story.rating.toFixed(1)}
           </span>
-          {story.hasAudio && (
-            <span>
-              <Icon icon={Headphones} size={16} /> Audio
-            </span>
-          )}
         </div>
       </div>
     </article>

@@ -51,7 +51,7 @@ export function HomePage() {
               </div>
               <Link to="/truyen?sort=new">Xem tất cả</Link>
             </div>
-            <StoryGrid stories={filterStories(stories, { sort: "new" }).slice(0, 4)} />
+            <StoryGrid stories={filterStories(stories, { sort: "new" }).slice(0, 8)} />
           </section>
           <section className="discovery-section">
             <div className="section-heading">
