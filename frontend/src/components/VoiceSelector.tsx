@@ -52,9 +52,10 @@ export function VoiceSelector({
 
       <div className="flex flex-wrap items-center gap-2">
         {voices.map((v) => {
-          const isActive =
+          const isActive = Boolean(
             currentVoice === v.id ||
-            (currentVoice && currentVoice.toLowerCase() === v.id.toLowerCase());
+            (currentVoice && currentVoice.toLowerCase() === v.id.toLowerCase())
+          );
           const isAiClone =
             v.id.includes("omni") ||
             v.name.toLowerCase().includes("omni") ||

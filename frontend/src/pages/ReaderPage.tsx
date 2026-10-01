@@ -167,6 +167,7 @@ export function ReaderPage() {
   const nextChapter = activeIdx < chapters.length - 1 ? chapters[activeIdx + 1] : null;
 
   const prevLink = prevChapter ? `${path}/doc/${prevChapter.id || activeIdx}` : null;
+  const nextLink = nextChapter ? `${path}/doc/${nextChapter.id || activeIdx + 2}` : null;
   const audioLink = `${path}/nghe/${currentChapter ? currentChapter.id : activeIdx + 1}${selectedVoice ? `?voice=${selectedVoice}` : ""}`;
   const audioSrc =
     content?.audio_url ||
