@@ -50,7 +50,7 @@ it("persists theme and resets personal overrides", async () => {
 it("leaves the selected theme card's focus outline available", async () => {
   localStorage.removeItem("ttm-appearance");
   render(<ThemeProvider><ThemePanel /></ThemeProvider>);
-  const selected = screen.getByRole("button", { name: /Tiểu Thuyết Mạng/ });
+  const selected = screen.getByRole("button", { name: /Người Yêu Cũ/ });
   selected.focus();
   expect(selected).toHaveFocus();
   expect(selected).toHaveAttribute("aria-pressed", "true");
