@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Icon } from "./Icon";
 import { AudioLoader } from "./AudioLoader";
 import { Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
-import type { BackendChapter } from "../data/api";
+import type { BackendChapter, ChapterCue } from "../data/api";
 
 export function AudioPlayer({
   storyPath,
@@ -11,12 +11,18 @@ export function AudioPlayer({
   chapters,
   audioSrc,
   locked = false,
+  cues = [],
+  onTimeUpdate,
+  seekRef,
 }: {
   storyPath: string;
   chapterIndex: number;
   chapters: BackendChapter[];
   audioSrc?: string;
   locked?: boolean;
+  cues?: ChapterCue[];
+  onTimeUpdate?: (currentTime: number, duration: number) => void;
+  seekRef?: React.MutableRefObject<((time: number) => void) | null>;
 }) {
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -29,6 +35,7 @@ export function AudioPlayer({
   const [speed, setSpeed] = useState("1");
   const [volume, setVolume] = useState(80);
   const [audioError, setAudioError] = useState(false);
+  const [activeCue, setActiveCue] = useState<ChapterCue | null>(null);
 
   const totalChapters = Math.max(chapters.length, 1);
   const currentChapter = chapters[chapterIndex] || {
@@ -41,11 +48,29 @@ export function AudioPlayer({
   const playlist = chapters.slice(first, first + 8);
 
   useEffect(() => {
+    if (seekRef) {
+      seekRef.current = (time: number) => {
+        if (audioRef.current) {
+          audioRef.current.currentTime = time;
+          audioRef.current
+            .play()
+            .then(() => setPlaying(true))
+            .catch(() => {});
+        }
+      };
+    }
+    return () => {
+      if (seekRef) seekRef.current = null;
+    };
+  }, [seekRef]);
+
+  useEffect(() => {
     setPlaying(false);
     setBuffering(false);
     setPosition(0);
     setCurrentTime(0);
     setAudioError(false);
+    setActiveCue(null);
     if (audioRef.current) {
       audioRef.current.playbackRate = Number(speed);
       audioRef.current.volume = volume / 100;
@@ -77,6 +102,21 @@ export function AudioPlayer({
     setDuration(dur);
     if (dur > 0) {
       setPosition(Math.round((cur / dur) * 100));
+    }
+    onTimeUpdate?.(cur, dur);
+
+    if (cues && cues.length > 0) {
+      let matched: ChapterCue | null = null;
+      for (let i = 0; i < cues.length; i++) {
+        const c = cues[i];
+        const next = cues[i + 1];
+        const nextStart = next ? next.start : c.end + 0.5;
+        if (cur >= c.start && cur < Math.max(c.end, nextStart)) {
+          matched = c;
+          break;
+        }
+      }
+      setActiveCue(matched);
     }
   }
 
@@ -144,6 +184,28 @@ export function AudioPlayer({
 
       {buffering && !audioError && !locked && (
         <AudioLoader compact text="Đang tải dữ liệu âm thanh..." />
+      )}
+
+      {/* Live Karaoke Subtitle Card */}
+      {cues && cues.length > 0 && (
+        <div
+          className="karaoke-subtitle-box"
+          onClick={() => {
+            const el = document.getElementById("audio-karaoke-lyrics");
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+          title="Nhấp để cuộn xuống xem toàn bộ lời thoại"
+        >
+          <div className="karaoke-subtitle-tag">
+            <span>✨ ĐANG ĐỌC TỪNG CÂU (KARAOKE)</span>
+            <span style={{ fontSize: "11px", opacity: 0.85, textDecoration: "underline" }}>
+              Xem toàn bộ lời thoại ↗
+            </span>
+          </div>
+          <p className="karaoke-subtitle-text">
+            {activeCue ? activeCue.text : "Bấm Phát hoặc nhấp vào câu bất kỳ để nghe audio đồng bộ..."}
+          </p>
+        </div>
       )}
 
       <p className="audio-state" role="status" aria-label="Trạng thái phát">

@@ -1,8 +1,15 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ReaderToolbar } from "../components/ReaderToolbar";
 import { TextLoader } from "../components/TextLoader";
-import { getStoryDetail, getChapterContent, type BackendChapter, type ChapterContent } from "../data/api";
+import { MiniPlayer } from "../components/MiniPlayer";
+import {
+  getStoryDetail,
+  getChapterContent,
+  type BackendChapter,
+  type ChapterContent,
+  type ChapterCue,
+} from "../data/api";
 import { stories as fallbackStories } from "../data/stories";
 import type { Story } from "../data/types";
 import { NotFoundPage } from "./NotFoundPage";
@@ -15,11 +22,15 @@ export function ReaderPage() {
   const [content, setContent] = useState<ChapterContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeIdx, setActiveIdx] = useState<number>(0);
+  const [activeCueId, setActiveCueId] = useState<string | null>(null);
+  const [autoScroll, setAutoScroll] = useState<boolean>(true);
+  const seekRef = useRef<((time: number) => void) | null>(null);
 
   useEffect(() => {
     if (!slug) return;
     let active = true;
     setLoading(true);
+    setActiveCueId(null);
 
     getStoryDetail(slug).then((detail) => {
       if (!active) return;
@@ -63,6 +74,58 @@ export function ReaderPage() {
     };
   }, [slug, chapter]);
 
+  const cues = content?.cues || [];
+
+  function handleAudioTimeUpdate(cur: number) {
+    if (!cues.length) return;
+    for (let i = 0; i < cues.length; i++) {
+      const c = cues[i];
+      const next = cues[i + 1];
+      const nextStart = next ? next.start : c.end + 0.5;
+      if (cur >= c.start && cur < Math.max(c.end, nextStart)) {
+        if (c.id !== activeCueId) {
+          setActiveCueId(c.id);
+        }
+        break;
+      }
+    }
+  }
+
+  useEffect(() => {
+    if (!activeCueId) return;
+    document.querySelectorAll(".reader-article .active-cue").forEach((el) => {
+      el.classList.remove("active-cue");
+    });
+    const el = document.getElementById(activeCueId);
+    if (el) {
+      el.classList.add("active-cue");
+      if (autoScroll) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [activeCueId, autoScroll]);
+
+  function handleArticleClick(e: React.MouseEvent<HTMLElement>) {
+    const target = (e.target as HTMLElement).closest("[data-start]") as HTMLElement | null;
+    if (!target) return;
+    const start = parseFloat(target.getAttribute("data-start") || "");
+    if (!isNaN(start) && seekRef.current) {
+      seekRef.current(start);
+      setActiveCueId(target.id);
+    }
+  }
+
+  function handleScrollToActiveCue() {
+    if (activeCueId) {
+      const el = document.getElementById(activeCueId);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    } else if (seekRef.current && cues.length > 0) {
+      seekRef.current(cues[0].start);
+    }
+  }
+
   if (loading) {
     return (
       <div className="reader-page">
@@ -84,9 +147,13 @@ export function ReaderPage() {
   const prevLink = prevChapter ? `${path}/doc/${prevChapter.id || activeIdx}` : null;
   const nextLink = nextChapter ? `${path}/doc/${nextChapter.id || activeIdx + 2}` : null;
   const audioLink = `${path}/nghe/${currentChapter ? currentChapter.id : activeIdx + 1}`;
+  const audioSrc =
+    content?.audio_url ||
+    (currentChapter ? `/api/books/${story.slug}/audio/${currentChapter.id}` : undefined);
+  const activeCue = cues.find((c) => c.id === activeCueId) || null;
 
   return (
-    <div className="reader-page">
+    <div className={`reader-page ${audioSrc ? "reader-page-with-player" : ""}`}>
       <nav className="reading-breadcrumb" aria-label="Đường dẫn">
         <Link to={path}>{story.title}</Link>
         <span aria-hidden="true">/</span>
@@ -94,14 +161,29 @@ export function ReaderPage() {
       </nav>
 
       <header className="reader-heading">
-        <p className="eyebrow">ĐỌC TRUYỆN</p>
+        <p className="eyebrow">ĐỌC TRUYỆN & KARAOKE</p>
         <h1>{chapterTitle}</h1>
         <p>
           {story.title} · {story.author}
         </p>
-        <div style={{ marginTop: "12px", display: "flex", gap: "8px", justifyContent: "center" }}>
-          <Link className="button button-primary" to={audioLink} style={{ fontSize: "13px", padding: "6px 16px" }}>
-            🎧 Nghe Audio Chương Này
+        <div style={{ marginTop: "12px", display: "flex", gap: "8px", justifyContent: "center", flexWrap: "wrap" }}>
+          {audioSrc && (
+            <button
+              type="button"
+              className="button button-primary"
+              onClick={() => {
+                if (seekRef.current) {
+                  const first = cues[0];
+                  seekRef.current(first ? first.start : 0);
+                }
+              }}
+              style={{ fontSize: "13px", padding: "6px 16px" }}
+            >
+              ✨ Nghe Audio & Karaoke Đồng Bộ
+            </button>
+          )}
+          <Link className="button" to={audioLink} style={{ fontSize: "13px", padding: "6px 16px" }}>
+            🎧 Mở Máy Đĩa Than
           </Link>
         </div>
       </header>
@@ -146,8 +228,23 @@ export function ReaderPage() {
       {content?.html ? (
         <article
           className="reader-article"
+          onClick={handleArticleClick}
           dangerouslySetInnerHTML={{ __html: content.html }}
         />
+      ) : cues.length > 0 ? (
+        <article className="reader-article" onClick={handleArticleClick}>
+          {cues.map((cue) => (
+            <p
+              key={cue.id}
+              id={cue.id}
+              data-start={cue.start}
+              data-end={cue.end}
+              className="reader-paragraph"
+            >
+              {cue.text}
+            </p>
+          ))}
+        </article>
       ) : (
         <article className="reader-article">
           <p>{story.description}</p>
@@ -170,6 +267,29 @@ export function ReaderPage() {
           Về đầu trang
         </a>
       </nav>
+
+      {/* Sticky Mini Player for Synchronized Karaoke Audio */}
+      {audioSrc && (
+        <MiniPlayer
+          storyTitle={story.title}
+          chapterTitle={chapterTitle}
+          audioSrc={audioSrc}
+          cues={cues}
+          activeCue={activeCue}
+          onTimeUpdate={handleAudioTimeUpdate}
+          seekRef={seekRef}
+          prevLink={prevLink}
+          nextLink={nextLink}
+          audioPageLink={audioLink}
+          autoScroll={autoScroll}
+          onToggleAutoScroll={() => setAutoScroll((prev) => !prev)}
+          onScrollToActiveCue={handleScrollToActiveCue}
+          onEnded={() => {
+            if (nextLink) navigate(nextLink);
+          }}
+        />
+      )}
     </div>
   );
 }
+
