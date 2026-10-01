@@ -347,7 +347,7 @@ def get_book(slug: str):
         }
 
 
-@app.get("/api/books/{slug}/cover")
+@app.api_route("/api/books/{slug}/cover", methods=["GET", "HEAD"])
 def get_book_cover(slug: str):
     primary_dir, remote_dir = get_book_storage_dirs(slug)
     search_dirs = [primary_dir]
