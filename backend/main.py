@@ -762,6 +762,7 @@ class SPAStaticFiles(StaticFiles):
 
 
 @app.get("/admin")
+@app.get("/admin/")
 def serve_admin_page():
     for f in [dist_dir / "admin.html", frontend_dir / "admin.html"]:
         if f.is_file():
