@@ -486,19 +486,41 @@ def update_book_settings(slug: str, req: UpdateBookRequest):
             params.append(slug)
             conn.execute(f"UPDATE admin_books SET {', '.join(updates)} WHERE slug = ?", params)
 
-    # Sync metadata.json if title, author, or cover changed
-    book_dir = Path(settings.AUDIOBOOKS_DIR).resolve() / slug
-    meta_path = book_dir / "metadata.json"
-    if meta_path.is_file() and (req.title or req.author or req.cover_url):
+    # Sync metadata.json in all possible locations (AUDIOBOOKS_DIR and LOCAL_DATA_DIR)
+    target_dirs = [
+        Path(settings.AUDIOBOOKS_DIR).resolve() / slug,
+        Path(settings.LOCAL_DATA_DIR).resolve() / slug,
+    ]
+    for b_dir in target_dirs:
+        if not b_dir.exists():
+            continue
+        meta_path = b_dir / "metadata.json"
         try:
-            m_data = json.loads(meta_path.read_text(encoding="utf-8"))
+            m_data = {}
+            if meta_path.is_file():
+                m_data = json.loads(meta_path.read_text(encoding="utf-8"))
+            else:
+                m_data = {"slug": slug}
             if req.title:
                 m_data["title"] = req.title
             if req.author:
                 m_data["author"] = req.author
             if req.cover_url:
                 m_data["cover_url"] = req.cover_url
+            if req.genres:
+                m_data["genres"] = req.genres
             meta_path.write_text(json.dumps(m_data, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception as e:
+            logger.warning(f"Error syncing metadata.json for {slug} in {b_dir}: {e}")
+
+    # Immediately clear in-memory caches so changes take effect across all endpoints
+    try:
+        from main import clear_api_caches
+        clear_api_caches(slug)
+    except Exception:
+        try:
+            from backend.main import clear_api_caches
+            clear_api_caches(slug)
         except Exception:
             pass
 

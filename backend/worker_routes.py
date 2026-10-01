@@ -147,6 +147,7 @@ def poll_job():
 @router.post("/progress")
 def report_progress(payload: ProgressPayload):
     """Receives live sentence-by-sentence progress from remote GPU worker."""
+    coordinator.touch(status="rendering")
     with queue_manager._lock:
         job = queue_manager._current_job
         if not job or job.book_slug != payload.book_slug:

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useLocation } from "react-router-dom";
 import { AudioPlayer } from "../components/AudioPlayer";
 import { AudioLoader } from "../components/AudioLoader";
 import {
@@ -14,6 +14,8 @@ import { NotFoundPage } from "./NotFoundPage";
 
 export function AudioPage() {
   const { slug, chapter } = useParams();
+  const location = useLocation();
+  const initialAutoPlay = Boolean(location.state?.autoPlay);
   const [story, setStory] = useState<Story | null>(null);
   const [chapters, setChapters] = useState<BackendChapter[]>([]);
   const [content, setContent] = useState<ChapterContent | null>(null);
@@ -109,6 +111,7 @@ export function AudioPage() {
             chapters={chapters}
             audioSrc={audioSrc}
             storyTitle={story.title}
+            initialAutoPlay={initialAutoPlay}
           />
 
           <div style={{ marginTop: "16px" }}>

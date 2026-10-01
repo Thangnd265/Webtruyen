@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { ReaderToolbar } from "../components/ReaderToolbar";
 import { TextLoader } from "../components/TextLoader";
 import { MiniPlayer } from "../components/MiniPlayer";
@@ -16,6 +16,8 @@ import { NotFoundPage } from "./NotFoundPage";
 
 export function ReaderPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const initialAutoPlay = Boolean(location.state?.autoPlay);
   const { slug, chapter } = useParams();
   const [story, setStory] = useState<Story | null>(null);
   const [chapters, setChapters] = useState<BackendChapter[]>([]);
@@ -284,8 +286,9 @@ export function ReaderPage() {
           autoScroll={autoScroll}
           onToggleAutoScroll={() => setAutoScroll((prev) => !prev)}
           onScrollToActiveCue={handleScrollToActiveCue}
+          initialAutoPlay={initialAutoPlay}
           onEnded={() => {
-            if (nextLink) navigate(nextLink);
+            if (nextLink) navigate(nextLink, { state: { autoPlay: true } });
           }}
         />
       )}

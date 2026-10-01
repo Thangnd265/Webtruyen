@@ -75,7 +75,7 @@ let cachedStories: Story[] | null = null;
 
 export async function getStories(): Promise<Story[]> {
   try {
-    const res = await fetch("/api/books");
+    const res = await fetch("/api/books", { cache: "no-store" });
     if (res.ok) {
       const data = await res.json();
       if (Array.isArray(data) && data.length > 0) {
@@ -101,7 +101,7 @@ export function buildDynamicHeroSlides(stories: Story[]): HeroSlide[] {
 
 export async function getStoryDetail(slug: string): Promise<{ story: Story; chapters: BackendChapter[] } | null> {
   try {
-    const res = await fetch(`/api/books/${slug}`);
+    const res = await fetch(`/api/books/${slug}`, { cache: "no-store" });
     if (res.ok) {
       const data: BackendBookDetail = await res.json();
       const story = mapBackendBookToStory(data);

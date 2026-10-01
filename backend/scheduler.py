@@ -100,6 +100,13 @@ class WorkerCoordinator:
                 "status": status,
             }
 
+    def touch(self, status: str = "rendering"):
+        with self._lock:
+            self.last_heartbeat = time.time()
+            if self.worker_info:
+                self.worker_info["status"] = status
+
+
     def is_online(self) -> bool:
         with self._lock:
             if self.last_heartbeat == 0:

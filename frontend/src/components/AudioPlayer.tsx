@@ -12,6 +12,7 @@ export function AudioPlayer({
   audioSrc,
   locked = false,
   storyTitle = "",
+  initialAutoPlay = false,
 }: {
   storyPath: string;
   chapterIndex: number;
@@ -19,6 +20,7 @@ export function AudioPlayer({
   audioSrc?: string;
   locked?: boolean;
   storyTitle?: string;
+  initialAutoPlay?: boolean;
 }) {
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -31,6 +33,10 @@ export function AudioPlayer({
   const [speed, setSpeed] = useState("1");
   const [volume, setVolume] = useState(80);
   const [audioError, setAudioError] = useState(false);
+  const [autoNext, setAutoNext] = useState(() => {
+    const saved = localStorage.getItem("webtruyen_auto_next");
+    return saved !== null ? saved === "true" : true;
+  });
 
   const totalChapters = Math.max(chapters.length, 1);
   const currentChapter = chapters[chapterIndex] || {
@@ -43,8 +49,6 @@ export function AudioPlayer({
   const playlist = chapters.slice(first, first + 8);
 
   useEffect(() => {
-    setPlaying(false);
-    setBuffering(false);
     setPosition(0);
     setCurrentTime(0);
     setAudioError(false);
@@ -52,7 +56,34 @@ export function AudioPlayer({
       audioRef.current.playbackRate = Number(speed);
       audioRef.current.volume = volume / 100;
     }
-  }, [audioSrc, chapterIndex]);
+
+    if (initialAutoPlay && audioSrc && !locked) {
+      setBuffering(true);
+      const audio = audioRef.current;
+      if (audio) {
+        const startPlay = () => {
+          audio
+            .play()
+            .then(() => {
+              setPlaying(true);
+              setBuffering(false);
+            })
+            .catch((err) => {
+              console.warn("AutoPlay blocked or deferred:", err);
+              setBuffering(false);
+            });
+        };
+        if (audio.readyState >= 2) {
+          startPlay();
+        } else {
+          audio.addEventListener("canplay", startPlay, { once: true });
+        }
+      }
+    } else {
+      setPlaying(false);
+      setBuffering(false);
+    }
+  }, [audioSrc, chapterIndex, initialAutoPlay]);
 
   function togglePlay() {
     if (!audioRef.current || locked) return;
@@ -105,10 +136,12 @@ export function AudioPlayer({
     }
   }
 
-  function selectChapter(idx: number) {
+  function selectChapter(idx: number, continuePlaying = playing) {
     if (idx < 0 || idx >= chapters.length) return;
     const target = chapters[idx];
-    navigate(`${storyPath}/nghe/${target ? target.id : idx + 1}`);
+    navigate(`${storyPath}/nghe/${target ? target.id : idx + 1}`, {
+      state: { autoPlay: continuePlaying },
+    });
   }
 
   function formatTime(sec: number) {
@@ -151,10 +184,11 @@ export function AudioPlayer({
           onPlaying={() => setBuffering(false)}
           onCanPlay={() => setBuffering(false)}
           onEnded={() => {
-            setPlaying(false);
             setBuffering(false);
-            if (chapterIndex < chapters.length - 1) {
-              selectChapter(chapterIndex + 1);
+            if (autoNext && chapterIndex < chapters.length - 1) {
+              selectChapter(chapterIndex + 1, true);
+            } else {
+              setPlaying(false);
             }
           }}
           onError={() => {
@@ -185,7 +219,7 @@ export function AudioPlayer({
           type="button"
           aria-label="Chương trước"
           disabled={chapterIndex === 0}
-          onClick={() => selectChapter(chapterIndex - 1)}
+          onClick={() => selectChapter(chapterIndex - 1, playing)}
         >
           <Icon icon={SkipBack} />
         </button>
@@ -203,7 +237,7 @@ export function AudioPlayer({
           type="button"
           aria-label="Chương sau"
           disabled={chapterIndex >= chapters.length - 1}
-          onClick={() => selectChapter(chapterIndex + 1)}
+          onClick={() => selectChapter(chapterIndex + 1, playing)}
         >
           <Icon icon={SkipForward} />
         </button>
@@ -245,6 +279,35 @@ export function AudioPlayer({
           />
           <output>{volume}%</output>
         </label>
+        <label
+          className="audio-auto-next"
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: "6px",
+            cursor: "pointer",
+            userSelect: "none",
+            marginLeft: "auto",
+          }}
+          title="Tự động phát chương tiếp theo khi nghe hết"
+        >
+          <input
+            type="checkbox"
+            checked={autoNext}
+            onChange={(e) => {
+              const val = e.target.checked;
+              setAutoNext(val);
+              localStorage.setItem("webtruyen_auto_next", String(val));
+            }}
+            style={{
+              accentColor: "var(--brand, #6366f1)",
+              width: "16px",
+              height: "16px",
+              cursor: "pointer",
+            }}
+          />
+          <span style={{ fontSize: "12px", fontWeight: 500 }}>Tự chuyển chương</span>
+        </label>
       </div>
 
       <section className="audio-playlist" aria-label="Danh sách phát">
@@ -258,7 +321,7 @@ export function AudioPlayer({
                 <button
                   type="button"
                   aria-current={isCurrent ? "true" : undefined}
-                  onClick={() => selectChapter(absIdx)}
+                  onClick={() => selectChapter(absIdx, true)}
                 >
                   {ch.title || `Chương ${absIdx + 1}`}
                 </button>

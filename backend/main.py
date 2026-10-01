@@ -40,12 +40,43 @@ except ImportError:
 kosync_client = KosyncClient()
 
 try:
-    from database import init_db
+    from database import init_db, get_db
 except ImportError:
-    from backend.database import init_db
+    from backend.database import init_db, get_db
 
 app = FastAPI(title="Synced Web Reader API", version="1.0.0")
 init_db()
+
+
+def get_admin_books_map() -> Dict[str, Dict[str, Any]]:
+    """Loads book metadata overrides from SQLite admin_books table."""
+    result: Dict[str, Dict[str, Any]] = {}
+    try:
+        with get_db() as conn:
+            rows = conn.execute(
+                "SELECT slug, title, author, genres, cover_url, status, total_chapters FROM admin_books"
+            ).fetchall()
+            for r in rows:
+                result[r["slug"]] = dict(r)
+    except Exception:
+        pass
+    return result
+
+
+def get_admin_book_meta(slug: str) -> Dict[str, Any]:
+    """Loads book metadata override for a single slug."""
+    try:
+        with get_db() as conn:
+            row = conn.execute(
+                "SELECT slug, title, author, genres, cover_url, status, total_chapters FROM admin_books WHERE slug = ?",
+                (slug,),
+            ).fetchone()
+            if row:
+                return dict(row)
+    except Exception:
+        pass
+    return {}
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -184,6 +215,7 @@ def list_books():
     books = []
     seen_slugs = set()
     try:
+        admin_map = get_admin_books_map()
         search_roots = []
         local_base = Path(settings.LOCAL_DATA_DIR)
         if local_base.exists():
@@ -209,15 +241,23 @@ def list_books():
                     continue
                 total_chapters = meta.get("total_chapters", len(chapters))
 
+                adm = admin_map.get(slug, {})
+                title = adm.get("title") or meta.get("title") or slug.replace("-", " ").title()
+                author = adm.get("author") or meta.get("author") or "Unknown"
+                cover_url = adm.get("cover_url") or meta.get("cover_url") or f"/api/books/{slug}/cover"
+                genres = adm.get("genres") or meta.get("genres") or meta.get("genre") or "Huyền Huyễn, Đô Thị"
+                book_status = adm.get("status") or meta.get("status") or "Đang ra"
+                book_total_ch = adm.get("total_chapters") or total_chapters
+
                 books.append({
                     "slug": slug,
-                    "title": meta.get("title", slug.replace("-", " ").title()),
-                    "author": meta.get("author", "Unknown"),
+                    "title": title,
+                    "author": author,
                     "description": meta.get("description", ""),
-                    "cover_url": meta.get("cover_url", f"/api/books/{slug}/cover"),
-                    "total_chapters": total_chapters,
-                    "genres": meta.get("genres", meta.get("genre", "Huyền Huyễn, Đô Thị")),
-                    "status": meta.get("status", "Đang ra"),
+                    "cover_url": cover_url,
+                    "total_chapters": book_total_ch,
+                    "genres": genres,
+                    "status": book_status,
                     "views": meta.get("views", "18.5k"),
                     "rating": meta.get("rating", 4.8),
                     "updated_at": meta.get("updated_at", "28/09/2026"),
@@ -236,15 +276,23 @@ def get_book(slug: str):
     chapters = get_book_chapters(book_dir, meta.get("chapters"))
     total_chapters = meta.get("total_chapters", len(chapters))
 
+    adm = get_admin_book_meta(slug)
+    title = adm.get("title") or meta.get("title") or slug.replace("-", " ").title()
+    author = adm.get("author") or meta.get("author") or "Unknown"
+    cover_url = adm.get("cover_url") or meta.get("cover_url") or f"/api/books/{slug}/cover"
+    genres = adm.get("genres") or meta.get("genres") or meta.get("genre") or "Huyền Huyễn, Đô Thị"
+    book_status = adm.get("status") or meta.get("status") or "Đang ra"
+    book_total_ch = adm.get("total_chapters") or total_chapters
+
     return {
         "slug": slug,
-        "title": meta.get("title", slug.replace("-", " ").title()),
-        "author": meta.get("author", "Unknown"),
+        "title": title,
+        "author": author,
         "description": meta.get("description", ""),
-        "cover_url": meta.get("cover_url", f"/api/books/{slug}/cover"),
-        "total_chapters": total_chapters,
-        "genres": meta.get("genres", meta.get("genre", "Huyền Huyễn, Đô Thị")),
-        "status": meta.get("status", "Đang ra"),
+        "cover_url": cover_url,
+        "total_chapters": book_total_ch,
+        "genres": genres,
+        "status": book_status,
         "views": meta.get("views", "18.5k"),
         "rating": meta.get("rating", 4.8),
         "updated_at": meta.get("updated_at", "28/09/2026"),

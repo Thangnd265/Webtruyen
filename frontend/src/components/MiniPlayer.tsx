@@ -19,6 +19,7 @@ interface MiniPlayerProps {
   onToggleAutoScroll: () => void;
   onScrollToActiveCue: () => void;
   onEnded?: () => void;
+  initialAutoPlay?: boolean;
 }
 
 export function MiniPlayer({
@@ -35,6 +36,7 @@ export function MiniPlayer({
   onToggleAutoScroll,
   onScrollToActiveCue,
   onEnded,
+  initialAutoPlay = false,
 }: MiniPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -43,12 +45,29 @@ export function MiniPlayer({
   const [speed, setSpeed] = useState("1");
 
   useEffect(() => {
-    setPlaying(false);
     setCurrentTime(0);
     if (audioRef.current) {
       audioRef.current.playbackRate = Number(speed);
     }
-  }, [audioSrc]);
+    if (initialAutoPlay && audioSrc) {
+      const audio = audioRef.current;
+      if (audio) {
+        const startPlay = () => {
+          audio
+            .play()
+            .then(() => setPlaying(true))
+            .catch(() => {});
+        };
+        if (audio.readyState >= 2) {
+          startPlay();
+        } else {
+          audio.addEventListener("canplay", startPlay, { once: true });
+        }
+      }
+    } else {
+      setPlaying(false);
+    }
+  }, [audioSrc, initialAutoPlay]);
 
   useEffect(() => {
     seekRef.current = (time: number) => {
@@ -152,7 +171,7 @@ export function MiniPlayer({
       {/* Center controls */}
       <div className="mini-player-controls">
         {prevLink ? (
-          <Link to={prevLink} className="mini-control-btn" title="Chương trước">
+          <Link to={prevLink} state={{ autoPlay: playing }} className="mini-control-btn" title="Chương trước">
             <Icon icon={SkipBack} size={18} />
           </Link>
         ) : (
@@ -189,7 +208,7 @@ export function MiniPlayer({
         </button>
 
         {nextLink ? (
-          <Link to={nextLink} className="mini-control-btn" title="Chương sau">
+          <Link to={nextLink} state={{ autoPlay: playing }} className="mini-control-btn" title="Chương sau">
             <Icon icon={SkipForward} size={18} />
           </Link>
         ) : (
