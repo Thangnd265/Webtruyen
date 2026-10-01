@@ -70,7 +70,7 @@ def get_wav_duration(wav_path: Path) -> float:
 
 
 class TTSEngine:
-    """TTS Synthesizer wrapper supporting VieNeu-TTS v3 neural synthesis and mock mode."""
+    """TTS Synthesizer wrapper supporting VieNeu-TTS v3 and OmniVoice neural synthesis, with mock mode."""
 
     def __init__(
         self,
@@ -82,23 +82,69 @@ class TTSEngine:
         self.dry_run = dry_run
         self.model_path = model_path
         self._model = None
+        self.is_omnivoice = "omnivoice" in self.voice.lower()
+        self._omni_model = None
+        self._omni_prompt = None
+        self._omni_config = None
 
         if not self.dry_run:
             self._init_real_model()
 
     def _init_real_model(self) -> None:
-        try:
-            from vieneu import Vieneu
+        if self.is_omnivoice:
+            try:
+                import torch
+                from omnivoice import OmniVoice, VoiceClonePrompt
+                from omnivoice.models.omnivoice import OmniVoiceGenerationConfig
 
-            logger.info("VieNeu-TTS v3 engine successfully loaded.")
-            self._model = Vieneu()
-            if self.model_path and Path(self.model_path).exists():
-                logger.info(f"Loading custom voice presets from {self.model_path}...")
-                self._model._load_voices_from_file(Path(self.model_path))
-        except ImportError:
-            logger.warning(
-                "VieNeu-TTS ('vieneu') is not installed. Real synthesis will fail unless dry_run=True."
-            )
+                device = "cuda:0" if torch.cuda.is_available() else "cpu"
+                dtype = torch.float16 if torch.cuda.is_available() else torch.float32
+                logger.info(f"OmniVoice engine loading on {device} ({dtype})...")
+                self._omni_model = OmniVoice.from_pretrained(
+                    "k2-fsa/OmniVoice",
+                    device_map=device,
+                    dtype=dtype,
+                )
+
+                prompt_file = Path(r"C:\Users\Thang.PC\Documents\Server\Webtruyenv2\voices\omnivoice_sample_clean_5s_prompt.pt")
+                if not prompt_file.is_file():
+                    prompt_file = Path(__file__).resolve().parent.parent / "voices" / "omnivoice_sample_clean_5s_prompt.pt"
+
+                if prompt_file.is_file():
+                    logger.info(f"Loading OmniVoice prompt from {prompt_file.name}...")
+                    self._omni_prompt = VoiceClonePrompt.load(str(prompt_file))
+                else:
+                    ref_audio = prompt_file.parent / "sample_voice_clean_5s.wav"
+                    ref_text = "Lời vừa dứt, Lữ Bình và Trương Hoài đột ngột ngẩng đầu, vẻ mặt đầy bất phục nhìn chằm chằm Cố Thương."
+                    logger.info(f"Creating OmniVoice clone prompt from {ref_audio.name}...")
+                    self._omni_prompt = self._omni_model.create_voice_clone_prompt(
+                        ref_audio=str(ref_audio), ref_text=ref_text
+                    )
+                    self._omni_prompt.save(str(prompt_file))
+
+                self._omni_config = OmniVoiceGenerationConfig(
+                    postprocess_output=False,
+                    preprocess_prompt=True,
+                    guidance_scale=2.0,
+                    denoise=True,
+                )
+                logger.info("OmniVoice engine initialized successfully.")
+            except Exception as e:
+                logger.error(f"Failed to load OmniVoice engine: {e}")
+                raise
+        else:
+            try:
+                from vieneu import Vieneu
+
+                logger.info("VieNeu-TTS v3 engine successfully loaded.")
+                self._model = Vieneu()
+                if self.model_path and Path(self.model_path).exists():
+                    logger.info(f"Loading custom voice presets from {self.model_path}...")
+                    self._model._load_voices_from_file(Path(self.model_path))
+            except ImportError:
+                logger.warning(
+                    "VieNeu-TTS ('vieneu') is not installed. Real synthesis will fail unless dry_run=True."
+                )
 
     def synthesize_sentence(self, text: str, output_wav_path: Path) -> float:
         """Synthesizes text into a WAV file at output_wav_path. Returns duration in seconds."""
@@ -122,14 +168,28 @@ class TTSEngine:
         return duration
 
     def _real_synthesize(self, text: str, output_wav_path: Path) -> float:
-        """Synthesizes text using VieNeu-TTS v3 model."""
-        if self._model is None:
-            raise RuntimeError(
-                "VieNeu-TTS engine is not available. Please install 'vieneu' or use --dry-run."
+        """Synthesizes text using OmniVoice or VieNeu-TTS v3 model."""
+        if self.is_omnivoice:
+            if self._omni_model is None or self._omni_prompt is None:
+                raise RuntimeError("OmniVoice engine is not available.")
+            import soundfile as sf
+            audios = self._omni_model.generate(
+                text=[text],
+                voice_clone_prompt=self._omni_prompt,
+                language="vi",
+                generation_config=self._omni_config,
             )
-        audio = self._model.infer(text, voice=self.voice)
-        self._model.save(audio, str(output_wav_path))
-        return get_wav_duration(output_wav_path)
+            audio = audios[0]
+            sf.write(str(output_wav_path), audio, 24000)
+            return get_wav_duration(output_wav_path)
+        else:
+            if self._model is None:
+                raise RuntimeError(
+                    "VieNeu-TTS engine is not available. Please install 'vieneu' or use --dry-run."
+                )
+            audio = self._model.infer(text, voice=self.voice)
+            self._model.save(audio, str(output_wav_path))
+            return get_wav_duration(output_wav_path)
 
 
 def stitch_to_m4b(
@@ -183,6 +243,31 @@ def stitch_to_m4b(
         return True
 
 
+def get_voice_tag(voice_name: str) -> str:
+    """Computes a clean, standardized voice tag suffix for parallel voice storage."""
+    if not voice_name:
+        return "default"
+    v = voice_name.lower().strip()
+    if "omni" in v:
+        return "omnivoice"
+    if "huyền" in v or "ngochuyen" in v:
+        return "ngochuyen"
+    if "minh" in v or "thienminh" in v:
+        return "thienminh"
+    if "quỳnh" in v or "quynhanh" in v:
+        return "quynhanh"
+    if "đăng" in v or "haidang" in v:
+        return "haidang"
+    if "sơn" in v or "thaison" in v:
+        return "thaison"
+    if "duyên" in v or "myduyen" in v:
+        return "myduyen"
+    if "quang" in v or "quangson" in v:
+        return "quangson"
+    clean = re.sub(r"[^a-zA-Z0-9]+", "_", v).strip("_")
+    return clean or "default"
+
+
 def process_chapter(
     chapter: Dict[str, Any],
     output_dir: Path,
@@ -197,21 +282,22 @@ def process_chapter(
     chapter_id = chapter["id"]
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    tag_suffix = f"_{voice_tag}" if voice_tag else ""
+    v_tag = voice_tag or get_voice_tag(tts.voice)
+    tag_suffix = f"_{v_tag}" if v_tag else ""
     m4b_path = output_dir / f"{chapter_id}{tag_suffix}.m4b"
     cues_path = output_dir / f"{chapter_id}{tag_suffix}_cues.json"
     html_path = output_dir / f"{chapter_id}.html"
 
-    # Chapter resume capability
+    # Chapter resume capability specifically for this voice tag:
     if skip_existing and m4b_path.exists() and m4b_path.stat().st_size > 0 and cues_path.exists():
-        logger.info(f"Chapter {chapter_id} already exists in {output_dir}. Skipping (resume).")
+        logger.info(f"Chapter {chapter_id} ({v_tag}) already exists in {output_dir}. Skipping (resume).")
         return {"status": "skipped", "chapter_id": chapter_id}
 
     if ram_base_dir is None:
         ram_base_dir = get_default_ram_dir()
 
-    # Create temporary batch directory in RAM Disk (deterministic per book & chapter to allow resume)
-    batch_ram_dir = ram_base_dir / f"tts_batch_{slug}_{chapter_id}"
+    # Create temporary batch directory in RAM Disk (deterministic per book, chapter & voice)
+    batch_ram_dir = ram_base_dir / f"tts_batch_{slug}_{chapter_id}_{v_tag}"
     batch_ram_dir.mkdir(parents=True, exist_ok=True)
     stitch_success = False
 
@@ -267,12 +353,23 @@ def process_chapter(
                 "error": "Audio stitching failed",
             }
 
-        # Write exact sentence timing cues
+        # Write exact sentence timing cues for this specific voice
         cues_path.write_text(json.dumps(final_cues, ensure_ascii=False, indent=2), encoding="utf-8")
 
-        # Write chapter HTML with cue IDs and timing metadata
-        html_markup = format_cues_html(final_cues)
-        html_path.write_text(html_markup, encoding="utf-8")
+        # If default untagged audio doesn't exist yet, also create fallback copy
+        default_m4b = output_dir / f"{chapter_id}.m4b"
+        default_cues = output_dir / f"{chapter_id}_cues.json"
+        if not default_m4b.exists():
+            try:
+                shutil.copy2(str(m4b_path), str(default_m4b))
+                shutil.copy2(str(cues_path), str(default_cues))
+            except Exception:
+                pass
+
+        # Write chapter HTML with cue IDs and timing metadata if not already present
+        if not html_path.exists():
+            html_markup = format_cues_html(final_cues)
+            html_path.write_text(html_markup, encoding="utf-8")
 
         logger.info(
             f"Successfully processed {chapter_id}: {len(final_cues)} cues, {current_time:.2f}s total audio."

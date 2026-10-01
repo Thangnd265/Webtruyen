@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Link, useParams, useLocation } from "react-router-dom";
+import { Link, useParams, useLocation, useSearchParams } from "react-router-dom";
 import { AudioPlayer } from "../components/AudioPlayer";
 import { AudioLoader } from "../components/AudioLoader";
+import { VoiceSelector } from "../components/VoiceSelector";
 import {
   getStoryDetail,
   getChapterContent,
@@ -15,12 +16,15 @@ import { NotFoundPage } from "./NotFoundPage";
 export function AudioPage() {
   const { slug, chapter } = useParams();
   const location = useLocation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialVoice = searchParams.get("voice") || localStorage.getItem("webtruyen_voice_pref") || "";
   const initialAutoPlay = Boolean(location.state?.autoPlay);
   const [story, setStory] = useState<Story | null>(null);
   const [chapters, setChapters] = useState<BackendChapter[]>([]);
   const [content, setContent] = useState<ChapterContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeIdx, setActiveIdx] = useState(0);
+  const [selectedVoice, setSelectedVoice] = useState<string>(initialVoice);
 
   useEffect(() => {
     if (!slug) return;
@@ -53,9 +57,12 @@ export function AudioPage() {
 
       const targetChapter = chList[targetIdx];
       if (targetChapter) {
-        getChapterContent(slug, targetChapter.id).then((cData) => {
+        getChapterContent(slug, targetChapter.id, selectedVoice || undefined).then((cData) => {
           if (!active) return;
           setContent(cData);
+          if (cData?.current_voice && !selectedVoice) {
+            setSelectedVoice(cData.current_voice);
+          }
           setLoading(false);
         });
       } else {
@@ -67,6 +74,24 @@ export function AudioPage() {
       active = false;
     };
   }, [slug, chapter]);
+
+  function handleVoiceChange(voiceId: string) {
+    setSelectedVoice(voiceId);
+    localStorage.setItem("webtruyen_voice_pref", voiceId);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set("voice", voiceId);
+      return next;
+    });
+    const targetChapter = chapters[activeIdx];
+    if (slug && targetChapter) {
+      getChapterContent(slug, targetChapter.id, voiceId).then((cData) => {
+        if (cData) {
+          setContent(cData);
+        }
+      });
+    }
+  }
 
   if (loading) {
     return (
@@ -104,6 +129,16 @@ export function AudioPage() {
           <p>
             {story.title} · {story.author}
           </p>
+
+          {content?.available_voices && content.available_voices.length > 0 && (
+            <div style={{ margin: "16px 0" }}>
+              <VoiceSelector
+                voices={content.available_voices}
+                currentVoice={content.current_voice || selectedVoice}
+                onSelectVoice={handleVoiceChange}
+              />
+            </div>
+          )}
 
           <AudioPlayer
             storyPath={path}

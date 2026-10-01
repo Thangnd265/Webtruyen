@@ -210,6 +210,83 @@ def clear_api_caches(slug: Optional[str] = None):
         _AUDIO_PATH_CACHE.clear()
 
 
+VOICE_MAP = {
+    "omnivoice": {"id": "omnivoice", "name": "OmniVoice - Cố Thương", "gender": "Nam", "region": "Bắc", "desc": "AI Clone OmniVoice"},
+    "ngochuyen": {"id": "ngochuyen", "name": "Ngọc Huyền", "gender": "Nữ", "region": "Bắc", "desc": "Tự nhiên, truyền cảm"},
+    "thienminh": {"id": "thienminh", "name": "Thiện Minh", "gender": "Nam", "region": "Bắc", "desc": "Trầm ấm, kiếm hiệp"},
+    "quynhanh": {"id": "quynhanh", "name": "Quỳnh Anh", "gender": "Nữ", "region": "Bắc", "desc": "Trang trọng"},
+    "haidang": {"id": "haidang", "name": "Hải Đăng", "gender": "Nam", "region": "Bắc", "desc": "MC tin tức"},
+    "thaison": {"id": "thaison", "name": "Thái Sơn", "gender": "Nam", "region": "Nam", "desc": "Kể chuyện Nam Bộ"},
+    "myduyen": {"id": "myduyen", "name": "Mỹ Duyên", "gender": "Nữ", "region": "Nam", "desc": "Nhẹ nhàng Nam Bộ"},
+    "quangson": {"id": "quangson", "name": "Quang Sơn", "gender": "Nam", "region": "Trung", "desc": "Mộc mạc, truyền cảm"},
+}
+
+
+def resolve_voice_info(tag: str, default_name: str = "Ngọc Huyền") -> Dict[str, str]:
+    tag_clean = tag.lower().replace("-", "_").strip()
+    for k, v in VOICE_MAP.items():
+        if k in tag_clean:
+            return v
+    return {"id": tag_clean, "name": default_name or tag, "gender": "Tùy chọn", "region": "Toàn quốc", "desc": ""}
+
+
+def get_available_voices_for_chapter(book_dir: Path, chapter_id: str, default_book_voice: str = "Ngọc Huyền") -> List[Dict[str, str]]:
+    found: Dict[str, Dict[str, str]] = {}
+    exts = (".m4b", ".mp3", ".wav", ".aac", ".ogg")
+    def_tag = "omnivoice" if "omni" in (default_book_voice or "").lower() else "ngochuyen"
+
+    try:
+        for f in book_dir.glob(f"{chapter_id}*"):
+            if f.suffix.lower() in exts:
+                stem = f.stem
+                if stem == chapter_id:
+                    v_info = resolve_voice_info(def_tag, default_book_voice)
+                    if v_info["id"] not in found:
+                        found[v_info["id"]] = v_info
+                elif stem.startswith(f"{chapter_id}_"):
+                    tag_part = stem[len(chapter_id) + 1:].lower()
+                    v_info = resolve_voice_info(tag_part)
+                    if v_info["id"] not in found:
+                        found[v_info["id"]] = v_info
+    except Exception:
+        pass
+
+    if not found:
+        v_info = resolve_voice_info(def_tag, default_book_voice)
+        found[v_info["id"]] = v_info
+
+    return list(found.values())
+
+
+def get_available_voices_for_book(book_dir: Path, default_book_voice: str = "Ngọc Huyền") -> List[Dict[str, str]]:
+    found: Dict[str, Dict[str, str]] = {}
+    exts = (".m4b", ".mp3", ".wav", ".aac", ".ogg")
+    def_tag = "omnivoice" if "omni" in (default_book_voice or "").lower() else "ngochuyen"
+
+    try:
+        for f in book_dir.glob("chapter_*"):
+            if f.suffix.lower() in exts:
+                stem = f.stem
+                parts = stem.split("_")
+                if len(parts) == 2:
+                    v_info = resolve_voice_info(def_tag, default_book_voice)
+                    if v_info["id"] not in found:
+                        found[v_info["id"]] = v_info
+                elif len(parts) >= 3:
+                    tag_part = "_".join(parts[2:]).lower()
+                    v_info = resolve_voice_info(tag_part)
+                    if v_info["id"] not in found:
+                        found[v_info["id"]] = v_info
+    except Exception:
+        pass
+
+    if not found:
+        v_info = resolve_voice_info(def_tag, default_book_voice)
+        found[v_info["id"]] = v_info
+
+    return list(found.values())
+
+
 @app.get("/api/books")
 def list_books():
     books = []
@@ -333,6 +410,9 @@ def get_book(slug: str):
         total_chapters = row["total_chapters"] or len(chapters)
         cover_url = row["cover_url"] or f"/api/books/{slug}/cover"
         banner_url = row["banner_url"] or f"/api/books/{slug}/banner"
+        default_voice = row["voice"] if "voice" in row.keys() and row["voice"] else "Ngọc Huyền"
+        book_dir = get_safe_book_dir(slug)
+        available_voices = get_available_voices_for_book(book_dir, default_voice)
 
         return {
             "slug": slug,
@@ -348,6 +428,7 @@ def get_book(slug: str):
             "rating": row["rating"] or 4.8,
             "updated_at": str(row["updated_at"])[:10] if row["updated_at"] else "Vừa xong",
             "chapters": chapters,
+            "available_voices": available_voices,
         }
 
 
@@ -400,13 +481,42 @@ def get_chapter(slug: str, chapter_id: str, voice: Optional[str] = None):
 
     book_dir = get_safe_book_dir(slug)
 
-    # Locate cues file
-    cues = []
-    cues_file = None
-    names_to_try = []
+    # Query default book voice
+    default_book_voice = "Ngọc Huyền"
+    try:
+        with get_db() as conn:
+            brow = conn.execute("SELECT voice FROM admin_books WHERE slug = ?", (slug,)).fetchone()
+            if brow and brow["voice"]:
+                default_book_voice = brow["voice"]
+    except Exception:
+        pass
+
+    available_voices = get_available_voices_for_chapter(book_dir, chapter_id, default_book_voice)
+
+    # Resolve selected voice
+    selected_voice_tag = None
     if voice:
         v_clean = re.sub(r"[^a-zA-Z0-9_\-]", "", voice.lower())
-        names_to_try.extend([f"{chapter_id}_{v_clean}_cues.json", f"{chapter_id}_{v_clean}.cues.json"])
+        for v in available_voices:
+            if v["id"] == v_clean or v_clean in v["id"] or v["name"].lower() == voice.lower():
+                selected_voice_tag = v["id"]
+                break
+        if not selected_voice_tag:
+            selected_voice_tag = v_clean
+    else:
+        selected_voice_tag = available_voices[0]["id"] if available_voices else "ngochuyen"
+
+    # Locate cues file matching the chosen voice
+    cues = []
+    cues_file = None
+    names_to_try = [
+        f"{chapter_id}_{selected_voice_tag}_cues.json",
+        f"{chapter_id}_{selected_voice_tag}.cues.json",
+    ]
+    if "omni" in selected_voice_tag:
+        names_to_try.extend([f"{chapter_id}_omnivoice_cues.json", f"{chapter_id}_omnivoice.cues.json"])
+    elif "ngoc" in selected_voice_tag or "huyen" in selected_voice_tag:
+        names_to_try.extend([f"{chapter_id}_ngochuyen_cues.json", f"{chapter_id}_cues.json"])
     names_to_try.extend([f"{chapter_id}_cues.json", f"{chapter_id}.cues.json", f"{chapter_id}.json"])
 
     for name in names_to_try:
@@ -466,7 +576,9 @@ def get_chapter(slug: str, chapter_id: str, voice: Optional[str] = None):
         "title": chapter_title,
         "html": html_content,
         "cues": cues,
-        "audio_url": f"/api/books/{slug}/audio/{chapter_id}",
+        "audio_url": f"/api/books/{slug}/audio/{chapter_id}?voice={selected_voice_tag}",
+        "current_voice": selected_voice_tag,
+        "available_voices": available_voices,
     }
     _CHAPTER_CACHE[cache_key] = (now, result)
     return result
@@ -510,7 +622,9 @@ def stream_audio(
                 v_clean = re.sub(r"[^a-zA-Z0-9_\-]", "", voice.lower())
                 p_clean = re.sub(r"[^a-zA-Z0-9_\-+]", "", pitch) if pitch else ""
                 aliases = [v_clean]
-                if v_clean in ["thienminh", "default"]:
+                if "omni" in v_clean:
+                    aliases.extend(["omnivoice", "omnivoice_cothuong", "cothuong"])
+                elif v_clean in ["thienminh", "default"]:
                     aliases.extend(["thienminh", "chapter_001", "male"])
                 elif v_clean in ["trucly", "female", "nu"]:
                     aliases.extend(["trucly", "female", "nu"])

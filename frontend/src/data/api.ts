@@ -2,12 +2,21 @@ import type { Story, HeroSlide } from "./types";
 import { stories as fallbackStories } from "./stories";
 import { heroSlides as fallbackSlides } from "./site";
 
+export interface VoiceOption {
+  id: string;
+  name: string;
+  gender?: string;
+  region?: string;
+  desc?: string;
+}
+
 export interface BackendChapter {
   id: string;
   title: string;
   chapter_index?: number;
   has_audio?: boolean;
   audio_url?: string;
+  available_voices?: VoiceOption[];
 }
 
 export interface BackendBookDetail {
@@ -23,6 +32,7 @@ export interface BackendBookDetail {
   rating: number;
   updated_at: string;
   chapters: BackendChapter[];
+  available_voices?: VoiceOption[];
 }
 
 export interface ChapterCue {
@@ -38,6 +48,8 @@ export interface ChapterContent {
   html: string;
   cues: ChapterCue[];
   audio_url: string;
+  current_voice?: string;
+  available_voices?: VoiceOption[];
 }
 
 export function mapBackendBookToStory(b: any): Story {
@@ -124,9 +136,16 @@ export async function getStoryDetail(slug: string): Promise<{ story: Story; chap
   return null;
 }
 
-export async function getChapterContent(slug: string, chapterId: string): Promise<ChapterContent | null> {
+export async function getChapterContent(
+  slug: string,
+  chapterId: string,
+  voice?: string
+): Promise<ChapterContent | null> {
   try {
-    const res = await fetch(`/api/books/${slug}/chapters/${chapterId}`);
+    const url = voice
+      ? `/api/books/${slug}/chapters/${chapterId}?voice=${encodeURIComponent(voice)}`
+      : `/api/books/${slug}/chapters/${chapterId}`;
+    const res = await fetch(url);
     if (res.ok) {
       const data: ChapterContent = await res.json();
       return data;

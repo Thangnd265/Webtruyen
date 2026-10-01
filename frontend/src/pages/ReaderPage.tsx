@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams, useLocation } from "react-router-dom";
 import { ReaderToolbar } from "../components/ReaderToolbar";
 import { TextLoader } from "../components/TextLoader";
 import { MiniPlayer } from "../components/MiniPlayer";
+import { VoiceSelector } from "../components/VoiceSelector";
 import {
   getStoryDetail,
   getChapterContent,
@@ -26,6 +27,9 @@ export function ReaderPage() {
   const [activeIdx, setActiveIdx] = useState<number>(0);
   const [activeCueId, setActiveCueId] = useState<string | null>(null);
   const [autoScroll, setAutoScroll] = useState<boolean>(true);
+  const [selectedVoice, setSelectedVoice] = useState<string>(() => {
+    return localStorage.getItem("webtruyen_voice_pref") || "";
+  });
   const seekRef = useRef<((time: number) => void) | null>(null);
 
   useEffect(() => {
@@ -61,9 +65,12 @@ export function ReaderPage() {
 
       const targetChapter = chList[targetIdx];
       if (targetChapter) {
-        getChapterContent(slug, targetChapter.id).then((cData) => {
+        getChapterContent(slug, targetChapter.id, selectedVoice || undefined).then((cData) => {
           if (!active) return;
           setContent(cData);
+          if (cData?.current_voice && !selectedVoice) {
+            setSelectedVoice(cData.current_voice);
+          }
           setLoading(false);
         });
       } else {
@@ -75,6 +82,19 @@ export function ReaderPage() {
       active = false;
     };
   }, [slug, chapter]);
+
+  function handleVoiceChange(voiceId: string) {
+    setSelectedVoice(voiceId);
+    localStorage.setItem("webtruyen_voice_pref", voiceId);
+    const targetChapter = chapters[activeIdx];
+    if (slug && targetChapter) {
+      getChapterContent(slug, targetChapter.id, voiceId).then((cData) => {
+        if (cData) {
+          setContent(cData);
+        }
+      });
+    }
+  }
 
   const cues = content?.cues || [];
 
@@ -147,8 +167,7 @@ export function ReaderPage() {
   const nextChapter = activeIdx < chapters.length - 1 ? chapters[activeIdx + 1] : null;
 
   const prevLink = prevChapter ? `${path}/doc/${prevChapter.id || activeIdx}` : null;
-  const nextLink = nextChapter ? `${path}/doc/${nextChapter.id || activeIdx + 2}` : null;
-  const audioLink = `${path}/nghe/${currentChapter ? currentChapter.id : activeIdx + 1}`;
+  const audioLink = `${path}/nghe/${currentChapter ? currentChapter.id : activeIdx + 1}${selectedVoice ? `?voice=${selectedVoice}` : ""}`;
   const audioSrc =
     content?.audio_url ||
     (currentChapter ? `/api/books/${story.slug}/audio/${currentChapter.id}` : undefined);
@@ -188,6 +207,16 @@ export function ReaderPage() {
             🎧 Mở Máy Đĩa Than
           </Link>
         </div>
+
+        {content?.available_voices && content.available_voices.length > 0 && (
+          <div style={{ marginTop: "16px", display: "flex", justifyContent: "center" }}>
+            <VoiceSelector
+              voices={content.available_voices}
+              currentVoice={content.current_voice || selectedVoice}
+              onSelectVoice={handleVoiceChange}
+            />
+          </div>
+        )}
       </header>
 
       <ReaderToolbar storyPath={path} />

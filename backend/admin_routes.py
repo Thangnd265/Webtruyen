@@ -60,6 +60,7 @@ except ImportError:
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 PRESET_VOICES = [
+    {"name": "OmniVoice - Cố Thương", "gender": "Nam", "region": "Bắc", "desc": "OmniVoice AI Clone - Giọng nam truyện sắc nét, trầm ấm", "preview": "/api/admin/voices/preview/sample_voice_clean_5s.mp3"},
     {"name": "Ngọc Huyền", "gender": "Nữ", "region": "Bắc", "desc": "Tự nhiên, truyền cảm (Mặc định)", "preview": "/api/admin/voices/preview/02_ngochuyen_nu_bac_tunhien.mp3"},
     {"name": "Thiện Minh", "gender": "Nam", "region": "Bắc", "desc": "Trầm ấm, kể chuyện kiếm hiệp", "preview": "/api/admin/voices/preview/01_thienminh_nam_bac_kechuyen.mp3"},
     {"name": "Quỳnh Anh", "gender": "Nữ", "region": "Bắc", "desc": "Trang trọng, đọc truyện lôi cuốn", "preview": "/api/admin/voices/preview/03_quynhanh_nu_bac_doctruyen.mp3"},
