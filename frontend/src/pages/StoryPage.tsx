@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Tabs } from "../components/Tabs";
 import { StoryGrid } from "../components/StoryGrid";
+import { TextLoader } from "../components/TextLoader";
 import { comments } from "../data/site";
 import { stories as fallbackStories } from "../data/stories";
 import { getStoryDetail, getStories, type BackendChapter } from "../data/api";
@@ -44,9 +45,8 @@ export function StoryPage() {
 
   if (loading) {
     return (
-      <div className="story-page" style={{ padding: "48px 16px", textAlign: "center" }}>
-        <p className="eyebrow">ĐANG TẢI</p>
-        <h2>Đang tải thông tin truyện...</h2>
+      <div className="story-page">
+        <TextLoader text="Đang tải thông tin truyện..." />
       </div>
     );
   }

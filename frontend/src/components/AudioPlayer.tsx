@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "./Icon";
+import { AudioLoader } from "./AudioLoader";
 import { Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
 import type { BackendChapter } from "../data/api";
 
@@ -21,6 +22,7 @@ export function AudioPlayer({
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const [playing, setPlaying] = useState(false);
+  const [buffering, setBuffering] = useState(false);
   const [position, setPosition] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -40,6 +42,7 @@ export function AudioPlayer({
 
   useEffect(() => {
     setPlaying(false);
+    setBuffering(false);
     setPosition(0);
     setCurrentTime(0);
     setAudioError(false);
@@ -122,14 +125,25 @@ export function AudioPlayer({
           preload="metadata"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={handleTimeUpdate}
+          onWaiting={() => setBuffering(true)}
+          onPlaying={() => setBuffering(false)}
+          onCanPlay={() => setBuffering(false)}
           onEnded={() => {
             setPlaying(false);
+            setBuffering(false);
             if (chapterIndex < chapters.length - 1) {
               selectChapter(chapterIndex + 1);
             }
           }}
-          onError={() => setAudioError(true)}
+          onError={() => {
+            setAudioError(true);
+            setBuffering(false);
+          }}
         />
+      )}
+
+      {buffering && !audioError && !locked && (
+        <AudioLoader compact text="Đang tải dữ liệu âm thanh..." />
       )}
 
       <p className="audio-state" role="status" aria-label="Trạng thái phát">

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { ReaderToolbar } from "../components/ReaderToolbar";
+import { TextLoader } from "../components/TextLoader";
 import { getStoryDetail, getChapterContent, type BackendChapter, type ChapterContent } from "../data/api";
 import { stories as fallbackStories } from "../data/stories";
 import type { Story } from "../data/types";
@@ -64,9 +65,8 @@ export function ReaderPage() {
 
   if (loading) {
     return (
-      <div className="reader-page" style={{ padding: "48px 16px", textAlign: "center" }}>
-        <p className="eyebrow">ĐANG TẢI</p>
-        <h2>Đang tải nội dung chương...</h2>
+      <div className="reader-page">
+        <TextLoader text="Đang nạp nội dung chương..." />
       </div>
     );
   }
