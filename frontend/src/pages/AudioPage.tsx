@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { AudioPlayer } from "../components/AudioPlayer";
 import { AudioLoader } from "../components/AudioLoader";
@@ -7,7 +7,6 @@ import {
   getChapterContent,
   type BackendChapter,
   type ChapterContent,
-  type ChapterCue,
 } from "../data/api";
 import { stories as fallbackStories } from "../data/stories";
 import type { Story } from "../data/types";
@@ -20,9 +19,6 @@ export function AudioPage() {
   const [content, setContent] = useState<ChapterContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeIdx, setActiveIdx] = useState(0);
-  const [activeCueId, setActiveCueId] = useState<string | null>(null);
-  const [autoScroll, setAutoScroll] = useState<boolean>(true);
-  const seekRef = useRef<((time: number) => void) | null>(null);
 
   useEffect(() => {
     if (!slug) return;
@@ -70,43 +66,6 @@ export function AudioPage() {
     };
   }, [slug, chapter]);
 
-  function handleAudioTimeUpdate(cur: number) {
-    const cues = content?.cues || [];
-    if (!cues.length) return;
-    for (let i = 0; i < cues.length; i++) {
-      const c = cues[i];
-      const next = cues[i + 1];
-      const nextStart = next ? next.start : c.end + 0.5;
-      if (cur >= c.start && cur < Math.max(c.end, nextStart)) {
-        if (c.id !== activeCueId) {
-          setActiveCueId(c.id);
-        }
-        break;
-      }
-    }
-  }
-
-  useEffect(() => {
-    if (!activeCueId) return;
-    document.querySelectorAll(".audio-karaoke-scrollbox .active-cue").forEach((el) => {
-      el.classList.remove("active-cue");
-    });
-    const el = document.getElementById(`audio-cue-${activeCueId}`);
-    if (el) {
-      el.classList.add("active-cue");
-      if (autoScroll) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }
-  }, [activeCueId, autoScroll]);
-
-  function handleCueClick(cue: ChapterCue) {
-    if (seekRef.current) {
-      seekRef.current(cue.start);
-      setActiveCueId(cue.id);
-    }
-  }
-
   if (loading) {
     return (
       <div className="audio-page">
@@ -138,7 +97,7 @@ export function AudioPage() {
           <img src={story.cover} alt={`Bìa truyện ${story.title}`} />
         </div>
         <div className="audio-content">
-          <p className="eyebrow">AUDIO ĐỒNG BỘ</p>
+          <p className="eyebrow">MÁY ĐĨA THAN AUDIO</p>
           <h1>{chapterTitle}</h1>
           <p>
             {story.title} · {story.author}
@@ -149,61 +108,18 @@ export function AudioPage() {
             chapterIndex={activeIdx}
             chapters={chapters}
             audioSrc={audioSrc}
-            cues={content?.cues}
-            onTimeUpdate={handleAudioTimeUpdate}
-            seekRef={seekRef}
+            storyTitle={story.title}
           />
 
           <div style={{ marginTop: "16px" }}>
             <Link className="button" to={docLink}>
-              📖 Đọc chương này dạng chữ
+              📖 Đọc chương này dạng chữ (Kèm Karaoke)
             </Link>
           </div>
         </div>
       </div>
-
-      {/* Synchronized Chapter Lyrics / Karaoke Section */}
-      {content?.cues && content.cues.length > 0 && (
-        <section
-          id="audio-karaoke-lyrics"
-          className="audio-karaoke-section"
-          aria-label="Lời thoại Karaoke đồng bộ"
-        >
-          <div className="audio-karaoke-header">
-            <div>
-              <h2 style={{ margin: 0, fontSize: "18px", fontWeight: 800 }}>
-                ✨ Lời Thoại Karaoke Đồng Bộ ({content.cues.length} câu)
-              </h2>
-              <p style={{ margin: "4px 0 0", fontSize: "13px", color: "var(--color-muted)" }}>
-                Nhấp vào câu bất kỳ để nghe âm thanh ngay từ câu đó
-              </p>
-            </div>
-            <button
-              type="button"
-              className={`mini-action-btn ${autoScroll ? "active" : ""}`}
-              onClick={() => setAutoScroll((prev) => !prev)}
-            >
-              {autoScroll ? "Tự động cuộn: Bật" : "Tự động cuộn: Tắt"}
-            </button>
-          </div>
-
-          <div className="audio-karaoke-scrollbox">
-            {content.cues.map((cue) => (
-              <p
-                key={cue.id}
-                id={`audio-cue-${cue.id}`}
-                data-start={cue.start}
-                data-end={cue.end}
-                className="reader-paragraph"
-                onClick={() => handleCueClick(cue)}
-              >
-                {cue.text}
-              </p>
-            ))}
-          </div>
-        </section>
-      )}
     </div>
   );
 }
+
 
