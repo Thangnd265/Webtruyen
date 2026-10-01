@@ -1,0 +1,28 @@
+[data-theme="default"] {
+  --color-bg: #fff8f6;
+  --color-surface: #ffffff;
+  --color-text: #2d1f1c;
+  --color-muted: #6b5348;
+  --color-border: rgb(229 77 66 / 12%);
+  --color-accent: #c94338;
+  --color-accent-hover: #c43d33;
+  --color-on-accent: #ffffff;
+  --font-sans: "Nunito", system-ui, sans-serif;
+  --radius-card: 12px;
+  --shadow-card: 0 2px 12px rgb(45 31 28 / 8%);
+  --density-scale: 1;
+  --motion-fast: 150ms;
+  --motion-normal: 250ms;
+}
+
+[data-theme="default"][data-mode="dark"] {
+  --color-bg: #000000;
+  --color-surface: #0d0d0d;
+  --color-text: #e8e4e0;
+  --color-muted: #a39e98;
+  --color-border: rgb(178 139 127 / 20%);
+  --color-accent: #d95a52;
+  --color-accent-hover: #e8726a;
+  --color-on-accent: #1a0d0c;
+  --shadow-card: 0 2px 12px rgb(0 0 0 / 32%);
+}

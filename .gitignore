@@ -8,6 +8,11 @@ __pycache__/
 .coverage
 htmlcov/
 
+# Node / Frontend
+node_modules/
+dist_temp/
+
+
 # Environments
 .env
 .venv
@@ -73,3 +78,5 @@ samples/tu-da-quai-*
 run_ngochuyen_inference.py
 input_ngochuyen.txt
 vieneu-ngoc-huyen-tts/
+scripts/gdrive_auth_helper.py
+

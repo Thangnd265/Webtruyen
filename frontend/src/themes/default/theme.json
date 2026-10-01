@@ -1,0 +1,6 @@
+{
+  "id": "default",
+  "name": "Tiểu Thuyết Mạng",
+  "description": "Warm editorial light theme",
+  "modes": ["light", "dark"]
+}

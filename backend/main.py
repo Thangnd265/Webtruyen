@@ -612,20 +612,41 @@ app.include_router(worker_router)
 
 # Mount frontend static files at root
 frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
-frontend_dir.mkdir(parents=True, exist_ok=True)
+dist_dir = frontend_dir / "dist"
+static_dir = dist_dir if (dist_dir / "index.html").is_file() else frontend_dir
+static_dir.mkdir(parents=True, exist_ok=True)
+
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+
+class SPAStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        try:
+            response = await super().get_response(path, scope)
+            if response.status_code == 404:
+                return await super().get_response("index.html", scope)
+            return response
+        except StarletteHTTPException as ex:
+            if ex.status_code == 404:
+                return await super().get_response("index.html", scope)
+            raise ex
+
 
 @app.get("/admin")
 def serve_admin_page():
-    admin_file = frontend_dir / "admin.html"
-    if admin_file.is_file():
-        return FileResponse(str(admin_file))
+    for f in [dist_dir / "admin.html", frontend_dir / "admin.html"]:
+        if f.is_file():
+            return FileResponse(str(f))
     return {"message": "Admin dashboard page not found"}
+
 
 @app.on_event("startup")
 async def startup_event():
     import asyncio
     asyncio.create_task(cron_schedule_checker())
 
-app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+
+app.mount("/", SPAStaticFiles(directory=str(static_dir), html=True), name="frontend")
+
 
 
