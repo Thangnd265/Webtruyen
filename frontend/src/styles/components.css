@@ -680,12 +680,22 @@
 .home-rankings-aside {
   min-width: 0;
 }
+@media (min-width: 1024px) {
+  .home-rankings-aside {
+    position: sticky;
+    top: calc(var(--header-offset, 88px) + 16px);
+    align-self: start;
+    max-height: calc(100vh - var(--header-offset, 88px) - 24px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+}
 .home-rankings-box {
-  background: var(--color-surface, #14151b);
-  border: 1px solid var(--color-border, #1f2229);
-  border-radius: 14px;
-  padding: 18px 20px 16px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
 }
 .home-rankings-title {
   color: #e0534c;

@@ -147,68 +147,70 @@ export function HomePage() {
         </section>
 
         {/* Section MỚI CẬP NHẬT & BẢNG XẾP HẠNG TRUYỆN (Split layout matching user screenshot) */}
-        <section className="home-split-section">
+        <div className="home-split-section">
           <div className="home-split-main">
-            <div className="section-heading-split">
-              <div>
-                <h2 className="split-title">Mới cập nhật</h2>
-                <p className="split-subtitle">Những truyện vừa được cập nhật chương mới</p>
-              </div>
-              <div className="split-controls">
-                <div className="split-pagination">
-                  <button
-                    type="button"
-                    onClick={() => setUpdatePage((p) => Math.max(1, p - 1))}
-                    disabled={updatePage === 1}
-                    aria-label="Trang trước"
-                    className="split-page-btn"
-                  >
-                    <Icon icon={ChevronLeft} size={16} />
-                  </button>
-                  <span className="split-page-indicator">{updatePage} / {totalUpdatePages}</span>
-                  <button
-                    type="button"
-                    onClick={() => setUpdatePage((p) => Math.min(totalUpdatePages, p + 1))}
-                    disabled={updatePage >= totalUpdatePages}
-                    aria-label="Trang sau"
-                    className="split-page-btn"
-                  >
-                    <Icon icon={ChevronRight} size={16} />
-                  </button>
+            <section className="discovery-section">
+              <div className="section-heading-split">
+                <div>
+                  <h2 className="split-title">Mới cập nhật</h2>
+                  <p className="split-subtitle">Những truyện vừa được cập nhật chương mới</p>
                 </div>
-                <Link to="/truyen?sort=new" className="split-view-all">
-                  Xem tất cả &rarr;
-                </Link>
+                <div className="split-controls">
+                  <div className="split-pagination">
+                    <button
+                      type="button"
+                      onClick={() => setUpdatePage((p) => Math.max(1, p - 1))}
+                      disabled={updatePage === 1}
+                      aria-label="Trang trước"
+                      className="split-page-btn"
+                    >
+                      <Icon icon={ChevronLeft} size={16} />
+                    </button>
+                    <span className="split-page-indicator">{updatePage} / {totalUpdatePages}</span>
+                    <button
+                      type="button"
+                      onClick={() => setUpdatePage((p) => Math.min(totalUpdatePages, p + 1))}
+                      disabled={updatePage >= totalUpdatePages}
+                      aria-label="Trang sau"
+                      className="split-page-btn"
+                    >
+                      <Icon icon={ChevronRight} size={16} />
+                    </button>
+                  </div>
+                  <Link to="/truyen?sort=new" className="split-view-all">
+                    Xem tất cả &rarr;
+                  </Link>
+                </div>
               </div>
-            </div>
-            <StoryGrid stories={displayedUpdateStories} variant="poster" />
+              <StoryGrid stories={displayedUpdateStories} variant="poster" />
+            </section>
+
+            <section className="discovery-section">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">TUYỂN CHỌN</p>
+                  <h2>Biên tập đề cử</h2>
+                </div>
+                <Link to="/truyen">Khám phá</Link>
+              </div>
+              <StoryGrid stories={stories.slice(0, 4)} variant="horizontal" />
+            </section>
+
+            <section className="discovery-section">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">GÓC ĐỘC GIẢ</p>
+                  <h2>Đánh giá mới</h2>
+                </div>
+              </div>
+              <RatingFeed />
+            </section>
           </div>
 
           <aside className="home-rankings-aside">
             <HomeRankings stories={stories} />
           </aside>
-        </section>
-
-        <section className="discovery-section">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">TUYỂN CHỌN</p>
-              <h2>Biên tập đề cử</h2>
-            </div>
-            <Link to="/truyen">Khám phá</Link>
-          </div>
-          <StoryGrid stories={stories.slice(0, 4)} variant="horizontal" />
-        </section>
-
-        <section className="discovery-section">
-          <div className="section-heading">
-            <div>
-              <p className="eyebrow">GÓC ĐỘC GIẢ</p>
-              <h2>Đánh giá mới</h2>
-            </div>
-          </div>
-          <RatingFeed />
-        </section>
+        </div>
       </div>
     </div>
   );
