@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { BookOpen, Menu, Search, Settings2, UserRound, X, LogOut, UserPlus, Sliders } from "lucide-react";
+import { BookOpen, Menu, Search, UserRound, X, LogOut, UserPlus, Sliders } from "lucide-react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { navigationGroups } from "../data/site";
 import { Icon } from "./Icon";
@@ -118,46 +118,36 @@ export function Header() {
         </div>
       </div>
 
-      {/* Menu 3 Gạch: Gồm Setting Giao diện đọc truyện và Điều hướng */}
+      {/* Menu 3 Gạch: Gồm Điều hướng và Giao diện đọc truyện */}
       {menuOpen && (
         <div className="site-menu-dropdown-wrapper container" ref={menuRef}>
           <nav id="mobile-nav" className="site-menu-dropdown" aria-label="Điều hướng di động">
-            {/* Tùy chỉnh Giao diện đọc truyện */}
+            {links.map(({ label, href }) => (
+              <NavLink
+                key={href}
+                to={href}
+                end={href === "/"}
+                className="menu-item-link"
+                onClick={() => setMenuOpen(false)}
+              >
+                {label}
+              </NavLink>
+            ))}
+
+            <div className="menu-divider" />
+
+            {/* Tùy chỉnh Giao diện đọc truyện dạng nút đồng bộ */}
             <button
               type="button"
-              className="menu-item-button highlight"
+              className="menu-item-link menu-item-btn"
               aria-label="Tùy chỉnh giao diện"
               onClick={() => {
                 setMenuOpen(false);
                 setThemeOpen(true);
               }}
             >
-              <div className="menu-item-icon">
-                <Icon icon={Settings2} size={20} />
-              </div>
-              <div className="menu-item-content">
-                <span className="menu-item-title">Giao diện đọc truyện</span>
-                <span className="menu-item-desc">Cỡ chữ, giãn dòng, màu nền, chủ đề...</span>
-              </div>
+              Giao diện đọc truyện
             </button>
-
-            <div className="menu-divider" />
-
-            {/* Danh mục điều hướng */}
-            <div className="menu-nav-section">
-              <span className="menu-section-title">Danh mục</span>
-              {links.map(({ label, href }) => (
-                <NavLink
-                  key={href}
-                  to={href}
-                  end={href === "/"}
-                  className="menu-item-link"
-                  onClick={() => setMenuOpen(false)}
-                >
-                  {label}
-                </NavLink>
-              ))}
-            </div>
           </nav>
         </div>
       )}
