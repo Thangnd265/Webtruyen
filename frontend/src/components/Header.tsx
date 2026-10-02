@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { BookOpen, Menu, Search, Settings2, UserRound, X, LogOut, UserPlus, Sliders } from "lucide-react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { navigationGroups } from "../data/site";
@@ -6,6 +6,7 @@ import { Icon } from "./Icon";
 import { Modal } from "./Modal";
 import { ThemePanel } from "./ThemePanel";
 import { AuthModal } from "./AuthModal";
+import { ThemeToggleSwitch } from "./ThemeToggleSwitch";
 import { useAuth } from "../context/AuthContext";
 
 const links = [
@@ -23,13 +24,21 @@ export function Header() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [authTab, setAuthTab] = useState<"login" | "register">("login");
   const [query, setQuery] = useState("");
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!menuOpen) return;
-    const closeOnDesktop = () => { if (window.innerWidth >= 1100) setMenuOpen(false); };
-    window.addEventListener("resize", closeOnDesktop);
-    closeOnDesktop();
-    return () => window.removeEventListener("resize", closeOnDesktop);
+    function handleClickOutside(event: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        // Only close if not clicking the toggle button itself
+        const target = event.target as HTMLElement;
+        if (!target.closest(".menu-button")) {
+          setMenuOpen(false);
+        }
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
   function search(event: FormEvent<HTMLFormElement>) {
@@ -63,9 +72,8 @@ export function Header() {
           <button type="submit" aria-label="Tìm kiếm"><Icon icon={Search} /></button>
         </form>
         <div className="header-actions">
-          <button type="button" className="icon-button" aria-label="Tùy chỉnh giao diện" aria-expanded={themeOpen} aria-controls="appearance-panel" onClick={() => setThemeOpen(!themeOpen)}>
-            <Icon icon={Settings2} />
-          </button>
+          {/* Switch Giao diện Sáng / Tối (uiverse JustCode14/red-dingo-61) */}
+          <ThemeToggleSwitch />
           
           {user ? (
             <button
@@ -90,12 +98,62 @@ export function Header() {
             </button>
           )}
 
-          <button type="button" className="icon-button menu-button" aria-label={menuOpen ? "Đóng menu" : "Mở menu"} aria-expanded={menuOpen} aria-controls="mobile-nav" onClick={() => setMenuOpen(!menuOpen)}>
+          <button
+            type="button"
+            className="icon-button menu-button"
+            aria-label={menuOpen ? "Đóng menu" : "Mở menu"}
+            aria-expanded={menuOpen}
+            aria-controls="site-menu-dropdown"
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
             <Icon icon={menuOpen ? X : Menu} />
           </button>
         </div>
       </div>
-      {menuOpen && <nav id="mobile-nav" className="mobile-nav container" aria-label="Điều hướng di động">{links.map(({ label, href }) => <NavLink key={href} to={href} end={href === "/"} onClick={() => setMenuOpen(false)}>{label}</NavLink>)}</nav>}
+
+      {/* Menu 3 Gạch: Gồm Setting Giao diện đọc truyện và Điều hướng */}
+      {menuOpen && (
+        <div className="site-menu-dropdown-wrapper container" ref={menuRef}>
+          <nav id="site-menu-dropdown" className="site-menu-dropdown" aria-label="Menu điều hướng và cài đặt">
+            {/* Tùy chỉnh Giao diện đọc truyện */}
+            <button
+              type="button"
+              className="menu-item-button highlight"
+              aria-label="Tùy chỉnh giao diện"
+              onClick={() => {
+                setMenuOpen(false);
+                setThemeOpen(true);
+              }}
+            >
+              <div className="menu-item-icon">
+                <Icon icon={Settings2} size={20} />
+              </div>
+              <div className="menu-item-content">
+                <span className="menu-item-title">Giao diện đọc truyện</span>
+                <span className="menu-item-desc">Cỡ chữ, giãn dòng, màu nền, chủ đề...</span>
+              </div>
+            </button>
+
+            <div className="menu-divider" />
+
+            {/* Danh mục điều hướng */}
+            <div className="menu-nav-section">
+              <span className="menu-section-title">Danh mục</span>
+              {links.map(({ label, href }) => (
+                <NavLink
+                  key={href}
+                  to={href}
+                  end={href === "/"}
+                  className="menu-item-link"
+                  onClick={() => setMenuOpen(false)}
+                >
+                  {label}
+                </NavLink>
+              ))}
+            </div>
+          </nav>
+        </div>
+      )}
       
       {/* Giao diện đọc truyện Modal */}
       <Modal id="appearance-panel" open={themeOpen} title="Giao diện đọc truyện" onClose={() => setThemeOpen(false)}>

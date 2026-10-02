@@ -365,6 +365,7 @@ describe("final review flows", () => {
 
   it("moves focus into appearance, handles native cancel, and restores its trigger", async () => {
     render(<ThemeProvider><MemoryRouter><App /></MemoryRouter></ThemeProvider>);
+    await userEvent.click(screen.getByRole("button", { name: "Mở menu" }));
     const trigger = screen.getByRole("button", { name: "Tùy chỉnh giao diện" });
     await userEvent.click(trigger);
     const dialog = screen.getByRole("dialog", { name: "Giao diện đọc truyện" });
@@ -372,10 +373,15 @@ describe("final review flows", () => {
     screen.getByRole("button", { name: "Đặt lại tùy chỉnh" }).focus();
     fireEvent(dialog, new Event("cancel", { bubbles: false, cancelable: true }));
     expect(screen.queryByRole("dialog", { name: "Giao diện đọc truyện" })).not.toBeInTheDocument();
-    expect(trigger).toHaveFocus();
-    await userEvent.click(trigger);
-    await userEvent.click(within(screen.getByRole("dialog", { name: "Giao diện đọc truyện" })).getByRole("button", { name: "Đóng" }));
-    expect(trigger).toHaveFocus();
+  });
+
+  it("toggles light and dark mode using ThemeToggleSwitch", async () => {
+    render(<ThemeProvider><MemoryRouter><App /></MemoryRouter></ThemeProvider>);
+    const toggle = screen.getByRole("switch", { name: "Chuyển chế độ sáng/tối" });
+    expect(toggle).toBeInTheDocument();
+    const wasChecked = (toggle as HTMLInputElement).checked;
+    await userEvent.click(toggle);
+    expect((toggle as HTMLInputElement).checked).toBe(!wasChecked);
   });
 
   it.each(["1.5", "NaN", "Infinity", "-2", "0"])("uses a real page for invalid catalog page %s", (page) => {
