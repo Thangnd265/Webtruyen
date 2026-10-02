@@ -32,10 +32,49 @@ export function StoryCard({
   rank,
 }: {
   story: Story;
-  variant?: "horizontal" | "compact" | "ranked";
+  variant?: "horizontal" | "compact" | "ranked" | "poster";
   rank?: number;
 }) {
   const [coverFailed, setCoverFailed] = useState(false);
+
+  if (variant === "poster") {
+    const badgeText = "★ Đề cử";
+    return (
+      <article className="story-card-poster">
+        <div className="story-cover-wrapper-poster">
+          <span className="story-badge-poster">{badgeText}</span>
+          <Link className="story-cover-poster" to={`/truyen/${story.slug}`} tabIndex={-1} aria-hidden="true">
+            {!coverFailed ? (
+              <img src={story.cover} alt={story.title} loading="lazy" onError={() => setCoverFailed(true)} />
+            ) : (
+              <div className="story-cover-placeholder">
+                <Icon icon={BookOpen} size={28} />
+              </div>
+            )}
+          </Link>
+        </div>
+        <div className="story-body-poster">
+          <h3 className="story-title-poster">
+            <Link to={`/truyen/${story.slug}`}>{story.title}</Link>
+          </h3>
+          <div className="story-meta-poster">
+            <span className="meta-poster-item">
+              <Icon icon={BookOpen} size={12} />
+              <span>{story.chapters || 0} chương</span>
+            </span>
+            <span className="meta-poster-item">
+              <Icon icon={Eye} size={12} />
+              <span>{formatViews(story.views)}</span>
+            </span>
+          </div>
+          <div className="story-rating-poster">
+            <Icon icon={Star} size={13} />
+            <span>{(story.rating || 4.5).toFixed(1)}</span>
+          </div>
+        </div>
+      </article>
+    );
+  }
 
   if (variant === "horizontal") {
     const isCompleted = story.status === "completed";
