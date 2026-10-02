@@ -124,38 +124,37 @@ export function StoryPage() {
   const bannerImage = story.banner || story.cover;
 
   return (
-    <div className="story-page">
-      <section className="story-hero-banner story-hero-banner-full-bleed">
-        {bannerImage && (
-          <>
-            <img
-              src={bannerImage}
-              alt=""
-              className="story-hero-banner-img"
-              onError={(e) => {
-                e.currentTarget.style.display = "none";
-              }}
-            />
-            <div className="story-hero-banner-overlay" />
-          </>
-        )}
-        <div className="story-hero-banner-content container">
-          <div className="story-detail-cover">
-            <img src={story.cover} alt={`Bìa truyện ${story.title}`} />
+    <div className="story-page story-page-with-wallpaper">
+      {bannerImage && (
+        <div className="story-fullpage-wallpaper" aria-hidden="true">
+          <img
+            src={bannerImage}
+            alt=""
+            className="story-fullpage-wallpaper-img"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+          <div className="story-fullpage-wallpaper-overlay" />
+        </div>
+      )}
+      <div className="story-detail-hero">
+        <div className="story-detail-cover">
+          <img src={story.cover} alt={`Bìa truyện ${story.title}`} />
+        </div>
+        <div className="story-detail-intro">
+          <p className="eyebrow">{story.category}</p>
+          <h1>{story.title}</h1>
+          <p className="story-detail-author">
+            Tác giả: <strong>{story.author}</strong>
+          </p>
+          <div className="story-detail-stats">
+            <span>{story.status === "completed" ? "Đã hoàn thành" : "Đang cập nhật"}</span>
+            <span>{totalChaptersCount} chương</span>
+            <span>{new Intl.NumberFormat("vi-VN").format(story.views)} lượt đọc</span>
+            <span>{story.rating}/5 đánh giá</span>
           </div>
-          <div className="story-detail-intro">
-            <p className="eyebrow hero-eyebrow">{story.category}</p>
-            <h1>{story.title}</h1>
-            <p className="story-detail-author">
-              Tác giả: <strong>{story.author}</strong>
-            </p>
-            <div className="story-detail-stats">
-              <span>{story.status === "completed" ? "Đã hoàn thành" : "Đang cập nhật"}</span>
-              <span>{totalChaptersCount} chương</span>
-              <span>{new Intl.NumberFormat("vi-VN").format(story.views)} lượt đọc</span>
-              <span>{story.rating}/5 đánh giá</span>
-            </div>
-            <div className="story-detail-actions">
+          <div className="story-detail-actions">
             {userProgress ? (
               <>
                 <Link
@@ -192,7 +191,6 @@ export function StoryPage() {
           </div>
         </div>
       </div>
-    </section>
       <div className="story-detail-layout">
         <div className="story-detail-main">
           <Tabs
