@@ -191,7 +191,8 @@ export function StoryPage() {
             )}
           </div>
         </div>
-      </section>
+      </div>
+    </section>
       <div className="story-detail-layout">
         <div className="story-detail-main">
           <Tabs
