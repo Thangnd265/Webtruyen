@@ -407,7 +407,13 @@ def get_book(slug: str):
                         VALUES (?, ?, ?, ?, 0, ?)
                         """,
                         [
-                            (slug, ch["id"], ch.get("chapter_index", i + 1), ch.get("title", f"Chương {i + 1}"), f"/api/books/{slug}/audio/{ch['id']}")
+                            (
+                                slug,
+                                ch["id"],
+                                ch.get("chapter_index") if ch.get("chapter_index") is not None else (i + 1),
+                                ch.get("title") or ("Giới Thiệu" if ch.get("chapter_index") == 0 else f"Chương {i + 1}"),
+                                f"/api/books/{slug}/audio/{ch['id']}",
+                            )
                             for i, ch in enumerate(disk_chapters)
                         ],
                     )

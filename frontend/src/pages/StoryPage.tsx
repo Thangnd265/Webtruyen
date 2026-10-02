@@ -89,16 +89,18 @@ export function StoryPage() {
   const totalChaptersCount = Math.max(story.chapters, chapters.length);
   const displayedChapters = showAll ? chapters : chapters.slice(0, 24);
 
+  const firstChapterId = chapters[0]?.id || "1";
+
   const chapterList = (audio: boolean) => (
     <>
       <ol className="chapter-list">
         {displayedChapters.map((ch, idx) => {
-          const chNum = ch.chapter_index || idx + 1;
+          const chNum = ch.chapter_index !== undefined ? ch.chapter_index : idx + 1;
           const chParam = ch.id || String(chNum);
           return (
             <li key={ch.id || idx}>
               <Link to={`${path}/${audio ? "nghe" : "doc"}/${chParam}`}>
-                {ch.title || `Chương ${chNum}`}
+                {ch.title || (ch.chapter_index === 0 ? "Giới Thiệu" : `Chương ${chNum}`)}
               </Link>
             </li>
           );
@@ -155,17 +157,17 @@ export function StoryPage() {
                     🎧 Nghe tiếp ({userProgress.chapter_title || `Chương ${userProgress.chapter_id}`})
                   </Link>
                 )}
-                <Link className="button button-outline" to={`${path}/doc/1`} title="Đọc lại từ đầu">
+                <Link className="button button-outline" to={`${path}/doc/${firstChapterId}`} title="Đọc lại từ đầu">
                   Đọc từ đầu
                 </Link>
               </>
             ) : (
               <>
-                <Link className="button button-primary" to={`${path}/doc/1`}>
+                <Link className="button button-primary" to={`${path}/doc/${firstChapterId}`}>
                   Đọc từ đầu
                 </Link>
                 {story.hasAudio && (
-                  <Link className="button" to={`${path}/nghe/1`}>
+                  <Link className="button" to={`${path}/nghe/${firstChapterId}`}>
                     Nghe truyện
                   </Link>
                 )}

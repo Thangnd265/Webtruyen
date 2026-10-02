@@ -228,8 +228,8 @@ def sync_disk_books_to_sql(audiobooks_dir: Path, local_data_dir: Optional[Path] 
                         if meta.get("chapters") and isinstance(meta["chapters"], list):
                             for i, ch in enumerate(meta["chapters"]):
                                 ch_id = ch.get("id") or f"chapter_{str(i+1).zfill(3)}"
-                                ch_idx = ch.get("chapter_index") or (i + 1)
-                                ch_title = ch.get("title") or f"Chương {ch_idx}"
+                                ch_idx = ch.get("chapter_index") if ch.get("chapter_index") is not None else (i + 1)
+                                ch_title = ch.get("title") or ("Giới Thiệu" if ch_idx == 0 else f"Chương {ch_idx}")
                                 has_audio = 1 if (ch.get("has_audio") or (item / f"{ch_id}.m4b").is_file() or (item / f"{ch_id}.mp3").is_file()) else 0
                                 chapters_to_insert.append((slug, ch_id, ch_idx, ch_title, has_audio, f"/api/books/{slug}/audio/{ch_id}"))
                         else:

@@ -59,15 +59,16 @@ export function ReaderPage() {
       const chList = detail.chapters || [];
       setChapters(chList);
 
-      // Find which chapter is requested
+      // Find which chapter is requested: Ưu tiên id -> chapter_index -> fallback thứ tự mảng
       let targetIdx = 0;
       if (chapter) {
-        const found = chList.findIndex(
-          (c, i) =>
-            c.id === chapter ||
-            String(c.chapter_index) === chapter ||
-            String(i + 1) === chapter
-        );
+        let found = chList.findIndex((c) => c.id === chapter);
+        if (found < 0) {
+          found = chList.findIndex((c) => c.chapter_index !== undefined && String(c.chapter_index) === chapter);
+        }
+        if (found < 0) {
+          found = chList.findIndex((_, i) => String(i + 1) === chapter);
+        }
         if (found >= 0) targetIdx = found;
       }
       setActiveIdx(targetIdx);
@@ -247,7 +248,14 @@ export function ReaderPage() {
 
   const path = `/truyen/${story.slug}`;
   const currentChapter = chapters[activeIdx];
-  const chapterTitle = content?.title || currentChapter?.title || `Chương ${activeIdx + 1}`;
+  const chapterTitle =
+    content?.title ||
+    currentChapter?.title ||
+    (currentChapter?.chapter_index === 0
+      ? "Giới Thiệu"
+      : currentChapter?.chapter_index !== undefined
+      ? `Chương ${currentChapter.chapter_index}`
+      : `Chương ${activeIdx + 1}`);
   const totalChapters = Math.max(chapters.length, story.chapters, 1);
 
   const prevChapter = activeIdx > 0 ? chapters[activeIdx - 1] : null;
@@ -330,7 +338,7 @@ export function ReaderPage() {
           >
             {chapters.map((ch, idx) => (
               <option key={ch.id || idx} value={idx}>
-                {ch.title || `Chương ${idx + 1}`}
+                {ch.title || (ch.chapter_index === 0 ? "Giới Thiệu" : `Chương ${ch.chapter_index ?? idx + 1}`)}
               </option>
             ))}
           </select>

@@ -82,12 +82,13 @@ export function AudioPage() {
 
       let targetIdx = 0;
       if (chapter) {
-        const found = chList.findIndex(
-          (c, i) =>
-            c.id === chapter ||
-            String(c.chapter_index) === chapter ||
-            String(i + 1) === chapter
-        );
+        let found = chList.findIndex((c) => c.id === chapter);
+        if (found < 0) {
+          found = chList.findIndex((c) => c.chapter_index !== undefined && String(c.chapter_index) === chapter);
+        }
+        if (found < 0) {
+          found = chList.findIndex((_, i) => String(i + 1) === chapter);
+        }
         if (found >= 0) targetIdx = found;
       }
       setActiveIdx(targetIdx);
@@ -142,7 +143,14 @@ export function AudioPage() {
 
   const path = `/truyen/${story.slug}`;
   const currentChapter = chapters[activeIdx];
-  const chapterTitle = content?.title || currentChapter?.title || `Chương ${activeIdx + 1}`;
+  const chapterTitle =
+    content?.title ||
+    currentChapter?.title ||
+    (currentChapter?.chapter_index === 0
+      ? "Giới Thiệu"
+      : currentChapter?.chapter_index !== undefined
+      ? `Chương ${currentChapter.chapter_index}`
+      : `Chương ${activeIdx + 1}`);
   const audioSrc =
     content?.audio_url ||
     (currentChapter ? `/api/books/${story.slug}/audio/${currentChapter.id}` : undefined);
