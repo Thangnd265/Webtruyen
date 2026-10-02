@@ -150,10 +150,10 @@ export function HomePage() {
         <div className="home-split-section">
           <div className="home-split-main">
             <section className="discovery-section">
-              <div className="section-heading-split">
+              <div className="section-heading section-heading-split">
                 <div>
-                  <h2 className="split-title">Mới cập nhật</h2>
-                  <p className="split-subtitle">Những truyện vừa được cập nhật chương mới</p>
+                  <p className="eyebrow">VỪA LÊN KỆ</p>
+                  <h2>Mới cập nhật</h2>
                 </div>
                 <div className="split-controls">
                   <div className="split-pagination">
@@ -193,7 +193,7 @@ export function HomePage() {
                 </div>
                 <Link to="/truyen">Khám phá</Link>
               </div>
-              <StoryGrid stories={stories.slice(0, 4)} variant="horizontal" />
+              <StoryGrid stories={stories.slice(0, 4)} variant="poster" />
             </section>
 
             <section className="discovery-section">

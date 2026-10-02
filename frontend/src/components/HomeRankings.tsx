@@ -43,6 +43,7 @@ export function HomeRankings({ stories }: { stories: Story[] }) {
   return (
     <div className="home-rankings-box">
       <div className="home-rankings-header">
+        <p className="eyebrow">XẾP HẠNG</p>
         <h2 className="home-rankings-title">Bảng xếp hạng truyện</h2>
         <p className="home-rankings-subtitle">Theo lượt đọc trong tháng / tuần / ngày</p>
       </div>
