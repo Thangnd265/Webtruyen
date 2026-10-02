@@ -893,11 +893,17 @@ class SPAStaticFiles(StaticFiles):
         try:
             response = await super().get_response(path, scope)
             if response.status_code == 404:
-                return await super().get_response("index.html", scope)
+                resp = await super().get_response("index.html", scope)
+                resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+                return resp
+            if not path or path in ["", "index.html"]:
+                response.headers["Cache-Control"] = "no-cache, must-revalidate"
             return response
         except StarletteHTTPException as ex:
             if ex.status_code == 404:
-                return await super().get_response("index.html", scope)
+                resp = await super().get_response("index.html", scope)
+                resp.headers["Cache-Control"] = "no-cache, must-revalidate"
+                return resp
             raise ex
 
 

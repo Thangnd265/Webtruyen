@@ -125,6 +125,19 @@ export function StoryPage() {
 
   return (
     <div className="story-page">
+      {bannerImage && (
+        <div className="story-page-ambient" aria-hidden="true">
+          <img
+            src={bannerImage}
+            alt=""
+            className="story-page-ambient-img"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+          />
+          <div className="story-page-ambient-fade" />
+        </div>
+      )}
       <div className="story-detail-hero">
         {bannerImage && (
           <div className="story-hero-backdrop" aria-hidden="true">
