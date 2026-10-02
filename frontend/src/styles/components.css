@@ -426,20 +426,23 @@
 }
 .hero-carousel { position: relative; min-height: clamp(420px, 58svh, 620px); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 48px 80px 88px; color: #fff; background: #0d0d0d; box-shadow: var(--shadow-card); }
 .hero-carousel-full-bleed { width: 100dvw; margin-top: -32px; margin-inline: calc(50% - 50dvw); }
-.hero-carousel::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgb(0 0 0 / 78%), rgb(0 0 0 / 42%) 50%, rgb(0 0 0 / 72%)), linear-gradient(0deg, rgb(0 0 0 / 78%), transparent 55%); }
-.hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
+.hero-carousel::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgb(0 0 0 / 78%), rgb(0 0 0 / 42%) 50%, rgb(0 0 0 / 72%)), linear-gradient(0deg, rgb(0 0 0 / 78%), transparent 55%); pointer-events: none; }
+.hero-banner-link { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: inherit; text-decoration: none; cursor: pointer; z-index: 1; }
+.hero-banner-link:hover .hero-image { transform: scale(1.02); }
+.hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 20%; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .hero-image-enter { animation: hero-poster-in calc(var(--motion-normal) * 2) cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes hero-poster-in { from { opacity: 0; transform: scale(1.025); } to { opacity: 1; transform: scale(1); } }
-.hero-content { position: relative; width: min(100%, 900px); z-index: 1; text-align: center; text-shadow: 0 2px 18px rgb(0 0 0 / 70%); }
-.hero-content h2 { margin: 16px auto; font-size: clamp(36px, 5vw, 64px); line-height: 1.1; text-wrap: balance; }
+.hero-content { position: relative; width: min(100%, 1000px); z-index: 1; text-align: center; text-shadow: 0 4px 28px rgb(0 0 0 / 90%), 0 1px 8px rgb(0 0 0 / 80%); pointer-events: none; padding: 0 24px; }
+.hero-content h2 { margin: 0 auto; font-size: clamp(38px, 5.5vw, 68px); line-height: 1.15; text-wrap: balance; font-weight: 800; letter-spacing: -0.02em; color: #ffffff; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.hero-banner-link:hover .hero-content h2 { transform: translateY(-2px); }
 .hero-eyebrow { width: fit-content; margin: 0 auto; padding: 8px 16px; color: #ffd166; background: rgb(0 0 0 / 55%); border: 1px solid rgb(255 209 102 / 55%); border-radius: 999px; }
 .hero-meta { width: fit-content; max-width: 100%; display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 14px; margin: 0 auto 16px; padding: 8px 16px; color: #e8e4e0; background: rgb(0 0 0 / 60%); border: 1px solid rgb(255 255 255 / 18%); border-radius: 999px; font-size: 14px; }
 .hero-description { max-width: 680px; margin: 0 auto 24px; color: #d7d1cc; line-height: 1.6; }
-.carousel-controls { position: absolute; inset: 50% 24px auto; z-index: 2; display: flex; justify-content: space-between; transform: translateY(-50%); pointer-events: none; }
+.carousel-controls { position: absolute; inset: 50% 24px auto; z-index: 10; display: flex; justify-content: space-between; transform: translateY(-50%); pointer-events: none; }
 .hero-arrow { color: #fff; background: rgb(255 255 255 / 14%); border-color: rgb(255 255 255 / 24%); border-radius: 50%; pointer-events: auto; backdrop-filter: blur(6px); }
 .hero-arrow:hover { color: #fff; background: rgb(255 255 255 / 24%); }
 .carousel-count { position: absolute; right: 0; top: calc(50% + 210px); color: #e8e4e0; font-size: 13px; }
-.carousel-dots { position: absolute; left: 50%; bottom: 24px; z-index: 2; display: flex; gap: 4px; transform: translateX(-50%); }
+.carousel-dots { position: absolute; left: 50%; bottom: 24px; z-index: 10; display: flex; gap: 4px; transform: translateX(-50%); }
 .carousel-dots button { width: 44px; height: 44px; padding: 0; display: grid; place-items: center; background: none; border: 0; }
 .carousel-dots button::after { content: ""; width: 8px; height: 8px; background: rgb(255 255 255 / 55%); border-radius: 999px; transition: width var(--motion-fast), background var(--motion-fast); }
 .carousel-dots button[aria-current="true"]::after { width: 28px; background: #fff; }
