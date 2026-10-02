@@ -41,6 +41,13 @@ export function Header() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
 
+  useEffect(() => {
+    if (!menuOpen) return;
+    const closeOnResize = () => { if (window.innerWidth >= 1100) setMenuOpen(false); };
+    window.addEventListener("resize", closeOnResize);
+    return () => window.removeEventListener("resize", closeOnResize);
+  }, [menuOpen]);
+
   function search(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     navigate(`/tim-kiem?q=${encodeURIComponent(query.trim())}`);
@@ -103,7 +110,7 @@ export function Header() {
             className="icon-button menu-button"
             aria-label={menuOpen ? "Đóng menu" : "Mở menu"}
             aria-expanded={menuOpen}
-            aria-controls="site-menu-dropdown"
+            aria-controls="mobile-nav"
             onClick={() => setMenuOpen(!menuOpen)}
           >
             <Icon icon={menuOpen ? X : Menu} />
@@ -114,7 +121,7 @@ export function Header() {
       {/* Menu 3 Gạch: Gồm Setting Giao diện đọc truyện và Điều hướng */}
       {menuOpen && (
         <div className="site-menu-dropdown-wrapper container" ref={menuRef}>
-          <nav id="site-menu-dropdown" className="site-menu-dropdown" aria-label="Menu điều hướng và cài đặt">
+          <nav id="mobile-nav" className="site-menu-dropdown" aria-label="Điều hướng di động">
             {/* Tùy chỉnh Giao diện đọc truyện */}
             <button
               type="button"
