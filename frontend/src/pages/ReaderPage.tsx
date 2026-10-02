@@ -14,8 +14,10 @@ import {
 import { stories as fallbackStories } from "../data/stories";
 import type { Story } from "../data/types";
 import { NotFoundPage } from "./NotFoundPage";
+import { useAuth } from "../context/AuthContext";
 
 export function ReaderPage() {
+  const { token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const initialAutoPlay = Boolean(location.state?.autoPlay);
@@ -82,6 +84,29 @@ export function ReaderPage() {
       active = false;
     };
   }, [slug, chapter]);
+
+  useEffect(() => {
+    if (!token || !slug || !story || !chapters[activeIdx]) return;
+    const ch = chapters[activeIdx];
+    fetch("/api/user/history", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        book_slug: slug,
+        book_title: story.title || slug,
+        book_author: story.author || "",
+        book_cover: story.cover || "",
+        chapter_id: ch.id,
+        chapter_title: ch.title || `Chương ${activeIdx + 1}`,
+        current_time: 0,
+        duration: 0,
+        progress: Number(((activeIdx + 1) / Math.max(chapters.length, 1)).toFixed(4)),
+      }),
+    }).catch(() => {});
+  }, [token, slug, activeIdx, story, chapters]);
 
   function handleVoiceChange(voiceId: string) {
     setSelectedVoice(voiceId);

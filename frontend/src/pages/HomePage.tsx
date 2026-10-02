@@ -9,10 +9,26 @@ import { getStories, buildDynamicHeroSlides } from "../data/api";
 import { heroSlides as fallbackSlides } from "../data/site";
 import { stories as fallbackStories } from "../data/stories";
 import type { HeroSlide, Story } from "../data/types";
+import { useAuth } from "../context/AuthContext";
+
+interface HistoryItem {
+  book_slug: string;
+  book_title: string;
+  book_author?: string;
+  book_cover?: string;
+  chapter_id: string;
+  chapter_title: string;
+  current_time?: number;
+  duration?: number;
+  progress?: number;
+  updated_at?: string;
+}
 
 export function HomePage() {
+  const { user, token } = useAuth();
   const [stories, setStories] = useState<Story[]>(fallbackStories);
   const [slides, setSlides] = useState<HeroSlide[]>(fallbackSlides);
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -27,12 +43,86 @@ export function HomePage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (!token) {
+      setHistoryItems([]);
+      return;
+    }
+    let active = true;
+    fetch("/api/user/history?limit=4", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (active && Array.isArray(data)) {
+          setHistoryItems(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [token]);
+
   return (
     <div className="home-page">
       <h1 className="sr-only">Trang chủ Người Yêu Cũ</h1>
       <Carousel slides={slides} stories={stories} />
       <div className="home-layout">
         <div className="home-content">
+          {user && historyItems.length > 0 && (
+            <section className="discovery-section user-continue-section">
+              <div className="section-heading">
+                <div>
+                  <p className="eyebrow">DÀNH RIÊNG CHO BẠN ({user.display_name})</p>
+                  <h2>Tiếp tục nghe & đọc</h2>
+                </div>
+              </div>
+              <div className="continue-reading-grid">
+                {historyItems.map((item) => {
+                  const percent = Math.min(100, Math.round((item.progress || 0) * 100));
+                  return (
+                    <div key={`${item.book_slug}-${item.chapter_id}`} className="continue-card">
+                      {item.book_cover && (
+                        <img
+                          src={item.book_cover}
+                          alt={item.book_title}
+                          className="continue-card-cover"
+                        />
+                      )}
+                      <div className="continue-card-details">
+                        <h4 className="continue-card-title">{item.book_title}</h4>
+                        <p className="continue-card-chapter">{item.chapter_title}</p>
+                        {percent > 0 && (
+                          <div className="continue-card-progress-bar">
+                            <div
+                              className="continue-card-progress-fill"
+                              style={{ width: `${percent}%` }}
+                            />
+                          </div>
+                        )}
+                        <div className="continue-card-actions">
+                          <Link
+                            to={`/truyen/${item.book_slug}/nghe/${item.chapter_id}`}
+                            className="continue-card-btn"
+                          >
+                            🎧 Nghe tiếp
+                          </Link>
+                          <Link
+                            to={`/truyen/${item.book_slug}/doc/${item.chapter_id}`}
+                            className="continue-card-btn"
+                          >
+                            📖 Đọc tiếp
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          )}
+
           <section className="discovery-section">
             <div className="section-heading">
               <div>

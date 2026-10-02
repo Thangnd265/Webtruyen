@@ -101,3 +101,40 @@ def login(req: LoginRequest):
 @router.get("/me")
 def get_me(user: Dict[str, Any] = Depends(get_current_user)):
     return user
+
+
+class UpdatePreferencesRequest(BaseModel):
+    preferences: Dict[str, Any]
+
+
+@router.get("/preferences")
+def get_user_preferences(user: Dict[str, Any] = Depends(get_current_user)):
+    import json
+    with get_db() as conn:
+        row = conn.execute("SELECT preferences_json FROM user_preferences WHERE user_id = ?", (user["id"],)).fetchone()
+        if not row:
+            return {}
+        try:
+            return json.loads(row["preferences_json"])
+        except Exception:
+            return {}
+
+
+@router.post("/preferences")
+def save_user_preferences(req: UpdatePreferencesRequest, user: Dict[str, Any] = Depends(get_current_user)):
+    import json
+    pref_str = json.dumps(req.preferences, ensure_ascii=False)
+    with get_db() as conn:
+        conn.execute(
+            """
+            INSERT INTO user_preferences (user_id, preferences_json, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(user_id) DO UPDATE SET
+                preferences_json = excluded.preferences_json,
+                updated_at = CURRENT_TIMESTAMP
+            """,
+            (user["id"], pref_str)
+        )
+        conn.commit()
+    return {"status": "ok", "preferences": req.preferences}
+

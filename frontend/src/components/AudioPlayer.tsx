@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "./Icon";
 import { AudioLoader } from "./AudioLoader";
 import { VinylTurntable } from "./VinylTurntable";
 import { Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
 import type { BackendChapter, ChapterCue } from "../data/api";
+import { useAuth } from "../context/AuthContext";
 
 export function AudioPlayer({
   storyPath,
@@ -27,16 +28,19 @@ export function AudioPlayer({
 }) {
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { token, preferences, updatePreferences } = useAuth();
+  const lastSyncRef = useRef<number>(0);
 
   const [playing, setPlaying] = useState(false);
   const [buffering, setBuffering] = useState(false);
   const [position, setPosition] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [speed, setSpeed] = useState("1");
+  const [speed, setSpeed] = useState(() => preferences.playbackSpeed || "1");
   const [volume, setVolume] = useState(80);
   const [audioError, setAudioError] = useState(false);
   const [autoNext, setAutoNext] = useState(() => {
+    if (preferences.autoNext !== undefined) return preferences.autoNext;
     const saved = localStorage.getItem("webtruyen_auto_next");
     return saved !== null ? saved === "true" : true;
   });
@@ -88,11 +92,45 @@ export function AudioPlayer({
     }
   }, [audioSrc, chapterIndex, initialAutoPlay]);
 
+  const syncProgress = useCallback(
+    (curTime: number, dur: number, force = false) => {
+      if (!token) return;
+      const now = Date.now();
+      if (!force && now - lastSyncRef.current < 10000) return;
+      lastSyncRef.current = now;
+
+      const slug = storyPath.replace(/^\/truyen\//, "").replace(/\/.*$/, "");
+      const ch = chapters[chapterIndex];
+      if (!slug || !ch) return;
+
+      fetch("/api/user/history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          book_slug: slug,
+          book_title: storyTitle || slug,
+          book_author: "",
+          book_cover: coverUrl || "",
+          chapter_id: ch.id,
+          chapter_title: ch.title,
+          current_time: curTime,
+          duration: dur,
+          progress: dur > 0 ? Number((curTime / dur).toFixed(4)) : 0,
+        }),
+      }).catch((err) => console.warn("Sync history error:", err));
+    },
+    [token, storyPath, chapters, chapterIndex, storyTitle, coverUrl]
+  );
+
   function togglePlay() {
     if (!audioRef.current || locked) return;
     if (playing) {
       audioRef.current.pause();
       setPlaying(false);
+      syncProgress(currentTime, duration, true);
     } else {
       audioRef.current
         .play()
@@ -114,6 +152,7 @@ export function AudioPlayer({
     if (dur > 0) {
       setPosition(Math.round((cur / dur) * 100));
     }
+    syncProgress(cur, dur, false);
   }
 
   function handleSeek(val: number) {
@@ -121,7 +160,9 @@ export function AudioPlayer({
     const dur = audioRef.current.duration || 0;
     setPosition(val);
     if (dur > 0) {
-      audioRef.current.currentTime = (val / 100) * dur;
+      const targetTime = (val / 100) * dur;
+      audioRef.current.currentTime = targetTime;
+      syncProgress(targetTime, dur, true);
     }
   }
 
@@ -130,6 +171,7 @@ export function AudioPlayer({
     if (audioRef.current) {
       audioRef.current.playbackRate = Number(newSpeed);
     }
+    updatePreferences({ playbackSpeed: newSpeed });
   }
 
   function handleVolumeChange(val: number) {
@@ -178,6 +220,9 @@ export function AudioPlayer({
           onCanPlay={() => setBuffering(false)}
           onEnded={() => {
             setBuffering(false);
+            if (audioRef.current) {
+              syncProgress(audioRef.current.duration || 0, audioRef.current.duration || 0, true);
+            }
             if (autoNext && chapterIndex < chapters.length - 1) {
               selectChapter(chapterIndex + 1, true);
             } else {
@@ -291,6 +336,7 @@ export function AudioPlayer({
               const val = e.target.checked;
               setAutoNext(val);
               localStorage.setItem("webtruyen_auto_next", String(val));
+              updatePreferences({ autoNext: val });
             }}
             style={{
               accentColor: "var(--brand, #6366f1)",

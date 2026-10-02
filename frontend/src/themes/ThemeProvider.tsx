@@ -2,6 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { themes } from ".";
 import { ThemeContext, type AppearanceOverrides } from "./useTheme";
 import type { ThemeMode } from "./types";
+import { useAuth } from "../context/AuthContext";
 
 const storageKey = "ttm-appearance";
 const variables = {
@@ -54,8 +55,25 @@ function readAppearance(): Appearance {
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
+  const { preferences, updatePreferences } = useAuth();
   const [appearance, setAppearance] = useState(readAppearance);
   const [accentError, setAccentError] = useState<string | null>(null);
+
+  // Sync from user preferences when user logs in or preferences are loaded from server
+  useEffect(() => {
+    if (preferences && (preferences.themeId || preferences.mode || preferences.overrides)) {
+      setAppearance((current) => {
+        const theme = themes.find((t) => t.id === preferences.themeId) ?? themes.find((t) => t.id === current.themeId) ?? themes[0];
+        const mode = preferences.mode && theme.modes.includes(preferences.mode) ? preferences.mode : current.mode;
+        const overrides = preferences.overrides ? { ...current.overrides, ...preferences.overrides } : current.overrides;
+        return {
+          themeId: theme.id,
+          mode,
+          overrides,
+        };
+      });
+    }
+  }, [preferences]);
 
   useEffect(() => {
     const root = document.documentElement;
@@ -95,14 +113,36 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       accentError,
       setThemeId: (themeId) => {
         const theme = themes.find((item) => item.id === themeId);
-        if (theme) setAppearance((current) => ({ ...current, themeId, mode: theme.modes.includes(current.mode) ? current.mode : theme.modes[0] }));
+        if (theme) {
+          const nextMode = theme.modes.includes(appearance.mode) ? appearance.mode : theme.modes[0];
+          setAppearance((current) => ({ ...current, themeId, mode: nextMode }));
+          updatePreferences({ themeId, mode: nextMode });
+        }
       },
-      setMode: (mode) => setAppearance((current) => themes.find((theme) => theme.id === current.themeId)!.modes.includes(mode) ? { ...current, mode } : current),
+      setMode: (mode) => {
+        setAppearance((current) => {
+          const updated = themes.find((theme) => theme.id === current.themeId)!.modes.includes(mode) ? { ...current, mode } : current;
+          updatePreferences({ mode: updated.mode });
+          return updated;
+        });
+      },
       setOverride: (key, value) => {
         if (key === "accentColor") setAccentError(null);
-        if (validOverride(key, value)) setAppearance((current) => ({ ...current, overrides: { ...current.overrides, [key]: value } }));
+        if (validOverride(key, value)) {
+          setAppearance((current) => {
+            const newOverrides = { ...current.overrides, [key]: value };
+            updatePreferences({ overrides: newOverrides });
+            return { ...current, overrides: newOverrides };
+          });
+        }
       },
-      resetOverrides: () => { setAccentError(null); setAppearance((current) => ({ ...current, overrides: {} })); },
+      resetOverrides: () => {
+        setAccentError(null);
+        setAppearance((current) => {
+          updatePreferences({ overrides: {} });
+          return { ...current, overrides: {} };
+        });
+      },
     }}>
       {children}
     </ThemeContext.Provider>

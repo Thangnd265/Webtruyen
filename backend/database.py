@@ -51,6 +51,14 @@ def init_db() -> None:
             ON user_history(user_id, updated_at DESC);
         """)
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_preferences (
+                user_id INTEGER PRIMARY KEY,
+                preferences_json TEXT NOT NULL DEFAULT '{}',
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY(user_id) REFERENCES users(id) ON DELETE CASCADE
+            );
+        """)
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS admin_books (
                 slug TEXT PRIMARY KEY,
                 title TEXT NOT NULL,
