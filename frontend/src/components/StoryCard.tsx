@@ -30,19 +30,26 @@ export function StoryCard({
   story,
   variant = "compact",
   rank,
+  badge,
 }: {
   story: Story;
   variant?: "horizontal" | "compact" | "ranked" | "poster";
   rank?: number;
+  badge?: string;
 }) {
   const [coverFailed, setCoverFailed] = useState(false);
 
   if (variant === "poster") {
-    const badgeText = "★ Đề cử";
+    const badgeText = badge ?? (story.featured ? "★ Đề cử" : "★ Mới");
+    const isNew = badgeText.includes("Mới");
     return (
       <article className="story-card-poster">
         <div className="story-cover-wrapper-poster">
-          <span className="story-badge-poster">{badgeText}</span>
+          {badgeText && (
+            <span className={`story-badge-poster ${isNew ? "badge-new" : "badge-nominate"}`}>
+              {badgeText}
+            </span>
+          )}
           <Link className="story-cover-poster" to={`/truyen/${story.slug}`} tabIndex={-1} aria-hidden="true">
             {!coverFailed ? (
               <img src={story.cover} alt={story.title} loading="lazy" onError={() => setCoverFailed(true)} />

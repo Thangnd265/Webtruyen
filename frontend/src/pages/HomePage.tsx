@@ -182,7 +182,7 @@ export function HomePage() {
                   </Link>
                 </div>
               </div>
-              <StoryGrid stories={displayedUpdateStories} variant="poster" />
+              <StoryGrid stories={displayedUpdateStories} variant="poster" badge="★ Mới" />
             </section>
 
             <section className="discovery-section">
@@ -193,7 +193,7 @@ export function HomePage() {
                 </div>
                 <Link to="/truyen">Khám phá</Link>
               </div>
-              <StoryGrid stories={stories.slice(0, 4)} variant="poster" />
+              <StoryGrid stories={stories.slice(0, 4)} variant="poster" badge="★ Đề cử" />
             </section>
 
             <section className="discovery-section">
