@@ -141,6 +141,8 @@ def init_db() -> None:
             INSERT OR IGNORE INTO admin_settings (key, value)
             VALUES ('default_voice', 'Ngọc Huyền');
         """)
+        # Auto-recover any stale 'rendering' books left by sudden power loss or server crash
+        conn.execute("UPDATE admin_books SET status = 'idle' WHERE status = 'rendering';")
 
 
 def sync_disk_books_to_sql(audiobooks_dir: Path, local_data_dir: Optional[Path] = None) -> int:
