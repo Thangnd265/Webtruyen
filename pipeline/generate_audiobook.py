@@ -452,19 +452,26 @@ def extract_epub_chapters(epub_path: Path) -> Tuple[Dict[str, Any], List[Dict[st
         heading = soup.find(["h1", "h2", "h3"])
         if heading and heading.get_text(strip=True):
             chapter_title = heading.get_text(strip=True)
+            ch_id = f"chapter_{chapter_index:03d}"
+            curr_idx = chapter_index
+            chapter_index += 1
         else:
             if chapter_index == 1 and not re.search(r"\b(?:chương|hồi|tiết|bài|chapter)\s+\d+", text, re.IGNORECASE):
                 chapter_title = "Giới Thiệu"
+                ch_id = "chapter_000"
+                curr_idx = 0
             else:
                 chapter_title = f"Chương {chapter_index}"
+                ch_id = f"chapter_{chapter_index:03d}"
+                curr_idx = chapter_index
+                chapter_index += 1
 
         chapters.append({
-            "id": f"chapter_{chapter_index:03d}",
+            "id": ch_id,
             "title": chapter_title,
-            "chapter_index": chapter_index,
+            "chapter_index": curr_idx,
             "html": content,
         })
-        chapter_index += 1
 
     return metadata_info, chapters
 
@@ -499,7 +506,11 @@ def generate_audiobook(
         cover_path.write_bytes(metadata_info["cover_bytes"])
 
     # Slice chapters by start_chapter and max_chapters
-    start_idx = max(0, start_chapter - 1) if start_chapter else 0
+    has_ch0 = len(chapters) > 0 and (chapters[0].get("id") == "chapter_000" or chapters[0].get("chapter_index") == 0)
+    if has_ch0:
+        start_idx = max(0, start_chapter) if start_chapter is not None else 0
+    else:
+        start_idx = max(0, start_chapter - 1) if start_chapter else 0
     if max_chapters:
         active_chapters = chapters[start_idx : start_idx + max_chapters]
     else:

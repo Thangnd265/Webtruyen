@@ -212,7 +212,7 @@ def upload_chapter_text(payload: UploadChapterPayload):
                         ELSE book_chapters.title
                     END,
                     chapter_index = CASE
-                        WHEN ? IS NOT NULL AND ? > 0 THEN ?
+                        WHEN ? IS NOT NULL AND ? >= 0 THEN ?
                         ELSE book_chapters.chapter_index
                     END,
                     audio_url = excluded.audio_url
