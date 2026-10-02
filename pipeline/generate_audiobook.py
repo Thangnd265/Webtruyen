@@ -450,7 +450,13 @@ def extract_epub_chapters(epub_path: Path) -> Tuple[Dict[str, Any], List[Dict[st
             continue
 
         heading = soup.find(["h1", "h2", "h3"])
-        chapter_title = heading.get_text(strip=True) if heading else f"Chương {chapter_index}"
+        if heading and heading.get_text(strip=True):
+            chapter_title = heading.get_text(strip=True)
+        else:
+            if chapter_index == 1 and not re.search(r"\b(?:chương|hồi|tiết|bài|chapter)\s+\d+", text, re.IGNORECASE):
+                chapter_title = "Giới Thiệu"
+            else:
+                chapter_title = f"Chương {chapter_index}"
 
         chapters.append({
             "id": f"chapter_{chapter_index:03d}",

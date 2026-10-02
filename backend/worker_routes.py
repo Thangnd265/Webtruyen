@@ -194,8 +194,12 @@ def upload_chapter_text(payload: UploadChapterPayload):
 
     try:
         with get_db() as conn:
-            ch_idx = payload.chapter_index or 1
-            ch_title = payload.title or f"Chương {ch_idx}"
+            import re
+            m_num = re.search(r"\d+", payload.chapter_id)
+            parsed_idx = int(m_num.group(0)) if m_num else 1
+            ch_idx = payload.chapter_index if payload.chapter_index is not None else parsed_idx
+            ch_title = payload.title
+            insert_title = ch_title if ch_title else f"Chương {ch_idx}"
             audio_url = f"/api/books/{payload.book_slug}/audio/{payload.chapter_id}"
             conn.execute(
                 """
@@ -203,10 +207,21 @@ def upload_chapter_text(payload: UploadChapterPayload):
                 VALUES (?, ?, ?, ?, 1, ?)
                 ON CONFLICT(book_slug, chapter_id) DO UPDATE SET
                     has_audio = 1,
-                    title = COALESCE(excluded.title, book_chapters.title),
+                    title = CASE
+                        WHEN ? IS NOT NULL AND ? != '' THEN ?
+                        ELSE book_chapters.title
+                    END,
+                    chapter_index = CASE
+                        WHEN ? IS NOT NULL AND ? > 0 THEN ?
+                        ELSE book_chapters.chapter_index
+                    END,
                     audio_url = excluded.audio_url
                 """,
-                (payload.book_slug, payload.chapter_id, ch_idx, ch_title, audio_url),
+                (
+                    payload.book_slug, payload.chapter_id, ch_idx, insert_title, audio_url,
+                    ch_title, ch_title, ch_title,
+                    payload.chapter_index, payload.chapter_index, payload.chapter_index,
+                ),
             )
     except Exception as e:
         logger.error(f"Error updating book_chapters in DB: {e}")

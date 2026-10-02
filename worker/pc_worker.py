@@ -346,6 +346,24 @@ class PCGPUWorker:
                             book_folder = self.audiobooks_dir / book_slug
                             html_file = book_folder / f"{ch_done_id}.html"
                             cues_file = book_folder / f"{ch_done_id}_cues.json"
+                            meta_file = book_folder / "metadata.json"
+
+                            ch_title = None
+                            m_num = re.search(r"\d+", ch_done_id)
+                            ch_index = int(m_num.group(0)) if m_num else (start_ch + ch_processed - 1)
+
+                            if meta_file.is_file():
+                                try:
+                                    meta_data = json.loads(meta_file.read_text(encoding="utf-8"))
+                                    for ch_item in meta_data.get("chapters", []):
+                                        if ch_item.get("id") == ch_done_id:
+                                            ch_title = ch_item.get("title")
+                                            if ch_item.get("chapter_index"):
+                                                ch_index = ch_item.get("chapter_index")
+                                            break
+                                except Exception:
+                                    pass
+
                             if html_file.is_file():
                                 html_txt = html_file.read_text(encoding="utf-8")
                                 cues_data = json.loads(cues_file.read_text(encoding="utf-8")) if cues_file.is_file() else None
@@ -354,11 +372,13 @@ class PCGPUWorker:
                                     {
                                         "book_slug": book_slug,
                                         "chapter_id": ch_done_id,
+                                        "chapter_index": ch_index,
+                                        "title": ch_title,
                                         "html": html_txt,
                                         "cues": cues_data,
                                     },
                                 )
-                                logger.info(f"⚡ Đã đồng bộ text {ch_done_id} lên SSD server (Đọc tức thì)!")
+                                logger.info(f"⚡ Đã đồng bộ text {ch_done_id} ('{ch_title or f'Chương {ch_index}'}') lên SSD server (Đọc tức thì)!")
                     except Exception as upload_err:
                         logger.debug(f"Could not push chapter text to server: {upload_err}")
 
