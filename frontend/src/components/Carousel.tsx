@@ -29,12 +29,14 @@ export function Carousel({ slides, stories }: { slides: HeroSlide[]; stories: St
             style={{ objectPosition: story.bannerPosition || "center 20%" }}
             onError={(event) => { event.currentTarget.style.display = "none"; }}
           />
+          <div className="hero-overlay" aria-hidden="true" />
           <div className="hero-content">
             <h2>{story.title || slide.title}</h2>
           </div>
         </Link>
       ) : (
         <div className="hero-banner-link">
+          <div className="hero-overlay" aria-hidden="true" />
           <div className="hero-content">
             <h2>{slide.title}</h2>
           </div>
