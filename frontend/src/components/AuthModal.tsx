@@ -84,7 +84,8 @@ export function AuthModal({ open, onClose, defaultTab = "login" }: AuthModalProp
   return (
     <Modal
       open={open}
-      title={tab === "login" ? "Đăng Nhập Tài Khoản" : "Tạo Tài Khoản Mới"}
+      className="spotty-modal"
+      title={tab === "login" ? "ĐĂNG NHẬP" : "TẠO TÀI KHOẢN"}
       onClose={() => {
         resetForm();
         onClose();
@@ -111,7 +112,7 @@ export function AuthModal({ open, onClose, defaultTab = "login" }: AuthModalProp
             onClick={() => handleTabSwitch("register")}
           >
             <Icon icon={UserPlus} size={16} />
-            <span>Đăng Ký Thành Viên</span>
+            <span>Đăng Ký</span>
           </button>
         </div>
 
@@ -141,13 +142,12 @@ export function AuthModal({ open, onClose, defaultTab = "login" }: AuthModalProp
               type="text"
               autoComplete="username"
               required
-              placeholder="ví dụ: bo, me, vananh, tuanminh..."
+              placeholder="Tên đăng nhập"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               disabled={submitting}
               autoFocus
             />
-            <span className="auth-help-text">Chỉ chứa chữ cái, số và dấu gạch dưới (viết liền không dấu).</span>
           </div>
 
           {tab === "register" && (
@@ -157,12 +157,11 @@ export function AuthModal({ open, onClose, defaultTab = "login" }: AuthModalProp
                 id="auth-display-name"
                 type="text"
                 autoComplete="nickname"
-                placeholder="ví dụ: Bố, Mẹ, Anh Hai, Bé Na..."
+                placeholder="Tên hiển thị (ví dụ: Bố, Mẹ...)"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 disabled={submitting}
               />
-              <span className="auth-help-text">Tên sẽ hiển thị ở góc trang web và trong lịch sử đọc.</span>
             </div>
           )}
 
@@ -175,7 +174,7 @@ export function AuthModal({ open, onClose, defaultTab = "login" }: AuthModalProp
               type="password"
               autoComplete={tab === "login" ? "current-password" : "new-password"}
               required
-              placeholder="Tối thiểu 6 ký tự"
+              placeholder="Mật khẩu"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={submitting}
@@ -188,10 +187,10 @@ export function AuthModal({ open, onClose, defaultTab = "login" }: AuthModalProp
             disabled={submitting}
           >
             {submitting
-              ? "Đang xử lý..."
+              ? "ĐANG XỬ LÝ..."
               : tab === "login"
-              ? "Đăng Nhập Ngay"
-              : "Hoàn Tất Đăng Ký"}
+              ? "ĐĂNG NHẬP NGAY"
+              : "HOÀN TẤT ĐĂNG KÝ"}
           </button>
         </form>
 
