@@ -121,9 +121,24 @@ export function StoryPage() {
 
   const storyComments = comments.filter((comment) => comment.storyId === story.id);
 
+  const bannerImage = story.banner || story.cover;
+
   return (
     <div className="story-page">
       <div className="story-detail-hero">
+        {bannerImage && (
+          <div className="story-hero-backdrop" aria-hidden="true">
+            <img
+              src={bannerImage}
+              alt=""
+              className="story-hero-backdrop-img"
+              onError={(e) => {
+                e.currentTarget.style.display = "none";
+              }}
+            />
+            <div className="story-hero-backdrop-overlay" />
+          </div>
+        )}
         <div className="story-detail-cover">
           <img src={story.cover} alt={`Bìa truyện ${story.title}`} />
         </div>

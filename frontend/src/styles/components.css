@@ -537,8 +537,12 @@
 @media (min-width: 768px) { .pricing-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 @media (min-width: 1100px) { .home-layout { grid-template-columns: minmax(0, 1fr) 280px; } .home-sidebar { position: sticky; top: 104px; } }
 
-.story-detail-hero { display: grid; gap: 24px; align-items: center; padding: 24px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-card); }
-.story-detail-cover, .audio-art { overflow: hidden; aspect-ratio: 3 / 4; background: linear-gradient(135deg, var(--color-bg), var(--color-accent)); border-radius: 12px; }
+.story-detail-hero { position: relative; display: grid; gap: 28px; align-items: center; padding: 28px; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-card); box-shadow: var(--shadow-card); overflow: hidden; }
+.story-hero-backdrop { position: absolute; inset: -24px; z-index: 0; pointer-events: none; overflow: hidden; }
+.story-hero-backdrop-img { width: 100%; height: 100%; object-fit: cover; filter: blur(32px) saturate(1.5) brightness(0.8); transform: scale(1.15); opacity: 0.55; }
+.story-hero-backdrop-overlay { position: absolute; inset: 0; background: linear-gradient(135deg, color-mix(in srgb, var(--color-surface) 78%, transparent) 0%, color-mix(in srgb, var(--color-surface) 88%, transparent) 55%, color-mix(in srgb, var(--color-surface) 95%, transparent) 100%); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); }
+.story-detail-cover, .story-detail-intro { position: relative; z-index: 1; }
+.story-detail-cover, .audio-art { overflow: hidden; aspect-ratio: 3 / 4; background: linear-gradient(135deg, var(--color-bg), var(--color-accent)); border-radius: 12px; box-shadow: 0 16px 36px -6px rgb(0 0 0 / 50%), 0 0 0 1px rgb(255 255 255 / 12%); }
 .story-detail-cover img, .audio-art img { width: 100%; height: 100%; object-fit: cover; }
 .story-detail-intro h1, .audio-content h1 { margin: 8px 0 16px; font-size: clamp(30px, 5vw, 48px); line-height: 1.18; }
 .story-detail-author { color: var(--color-muted); }
