@@ -9,6 +9,9 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Cropper.js (Interactive Image Cropping) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
@@ -43,6 +46,25 @@
       background-color: #09090b;
       color: #f4f4f5;
       font-family: 'Inter', system-ui, sans-serif;
+    }
+    /* Cropper Dark Theme Styling */
+    .cropper-view-box {
+      outline: 2px solid #8b5cf6 !important;
+      outline-color: rgba(139, 92, 246, 0.9) !important;
+    }
+    .cropper-line, .cropper-point {
+      background-color: #a78bfa !important;
+    }
+    .cropper-point.point-se {
+      width: 10px;
+      height: 10px;
+    }
+    .cropper-modal {
+      background-color: rgba(0, 0, 0, 0.75) !important;
+    }
+    .cropper-bg {
+      background-image: none !important;
+      background-color: #09090b !important;
     }
     .custom-scrollbar::-webkit-scrollbar {
       width: 6px;
@@ -801,6 +823,92 @@
     </div>
   </div>
 
+  <!-- ========================================== -->
+  <!-- MODAL 5: CẮT & CĂN CHỈNH ẢNH (IMAGE CROPPER) -->
+  <!-- ========================================== -->
+  <div id="imageCropModal" class="fixed inset-0 z-[70] bg-black/85 backdrop-blur-md hidden items-center justify-center p-3 sm:p-5">
+    <div class="bg-zinc-900 border border-zinc-700/80 rounded-2xl max-w-3xl w-full max-h-[95vh] flex flex-col shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- HEADER -->
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-zinc-800 bg-zinc-900/95 flex-shrink-0">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400">
+            <i data-lucide="crop" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h3 id="cropModalTitle" class="text-sm sm:text-base font-bold text-white tracking-tight">Cắt & Căn Chỉnh Ảnh</h3>
+              <span id="cropModalBadge" class="text-[10px] px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-300 border border-brand-500/30 font-medium">16:9</span>
+            </div>
+            <p class="text-[11px] text-zinc-400">Kéo và căn chỉnh khung để chọn vùng hiển thị đẹp nhất</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeCropModal()" class="text-zinc-400 hover:text-white p-1.5 hover:bg-zinc-800 rounded-xl transition-colors">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- WORKSPACE / CROP CANVAS AREA -->
+      <div class="flex-1 min-h-[300px] max-h-[55vh] bg-zinc-950 p-3 sm:p-4 flex items-center justify-center overflow-hidden select-none">
+        <div class="w-full h-full max-h-[50vh] flex items-center justify-center overflow-hidden rounded-xl border border-zinc-800/80 bg-zinc-950/80 relative">
+          <img id="cropImageTarget" src="" alt="Ảnh cắt" class="max-w-full max-h-full block">
+        </div>
+      </div>
+
+      <!-- CONTROLS TOOLBAR -->
+      <div class="px-5 py-3 bg-zinc-900 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-3 text-xs flex-shrink-0">
+        <!-- Tỉ Lệ Khung Hình -->
+        <div class="flex items-center gap-2">
+          <span class="text-zinc-400 text-[11px] font-medium flex items-center gap-1">
+            <i data-lucide="ratio" class="w-3.5 h-3.5"></i> Tỉ lệ:
+          </span>
+          <div id="cropRatioGroup" class="flex items-center gap-1.5 bg-zinc-950/70 p-1 rounded-xl border border-zinc-800">
+            <!-- Dynamically populated buttons -->
+          </div>
+        </div>
+
+        <!-- Công cụ Phụ: Zoom / Rotate / Reset -->
+        <div class="flex items-center gap-1.5">
+          <button type="button" onclick="cropperRotate(-90)" title="Xoay trái 90°" class="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg transition-colors border border-zinc-700/60">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+          </button>
+          <button type="button" onclick="cropperRotate(90)" title="Xoay phải 90°" class="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg transition-colors border border-zinc-700/60">
+            <i data-lucide="rotate-cw" class="w-3.5 h-3.5"></i>
+          </button>
+          <div class="h-4 w-px bg-zinc-700 mx-0.5"></div>
+          <button type="button" onclick="cropperZoom(0.1)" title="Phóng to" class="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg transition-colors border border-zinc-700/60">
+            <i data-lucide="zoom-in" class="w-3.5 h-3.5"></i>
+          </button>
+          <button type="button" onclick="cropperZoom(-0.1)" title="Thu nhỏ" class="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg transition-colors border border-zinc-700/60">
+            <i data-lucide="zoom-out" class="w-3.5 h-3.5"></i>
+          </button>
+          <div class="h-4 w-px bg-zinc-700 mx-0.5"></div>
+          <button type="button" onclick="cropperReset()" title="Đặt lại ban đầu" class="p-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white rounded-lg transition-colors border border-zinc-700/60">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- FOOTER ACTIONS -->
+      <div class="px-5 py-3.5 border-t border-zinc-800 bg-zinc-900/95 flex items-center justify-between gap-3 flex-shrink-0">
+        <button type="button" onclick="closeCropModal()" class="px-3.5 py-2 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors">
+          Hủy bỏ
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button type="button" id="cropOriginalBtn" onclick="submitCroppedImage(true)" class="px-3.5 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-xl text-xs font-medium transition-colors border border-zinc-700 flex items-center gap-1.5" title="Bỏ qua việc cắt và dùng toàn bộ ảnh gốc">
+            <span>Dùng Ảnh Gốc</span>
+          </button>
+          <button type="button" id="cropSubmitBtn" onclick="submitCroppedImage(false)" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-semibold transition-all shadow-lg shadow-brand-600/25 flex items-center gap-1.5">
+            <i data-lucide="check" class="w-4 h-4"></i>
+            <span>Cắt & Tải Lên</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- Toast notification -->
   <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-700 shadow-2xl text-xs font-medium flex items-center gap-2">
     <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
@@ -1356,100 +1464,267 @@
       }
     }
 
-    async function handleCoverFileSelected(event) {
+    function handleCoverFileSelected(event) {
       const file = event.target.files && event.target.files[0];
       if (!file) return;
+      openCropModal(file, 'cover');
+    }
+
+    function handleBannerFileSelected(event) {
+      const file = event.target.files && event.target.files[0];
+      if (!file) return;
+      openCropModal(file, 'banner');
+    }
+
+    // ==========================================
+    // CROPPER MODAL CONTROLLER
+    // ==========================================
+    let cropperInstance = null;
+    let currentCropType = 'cover'; // 'cover' or 'banner'
+    let currentCropSlug = '';
+    let currentCropFile = null;
+
+    function openCropModal(file, type) {
       const slug = document.getElementById('editSlug').value;
-      if (!slug) return;
+      if (!slug) {
+        showToast('Vui lòng chọn truyện trước khi tải ảnh', true);
+        return;
+      }
 
-      const btnText = document.getElementById('coverUploadBtnText');
-      const statusEl = document.getElementById('coverUploadStatus');
-      btnText.innerText = 'Đang tải...';
-      statusEl.classList.remove('hidden');
-      statusEl.className = 'text-[11px] text-brand-400 font-medium';
-      statusEl.innerText = 'Đang tải ảnh...';
+      currentCropType = type;
+      currentCropSlug = slug;
+      currentCropFile = file;
 
-      const formData = new FormData();
-      formData.append('file', file);
+      // Fallback if Cropper is not loaded
+      if (typeof Cropper === 'undefined') {
+        uploadFileDirectly(file, type, slug);
+        return;
+      }
 
-      try {
-        const res = await fetch(`/api/admin/books/${slug}/upload-cover`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${adminToken}` },
-          body: formData,
-        });
-        let data = {};
-        try {
-          data = await res.json();
-        } catch {
-          data = {};
+      const modal = document.getElementById('imageCropModal');
+      const title = document.getElementById('cropModalTitle');
+      const badge = document.getElementById('cropModalBadge');
+      const imgTarget = document.getElementById('cropImageTarget');
+      const ratioGroup = document.getElementById('cropRatioGroup');
+
+      if (type === 'cover') {
+        title.innerText = 'Cắt & Căn Chỉnh Ảnh Bìa';
+        badge.innerText = 'Bìa Dọc';
+        badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-300 border border-brand-500/30 font-medium';
+        ratioGroup.innerHTML = `
+          <button type="button" onclick="setCropRatio(3/4, this)" class="crop-ratio-btn px-2.5 py-1 text-[11px] rounded-lg bg-brand-600 text-white font-semibold transition-colors shadow-sm">3:4 (Chuẩn)</button>
+          <button type="button" onclick="setCropRatio(2/3, this)" class="crop-ratio-btn px-2.5 py-1 text-[11px] rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors">2:3 (Dọc)</button>
+          <button type="button" onclick="setCropRatio(1, this)" class="crop-ratio-btn px-2.5 py-1 text-[11px] rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors">1:1 (Vuông)</button>
+          <button type="button" onclick="setCropRatio(NaN, this)" class="crop-ratio-btn px-2.5 py-1 text-[11px] rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors">Tự do</button>
+        `;
+      } else {
+        title.innerText = 'Cắt & Căn Chỉnh Banner Ngang';
+        badge.innerText = 'Banner 16:9';
+        badge.className = 'text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-medium';
+        ratioGroup.innerHTML = `
+          <button type="button" onclick="setCropRatio(16/9, this)" class="crop-ratio-btn px-2.5 py-1 text-[11px] rounded-lg bg-brand-600 text-white font-semibold transition-colors shadow-sm">16:9 (Chuẩn)</button>
+          <button type="button" onclick="setCropRatio(21/9, this)" class="crop-ratio-btn px-2.5 py-1 text-[11px] rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors">21:9 (Rộng)</button>
+          <button type="button" onclick="setCropRatio(4/3, this)" class="crop-ratio-btn px-2.5 py-1 text-[11px] rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors">4:3 (Ngang)</button>
+          <button type="button" onclick="setCropRatio(NaN, this)" class="crop-ratio-btn px-2.5 py-1 text-[11px] rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors">Tự do</button>
+        `;
+      }
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        if (cropperInstance) {
+          cropperInstance.destroy();
+          cropperInstance = null;
         }
-        if (!res.ok) throw new Error(data.detail || `Lỗi tải ảnh (${res.status})`);
 
-        document.getElementById('editCover').value = data.cover_url;
-        updateCoverPreview(data.cover_url);
-        if (!document.getElementById('editBanner').value.trim()) {
-          updateBannerPreview('');
-        }
-        statusEl.className = 'text-[11px] text-emerald-400 font-medium';
-        statusEl.innerText = 'Tải lên thành công!';
-        showToast(data.message || 'Tải ảnh bìa thành công!');
-        fetchBooks();
-        setTimeout(() => { statusEl.classList.add('hidden'); }, 3000);
-      } catch (err) {
-        statusEl.className = 'text-[11px] text-rose-400 font-medium';
-        statusEl.innerText = err.message || 'Lỗi upload';
-        showToast(err.message || 'Lỗi upload ảnh bìa', true);
-      } finally {
-        btnText.innerText = 'Tải ảnh bìa';
-        event.target.value = '';
+        imgTarget.src = e.target.result;
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+
+        const initialRatio = (type === 'cover') ? (3 / 4) : (16 / 9);
+
+        setTimeout(() => {
+          cropperInstance = new Cropper(imgTarget, {
+            aspectRatio: initialRatio,
+            viewMode: 1,
+            autoCropArea: 0.95,
+            responsive: true,
+            restore: false,
+            guides: true,
+            center: true,
+            highlight: false,
+            cropBoxMovable: true,
+            cropBoxResizable: true,
+            toggleDragModeOnDblclick: false,
+          });
+          if (window.lucide) lucide.createIcons();
+        }, 120);
+      };
+      reader.readAsDataURL(file);
+    }
+
+    function setCropRatio(ratio, btn) {
+      if (cropperInstance) {
+        cropperInstance.setAspectRatio(ratio);
+      }
+      document.querySelectorAll('#cropRatioGroup .crop-ratio-btn').forEach(b => {
+        b.className = 'crop-ratio-btn px-2.5 py-1 text-[11px] rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors';
+      });
+      if (btn) {
+        btn.className = 'crop-ratio-btn px-2.5 py-1 text-[11px] rounded-lg bg-brand-600 text-white font-semibold transition-colors shadow-sm';
       }
     }
 
-    async function handleBannerFileSelected(event) {
-      const file = event.target.files && event.target.files[0];
-      if (!file) return;
-      const slug = document.getElementById('editSlug').value;
-      if (!slug) return;
+    function cropperRotate(deg) {
+      if (cropperInstance) cropperInstance.rotate(deg);
+    }
 
-      const btnText = document.getElementById('bannerUploadBtnText');
-      const statusEl = document.getElementById('bannerUploadStatus');
-      btnText.innerText = 'Đang tải...';
-      statusEl.classList.remove('hidden');
-      statusEl.className = 'text-[11px] text-brand-400 font-medium';
-      statusEl.innerText = 'Đang tải banner...';
+    function cropperZoom(val) {
+      if (cropperInstance) cropperInstance.zoom(val);
+    }
 
+    function cropperReset() {
+      if (cropperInstance) cropperInstance.reset();
+    }
+
+    function closeCropModal() {
+      const modal = document.getElementById('imageCropModal');
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+      if (cropperInstance) {
+        cropperInstance.destroy();
+        cropperInstance = null;
+      }
+      currentCropFile = null;
+      const cInput = document.getElementById('editCoverFileInput');
+      if (cInput) cInput.value = '';
+      const bInput = document.getElementById('editBannerFileInput');
+      if (bInput) bInput.value = '';
+    }
+
+    async function submitCroppedImage(useOriginal = false) {
+      if (!currentCropSlug) return;
+      const submitBtn = document.getElementById('cropSubmitBtn');
+      const originalBtn = document.getElementById('cropOriginalBtn');
+      const origSubmitHtml = submitBtn.innerHTML;
+
+      submitBtn.disabled = true;
+      if (originalBtn) originalBtn.disabled = true;
+      submitBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin inline mr-1"></i> Đang tải lên...`;
+      if (window.lucide) lucide.createIcons();
+
+      const doUpload = async (blob, fileName) => {
+        const formData = new FormData();
+        formData.append('file', blob, fileName);
+
+        const endpoint = currentCropType === 'cover'
+          ? `/api/admin/books/${currentCropSlug}/upload-cover`
+          : `/api/admin/books/${currentCropSlug}/upload-banner`;
+
+        try {
+          const res = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${adminToken}` },
+            body: formData,
+          });
+
+          let data = {};
+          try { data = await res.json(); } catch { data = {}; }
+          if (!res.ok) throw new Error(data.detail || `Lỗi tải ảnh (${res.status})`);
+
+          if (currentCropType === 'cover') {
+            document.getElementById('editCover').value = data.cover_url;
+            updateCoverPreview(data.cover_url);
+            if (!document.getElementById('editBanner').value.trim()) {
+              updateBannerPreview('');
+            }
+          } else {
+            document.getElementById('editBanner').value = data.banner_url;
+            updateBannerPreview(data.banner_url);
+          }
+
+          showToast(data.message || 'Tải ảnh thành công!');
+          fetchBooks();
+          closeCropModal();
+        } catch (err) {
+          showToast(err.message || 'Lỗi khi tải ảnh lên', true);
+        } finally {
+          submitBtn.disabled = false;
+          if (originalBtn) originalBtn.disabled = false;
+          submitBtn.innerHTML = origSubmitHtml;
+          if (window.lucide) lucide.createIcons();
+        }
+      };
+
+      if (useOriginal) {
+        if (!currentCropFile) return;
+        await doUpload(currentCropFile, currentCropFile.name);
+      } else {
+        if (!cropperInstance) return;
+        const maxW = currentCropType === 'cover' ? 1200 : 2560;
+        const maxH = currentCropType === 'cover' ? 1600 : 1440;
+        const canvas = cropperInstance.getCroppedCanvas({
+          maxWidth: maxW,
+          maxHeight: maxH,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high',
+        });
+        if (!canvas) {
+          showToast('Không thể xuất ảnh đã cắt', true);
+          submitBtn.disabled = false;
+          if (originalBtn) originalBtn.disabled = false;
+          submitBtn.innerHTML = origSubmitHtml;
+          return;
+        }
+
+        const mime = (currentCropFile && currentCropFile.type === 'image/png') ? 'image/png' : 'image/jpeg';
+        const ext = mime === 'image/png' ? '.png' : '.jpg';
+        const fname = (currentCropType === 'cover' ? 'cover' : 'banner') + ext;
+
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            showToast('Không thể tạo file ảnh', true);
+            submitBtn.disabled = false;
+            if (originalBtn) originalBtn.disabled = false;
+            submitBtn.innerHTML = origSubmitHtml;
+            return;
+          }
+          await doUpload(blob, fname);
+        }, mime, 0.92);
+      }
+    }
+
+    async function uploadFileDirectly(file, type, slug) {
       const formData = new FormData();
       formData.append('file', file);
+      const endpoint = type === 'cover'
+        ? `/api/admin/books/${slug}/upload-cover`
+        : `/api/admin/books/${slug}/upload-banner`;
 
       try {
-        const res = await fetch(`/api/admin/books/${slug}/upload-banner`, {
+        const res = await fetch(endpoint, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${adminToken}` },
           body: formData,
         });
         let data = {};
-        try {
-          data = await res.json();
-        } catch {
-          data = {};
-        }
-        if (!res.ok) throw new Error(data.detail || `Lỗi tải banner (${res.status})`);
+        try { data = await res.json(); } catch { data = {}; }
+        if (!res.ok) throw new Error(data.detail || `Lỗi tải ảnh (${res.status})`);
 
-        document.getElementById('editBanner').value = data.banner_url;
-        updateBannerPreview(data.banner_url);
-        statusEl.className = 'text-[11px] text-emerald-400 font-medium';
-        statusEl.innerText = 'Tải lên thành công!';
-        showToast(data.message || 'Tải banner ngang thành công!');
+        if (type === 'cover') {
+          document.getElementById('editCover').value = data.cover_url;
+          updateCoverPreview(data.cover_url);
+          if (!document.getElementById('editBanner').value.trim()) {
+            updateBannerPreview('');
+          }
+        } else {
+          document.getElementById('editBanner').value = data.banner_url;
+          updateBannerPreview(data.banner_url);
+        }
+        showToast(data.message || 'Tải ảnh thành công!');
         fetchBooks();
-        setTimeout(() => { statusEl.classList.add('hidden'); }, 3000);
       } catch (err) {
-        statusEl.className = 'text-[11px] text-rose-400 font-medium';
-        statusEl.innerText = err.message || 'Lỗi upload';
-        showToast(err.message || 'Lỗi upload banner ngang', true);
-      } finally {
-        btnText.innerText = 'Tải banner ngang';
-        event.target.value = '';
+        showToast(err.message || 'Lỗi tải ảnh', true);
       }
     }
 
