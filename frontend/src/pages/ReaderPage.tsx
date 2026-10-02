@@ -37,7 +37,9 @@ export function ReaderPage() {
   useEffect(() => {
     if (!slug) return;
     let active = true;
-    setLoading(true);
+    if (!story || story.slug !== slug) {
+      setLoading(true);
+    }
     setActiveCueId(null);
 
     getStoryDetail(slug).then((detail) => {

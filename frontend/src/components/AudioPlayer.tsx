@@ -36,7 +36,9 @@ export function AudioPlayer({
   const [position, setPosition] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [speed, setSpeed] = useState(() => preferences.playbackSpeed || "1");
+  const [speed, setSpeed] = useState(() => {
+    return preferences.playbackSpeed || localStorage.getItem("webtruyen_audio_speed") || "1";
+  });
   const [volume, setVolume] = useState(80);
   const [audioError, setAudioError] = useState(false);
   const [autoNext, setAutoNext] = useState(() => {
@@ -44,6 +46,21 @@ export function AudioPlayer({
     const saved = localStorage.getItem("webtruyen_auto_next");
     return saved !== null ? saved === "true" : true;
   });
+
+  // Sync speed when remote preferences arrive
+  useEffect(() => {
+    if (preferences.playbackSpeed && preferences.playbackSpeed !== speed) {
+      setSpeed(preferences.playbackSpeed);
+      localStorage.setItem("webtruyen_audio_speed", preferences.playbackSpeed);
+    }
+  }, [preferences.playbackSpeed]);
+
+  // Keep audio playbackRate in sync with speed state
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = Number(speed);
+    }
+  }, [speed]);
 
   const totalChapters = Math.max(chapters.length, 1);
   const currentChapter = chapters[chapterIndex] || {
@@ -69,9 +86,13 @@ export function AudioPlayer({
       const audio = audioRef.current;
       if (audio) {
         const startPlay = () => {
+          audio.playbackRate = Number(speed);
           audio
             .play()
             .then(() => {
+              if (audioRef.current) {
+                audioRef.current.playbackRate = Number(speed);
+              }
               setPlaying(true);
               setBuffering(false);
             })
@@ -90,7 +111,7 @@ export function AudioPlayer({
       setPlaying(false);
       setBuffering(false);
     }
-  }, [audioSrc, chapterIndex, initialAutoPlay]);
+  }, [audioSrc, chapterIndex, initialAutoPlay, speed]);
 
   const syncProgress = useCallback(
     (curTime: number, dur: number, force = false) => {
@@ -132,9 +153,17 @@ export function AudioPlayer({
       setPlaying(false);
       syncProgress(currentTime, duration, true);
     } else {
+      if (audioRef.current) {
+        audioRef.current.playbackRate = Number(speed);
+      }
       audioRef.current
         .play()
-        .then(() => setPlaying(true))
+        .then(() => {
+          if (audioRef.current) {
+            audioRef.current.playbackRate = Number(speed);
+          }
+          setPlaying(true);
+        })
         .catch((err) => {
           console.warn("Audio playback failed:", err);
           setAudioError(true);
@@ -168,6 +197,7 @@ export function AudioPlayer({
 
   function handleSpeedChange(newSpeed: string) {
     setSpeed(newSpeed);
+    localStorage.setItem("webtruyen_audio_speed", newSpeed);
     if (audioRef.current) {
       audioRef.current.playbackRate = Number(newSpeed);
     }
@@ -214,10 +244,22 @@ export function AudioPlayer({
           src={audioSrc}
           preload="metadata"
           onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={handleTimeUpdate}
+          onLoadedMetadata={(e) => {
+            e.currentTarget.playbackRate = Number(speed);
+            handleTimeUpdate();
+          }}
+          onCanPlay={(e) => {
+            e.currentTarget.playbackRate = Number(speed);
+            setBuffering(false);
+          }}
+          onPlay={(e) => {
+            e.currentTarget.playbackRate = Number(speed);
+          }}
+          onPlaying={(e) => {
+            e.currentTarget.playbackRate = Number(speed);
+            setBuffering(false);
+          }}
           onWaiting={() => setBuffering(true)}
-          onPlaying={() => setBuffering(false)}
-          onCanPlay={() => setBuffering(false)}
           onEnded={() => {
             setBuffering(false);
             if (audioRef.current) {

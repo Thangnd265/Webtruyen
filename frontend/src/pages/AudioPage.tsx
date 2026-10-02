@@ -29,7 +29,9 @@ export function AudioPage() {
   useEffect(() => {
     if (!slug) return;
     let active = true;
-    setLoading(true);
+    if (!story || story.slug !== slug) {
+      setLoading(true);
+    }
 
     getStoryDetail(slug).then((detail) => {
       if (!active) return;

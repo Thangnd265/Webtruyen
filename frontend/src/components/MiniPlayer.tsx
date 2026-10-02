@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { Icon } from "./Icon";
 import { Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward, Headphones, Compass } from "lucide-react";
 import type { ChapterCue } from "../data/api";
+import { useAuth } from "../context/AuthContext";
 
 interface MiniPlayerProps {
   storyTitle: string;
@@ -39,10 +40,28 @@ export function MiniPlayer({
   initialAutoPlay = false,
 }: MiniPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const { preferences, updatePreferences } = useAuth();
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [speed, setSpeed] = useState("1");
+  const [speed, setSpeed] = useState(() => {
+    return preferences.playbackSpeed || localStorage.getItem("webtruyen_audio_speed") || "1";
+  });
+
+  // Sync when remote preferences arrive
+  useEffect(() => {
+    if (preferences.playbackSpeed && preferences.playbackSpeed !== speed) {
+      setSpeed(preferences.playbackSpeed);
+      localStorage.setItem("webtruyen_audio_speed", preferences.playbackSpeed);
+    }
+  }, [preferences.playbackSpeed]);
+
+  // Keep audio playbackRate in sync with speed state
+  useEffect(() => {
+    if (audioRef.current) {
+      audioRef.current.playbackRate = Number(speed);
+    }
+  }, [speed]);
 
   useEffect(() => {
     setCurrentTime(0);
@@ -53,9 +72,15 @@ export function MiniPlayer({
       const audio = audioRef.current;
       if (audio) {
         const startPlay = () => {
+          audio.playbackRate = Number(speed);
           audio
             .play()
-            .then(() => setPlaying(true))
+            .then(() => {
+              if (audioRef.current) {
+                audioRef.current.playbackRate = Number(speed);
+              }
+              setPlaying(true);
+            })
             .catch(() => {});
         };
         if (audio.readyState >= 2) {
@@ -67,7 +92,7 @@ export function MiniPlayer({
     } else {
       setPlaying(false);
     }
-  }, [audioSrc, initialAutoPlay]);
+  }, [audioSrc, initialAutoPlay, speed]);
 
   useEffect(() => {
     seekRef.current = (time: number) => {
@@ -90,9 +115,17 @@ export function MiniPlayer({
       audioRef.current.pause();
       setPlaying(false);
     } else {
+      if (audioRef.current) {
+        audioRef.current.playbackRate = Number(speed);
+      }
       audioRef.current
         .play()
-        .then(() => setPlaying(true))
+        .then(() => {
+          if (audioRef.current) {
+            audioRef.current.playbackRate = Number(speed);
+          }
+          setPlaying(true);
+        })
         .catch((err) => {
           console.warn("Audio play error:", err);
           setPlaying(false);
@@ -117,9 +150,11 @@ export function MiniPlayer({
 
   function handleSpeedChange(newSpeed: string) {
     setSpeed(newSpeed);
+    localStorage.setItem("webtruyen_audio_speed", newSpeed);
     if (audioRef.current) {
       audioRef.current.playbackRate = Number(newSpeed);
     }
+    updatePreferences({ playbackSpeed: newSpeed });
   }
 
   function formatTime(sec: number) {
@@ -147,7 +182,19 @@ export function MiniPlayer({
         src={audioSrc}
         preload="metadata"
         onTimeUpdate={handleTimeUpdate}
-        onLoadedMetadata={handleTimeUpdate}
+        onLoadedMetadata={(e) => {
+          e.currentTarget.playbackRate = Number(speed);
+          handleTimeUpdate();
+        }}
+        onCanPlay={(e) => {
+          e.currentTarget.playbackRate = Number(speed);
+        }}
+        onPlay={(e) => {
+          e.currentTarget.playbackRate = Number(speed);
+        }}
+        onPlaying={(e) => {
+          e.currentTarget.playbackRate = Number(speed);
+        }}
         onEnded={() => {
           setPlaying(false);
           onEnded?.();
