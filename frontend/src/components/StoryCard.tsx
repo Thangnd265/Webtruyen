@@ -40,7 +40,7 @@ export function StoryCard({
   const [coverFailed, setCoverFailed] = useState(false);
 
   if (variant === "poster") {
-    const badgeText = badge ?? (story.featured ? "★ Đề cử" : "★ Mới");
+    const badgeText = badge ?? "★ Mới";
     const isNew = badgeText.includes("Mới");
     return (
       <article className="story-card-poster">
