@@ -37,7 +37,7 @@ def get_user_history(
         rows = conn.execute(
             """
             SELECT book_slug, book_title, book_author, book_cover,
-                   chapter_id, chapter_title, current_time, duration, progress, updated_at
+                   chapter_id, chapter_title, user_history.current_time AS current_time, duration, progress, updated_at
             FROM user_history
             WHERE user_id = ?
             ORDER BY updated_at DESC
@@ -57,7 +57,7 @@ def get_book_history(
         row = conn.execute(
             """
             SELECT book_slug, book_title, book_author, book_cover,
-                   chapter_id, chapter_title, current_time, duration, progress, updated_at
+                   chapter_id, chapter_title, user_history.current_time AS current_time, duration, progress, updated_at
             FROM user_history
             WHERE user_id = ? AND book_slug = ?
             """,
