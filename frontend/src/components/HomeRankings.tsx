@@ -19,26 +19,9 @@ export function HomeRankings({ stories }: { stories: Story[] }) {
   const rankedStories = useMemo(() => {
     if (!stories || stories.length === 0) return [];
     const list = [...stories];
-    if (activeTab === "month") {
-      // Top month by total views
-      list.sort((a, b) => (b.views || 0) - (a.views || 0));
-    } else if (activeTab === "week") {
-      // Top week (weighted by rating and views)
-      list.sort((a, b) => {
-        const scoreB = (b.rating || 4.5) * 20000 + ((b.views || 0) % 80000);
-        const scoreA = (a.rating || 4.5) * 20000 + ((a.views || 0) % 80000);
-        return scoreB - scoreA;
-      });
-    } else {
-      // Top day (recent chapters and daily activity)
-      list.sort((a, b) => {
-        const scoreB = (b.chapters || 0) * 500 + ((b.views || 0) % 30000);
-        const scoreA = (a.chapters || 0) * 500 + ((a.views || 0) % 30000);
-        return scoreB - scoreA;
-      });
-    }
+    list.sort((a, b) => (b.views || 0) - (a.views || 0));
     return list.slice(0, 10);
-  }, [stories, activeTab]);
+  }, [stories]);
 
   return (
     <div className="home-rankings-box">
@@ -103,7 +86,7 @@ export function HomeRankings({ stories }: { stories: Story[] }) {
                   <span className="home-ranking-chapter">Chương {story.chapters || 1}</span>
                 </div>
                 <div className="home-ranking-views">
-                  <Icon icon={Eye} size={13} />
+                  <Icon icon={Eye} size={14} />
                   <span>{formatRankingViews(story.views)}</span>
                 </div>
               </Link>
@@ -111,10 +94,6 @@ export function HomeRankings({ stories }: { stories: Story[] }) {
           );
         })}
       </ol>
-
-      <Link to="/bang-xep-hang" className="home-rankings-more-link">
-        Xem tất cả bảng xếp hạng &rarr;
-      </Link>
     </div>
   );
 }
