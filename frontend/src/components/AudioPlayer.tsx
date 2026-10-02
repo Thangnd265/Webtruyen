@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Icon } from "./Icon";
 import { AudioLoader } from "./AudioLoader";
+import { VinylTurntable } from "./VinylTurntable";
 import { Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
 import type { BackendChapter, ChapterCue } from "../data/api";
 
@@ -12,6 +13,7 @@ export function AudioPlayer({
   audioSrc,
   locked = false,
   storyTitle = "",
+  coverUrl,
   initialAutoPlay = false,
 }: {
   storyPath: string;
@@ -20,6 +22,7 @@ export function AudioPlayer({
   audioSrc?: string;
   locked?: boolean;
   storyTitle?: string;
+  coverUrl?: string;
   initialAutoPlay?: boolean;
 }) {
   const navigate = useNavigate();
@@ -153,25 +156,15 @@ export function AudioPlayer({
 
   return (
     <div className="audio-player">
-      {/* Vinyl Record Disc Spin Animation (Máy đĩa than) */}
-      <div
-        className={`vinyl-disc-box audio-disc-spin ${!playing ? "paused" : ""}`}
-        onClick={togglePlay}
-        title={playing ? "Bấm vào đĩa để tạm dừng" : "Bấm vào đĩa để phát nhạc"}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            togglePlay();
-          }
-        }}
-        aria-label={playing ? "Đang quay đĩa than, bấm để tạm dừng" : "Đĩa than đang dừng, bấm để phát"}
-      >
-        <div className="vinyl-center-dot">
-          {(storyTitle || currentChapter.title || "A").trim().charAt(0).toUpperCase()}
-        </div>
-      </div>
+      {/* Hi-Fi Animated Vinyl Turntable (Máy đĩa than siêu thực) */}
+      <VinylTurntable
+        playing={playing && !buffering}
+        onTogglePlay={togglePlay}
+        coverUrl={coverUrl}
+        title={storyTitle || currentChapter.title}
+        progress={duration > 0 ? currentTime / duration : 0}
+        disabled={locked || !audioSrc}
+      />
 
       {audioSrc && (
         <audio

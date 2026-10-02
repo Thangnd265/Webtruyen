@@ -146,6 +146,7 @@ export function AudioPage() {
             chapters={chapters}
             audioSrc={audioSrc}
             storyTitle={story.title}
+            coverUrl={story.cover}
             initialAutoPlay={initialAutoPlay}
           />
 
