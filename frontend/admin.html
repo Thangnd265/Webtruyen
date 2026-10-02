@@ -1378,8 +1378,13 @@
           headers: { 'Authorization': `Bearer ${adminToken}` },
           body: formData,
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Lỗi tải ảnh');
+        let data = {};
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
+        if (!res.ok) throw new Error(data.detail || `Lỗi tải ảnh (${res.status})`);
 
         document.getElementById('editCover').value = data.cover_url;
         updateCoverPreview(data.cover_url);
@@ -1423,8 +1428,13 @@
           headers: { 'Authorization': `Bearer ${adminToken}` },
           body: formData,
         });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.detail || 'Lỗi tải banner');
+        let data = {};
+        try {
+          data = await res.json();
+        } catch {
+          data = {};
+        }
+        if (!res.ok) throw new Error(data.detail || `Lỗi tải banner (${res.status})`);
 
         document.getElementById('editBanner').value = data.banner_url;
         updateBannerPreview(data.banner_url);

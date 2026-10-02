@@ -20,6 +20,7 @@ import os
 import re
 import shutil
 import sys
+import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -576,6 +577,14 @@ async def upload_cover_image(slug: str, file: UploadFile = File(...)):
     if not content:
         raise HTTPException(status_code=400, detail="File ảnh rỗng")
 
+    # Detect real image type from content magic bytes
+    if content.startswith(b"\x89PNG\r\n\x1a\n"):
+        ext = ".png"
+    elif content.startswith(b"\xff\xd8\xff"):
+        ext = ".jpg"
+    elif content.startswith(b"RIFF") and len(content) > 12 and content[8:12] == b"WEBP":
+        ext = ".webp"
+
     for base in [settings.AUDIOBOOKS_DIR, settings.LOCAL_DATA_DIR]:
         b_dir = Path(base).resolve() / slug
         b_dir.mkdir(parents=True, exist_ok=True)
@@ -618,6 +627,14 @@ async def upload_banner_image(slug: str, file: UploadFile = File(...)):
     content = await file.read()
     if not content:
         raise HTTPException(status_code=400, detail="File ảnh rỗng")
+
+    # Detect real image type from content magic bytes
+    if content.startswith(b"\x89PNG\r\n\x1a\n"):
+        ext = ".png"
+    elif content.startswith(b"\xff\xd8\xff"):
+        ext = ".jpg"
+    elif content.startswith(b"RIFF") and len(content) > 12 and content[8:12] == b"WEBP":
+        ext = ".webp"
 
     for base in [settings.AUDIOBOOKS_DIR, settings.LOCAL_DATA_DIR]:
         b_dir = Path(base).resolve() / slug
