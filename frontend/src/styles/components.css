@@ -1973,49 +1973,45 @@
 }
 
 /* ==========================================================================
-   Spotty Goose 56 (Neobrutalism UI Style - Uiverse.io @mi-series/spotty-goose-56)
-   - Background: #EDDCD9
-   - Border: 2px solid #264143
-   - Hard Drop Shadow: 3px 4px 0px 1px #E99F4C
-   - Button Background: #DE5499
-   - Text & Dark Elements: #264143
+   Harmonized Auth Modal Style (Synchronized with Website Design Tokens & Font)
    ========================================================================== */
 
 dialog.spotty-modal {
-  background-color: #EDDCD9 !important;
-  border: 2px solid #264143 !important;
-  border-radius: 20px !important;
-  box-shadow: 4px 6px 0px 1px #E99F4C, 0 16px 36px rgba(0, 0, 0, 0.45) !important;
-  color: #264143 !important;
+  font-family: var(--font-sans, system-ui, sans-serif) !important;
+  background-color: var(--color-surface) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: var(--radius-card, 16px) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.32), 0 0 0 1px var(--color-border) !important;
+  color: var(--color-text) !important;
   width: min(100% - 32px, 420px) !important;
-  padding: 24px 22px 28px !important;
+  padding: 24px 22px 26px !important;
 }
 
 dialog.spotty-modal::backdrop {
-  background: rgba(18, 22, 28, 0.75) !important;
+  background: rgba(0, 0, 0, 0.68) !important;
   backdrop-filter: blur(4px);
 }
 
 dialog.spotty-modal .modal-heading {
-  border-bottom: 2px solid #264143;
+  border-bottom: 1px solid var(--color-border);
   padding-bottom: 12px;
   margin-bottom: 18px;
 }
 
 dialog.spotty-modal .modal-heading h2 {
-  color: #264143 !important;
-  font-weight: 900 !important;
-  font-size: 20px !important;
-  letter-spacing: -0.01em;
-  text-transform: uppercase;
+  color: var(--color-text) !important;
+  font-weight: 800 !important;
+  font-size: 19px !important;
+  letter-spacing: -0.015em;
+  font-family: inherit;
 }
 
 dialog.spotty-modal .modal-heading .icon-button {
-  color: #264143 !important;
-  border: 2px solid #264143 !important;
-  background: #ffffff !important;
-  box-shadow: 2px 2px 0px 0px #E99F4C !important;
-  border-radius: 6px !important;
+  color: var(--color-muted) !important;
+  border: 1px solid var(--color-border) !important;
+  background: var(--color-bg) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
   width: 32px;
   height: 32px;
   display: flex;
@@ -2025,18 +2021,20 @@ dialog.spotty-modal .modal-heading .icon-button {
 }
 
 dialog.spotty-modal .modal-heading .icon-button:hover {
-  transform: translateY(1px);
-  box-shadow: 1px 1px 0px 0px #E99F4C !important;
+  color: var(--color-text) !important;
+  border-color: var(--color-accent) !important;
+  transform: translateY(-1px);
 }
 
 /* Tabs */
 dialog.spotty-modal .auth-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  background: transparent !important;
-  border: none !important;
-  padding: 0 !important;
+  gap: 6px;
+  background: var(--color-bg) !important;
+  border: 1px solid var(--color-border) !important;
+  border-radius: 10px !important;
+  padding: 4px !important;
   margin-bottom: 4px;
 }
 
@@ -2045,51 +2043,55 @@ dialog.spotty-modal .auth-tab-btn {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 10px 12px;
-  background: #ffffff !important;
-  color: #264143 !important;
-  border: 2px solid #264143 !important;
-  border-radius: 8px !important;
+  padding: 9px 12px;
+  background: transparent !important;
+  color: var(--color-muted) !important;
+  border: none !important;
+  border-radius: 7px !important;
   font-size: 13.5px !important;
-  font-weight: 800 !important;
-  box-shadow: 2px 3px 0px 0px #E99F4C !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
   cursor: pointer;
-  transition: all 0.15s ease;
+  font-family: inherit;
+  transition: all 0.18s cubic-bezier(0.23, 1, 0.32, 1) !important;
 }
 
 dialog.spotty-modal .auth-tab-btn:hover {
-  opacity: 0.95;
+  color: var(--color-text) !important;
 }
 
 dialog.spotty-modal .auth-tab-btn.active {
-  background: #264143 !important;
-  color: #ffffff !important;
-  box-shadow: 1px 2px 0px 0px #E99F4C !important;
-  transform: translateY(1px);
+  background: var(--color-surface) !important;
+  color: var(--color-text) !important;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14), inset 0 0 0 1px var(--color-border) !important;
+  font-weight: 800 !important;
+  transform: none !important;
 }
 
 /* Alerts */
 dialog.spotty-modal .auth-alert.error {
-  background: #fee2e2 !important;
-  color: #991b1b !important;
-  border: 2px solid #264143 !important;
-  border-radius: 6px !important;
-  box-shadow: 2px 3px 0px 0px #E99F4C !important;
-  font-weight: 700;
+  background: rgba(239, 68, 68, 0.12) !important;
+  color: #ef4444 !important;
+  border: 1px solid rgba(239, 68, 68, 0.28) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  font-weight: 600;
+  font-family: inherit;
 }
 
 dialog.spotty-modal .auth-alert.success {
-  background: #dcfce7 !important;
-  color: #166534 !important;
-  border: 2px solid #264143 !important;
-  border-radius: 6px !important;
-  box-shadow: 2px 3px 0px 0px #E99F4C !important;
-  font-weight: 700;
+  background: rgba(34, 197, 94, 0.12) !important;
+  color: #22c55e !important;
+  border: 1px solid rgba(34, 197, 94, 0.28) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  font-weight: 600;
+  font-family: inherit;
 }
 
 /* Fields & Inputs */
 dialog.spotty-modal .auth-form {
-  gap: 16px !important;
+  gap: 15px !important;
 }
 
 dialog.spotty-modal .auth-field {
@@ -2099,90 +2101,102 @@ dialog.spotty-modal .auth-field {
 }
 
 dialog.spotty-modal .auth-field label {
-  color: #264143 !important;
-  font-weight: 800 !important;
-  font-size: 14px !important;
+  color: var(--color-text) !important;
+  font-weight: 700 !important;
+  font-size: 13.5px !important;
+  letter-spacing: -0.01em;
+  font-family: inherit;
+}
+
+dialog.spotty-modal .auth-field label .req {
+  color: var(--color-accent) !important;
 }
 
 dialog.spotty-modal .auth-field input {
   outline: none !important;
-  border: 2px solid #264143 !important;
-  box-shadow: 3px 4px 0px 1px #E99F4C !important;
-  background-color: #ffffff !important;
-  color: #264143 !important;
+  border: 1.5px solid var(--color-border) !important;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+  background-color: var(--color-bg) !important;
+  color: var(--color-text) !important;
   width: 100% !important;
-  padding: 12px 14px !important;
-  border-radius: 6px !important;
+  padding: 11px 14px !important;
+  border-radius: 9px !important;
   font-size: 14.5px !important;
-  font-weight: 600 !important;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  font-weight: 500 !important;
+  font-family: inherit;
+  transition: all 0.18s cubic-bezier(0.23, 1, 0.32, 1) !important;
 }
 
 dialog.spotty-modal .auth-field input::placeholder {
-  color: #839596 !important;
-  opacity: 0.85;
+  color: var(--color-muted) !important;
+  opacity: 0.75;
+  font-family: inherit;
 }
 
 dialog.spotty-modal .auth-field input:focus {
-  transform: translateY(2px);
-  box-shadow: 1px 2px 0px 0px #E99F4C !important;
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 3px var(--color-border), inset 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+  transform: translateY(-1px) !important;
 }
 
 /* Submit Button */
 dialog.spotty-modal .auth-submit-btn {
-  padding: 14px 16px !important;
-  margin-top: 10px !important;
+  padding: 12px 16px !important;
+  margin-top: 8px !important;
   width: 100% !important;
-  font-size: 15px !important;
-  font-weight: 900 !important;
-  background: #DE5499 !important;
-  color: #ffffff !important;
-  border: 2px solid #264143 !important;
+  font-size: 14.5px !important;
+  font-weight: 800 !important;
+  background: var(--color-accent) !important;
+  color: var(--color-on-accent, #ffffff) !important;
+  border: 1px solid var(--color-accent) !important;
   border-radius: 10px !important;
-  box-shadow: 3px 4px 0px 0px #E99F4C !important;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18) !important;
   cursor: pointer;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  transition: all 0.15s ease;
+  letter-spacing: 0.03em;
+  font-family: inherit;
+  transition: all 0.18s cubic-bezier(0.23, 1, 0.32, 1) !important;
 }
 
 dialog.spotty-modal .auth-submit-btn:hover:not(:disabled) {
-  opacity: 0.95;
+  background: var(--color-accent-hover) !important;
+  border-color: var(--color-accent-hover) !important;
   transform: translateY(-1px);
-  box-shadow: 4px 5px 0px 0px #E99F4C !important;
+  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.25) !important;
 }
 
 dialog.spotty-modal .auth-submit-btn:focus,
 dialog.spotty-modal .auth-submit-btn:active {
-  transform: translateY(3px);
-  box-shadow: 1px 2px 0px 0px #E99F4C !important;
+  transform: translateY(1px);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15) !important;
 }
 
 dialog.spotty-modal .auth-submit-btn:disabled {
-  opacity: 0.65 !important;
+  opacity: 0.6 !important;
   cursor: not-allowed;
   transform: none !important;
 }
 
 /* Footer Hint & Links */
 dialog.spotty-modal .auth-footer-hint {
-  color: #264143 !important;
-  font-weight: 700 !important;
-  font-size: 13.5px !important;
+  color: var(--color-muted) !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
   margin-top: 4px;
+  font-family: inherit;
 }
 
 dialog.spotty-modal .auth-footer-hint .link-btn {
-  color: #264143 !important;
-  font-weight: 900 !important;
+  color: var(--color-accent) !important;
+  font-weight: 700 !important;
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
+  font-family: inherit;
   transition: color 0.15s ease;
 }
 
 dialog.spotty-modal .auth-footer-hint .link-btn:hover {
-  color: #DE5499 !important;
+  color: var(--color-accent-hover) !important;
 }
 
 .user-profile-modal-body {
