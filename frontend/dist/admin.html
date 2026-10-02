@@ -567,166 +567,186 @@
   <!-- ========================================== -->
   <!-- MODAL 3: CHỈNH SỬA CẤU HÌNH TRUYỆN -->
   <!-- ========================================== -->
-  <div id="editModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4">
-    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-150">
-      <div class="flex items-center justify-between pb-3 border-b border-zinc-800 mb-4 sticky top-0 bg-zinc-900/90 backdrop-blur z-10">
-        <h3 class="text-base font-bold text-white flex items-center gap-2">
-          <i data-lucide="sliders" class="w-5 h-5 text-brand-500"></i>
-          Cấu Hình Truyện
-        </h3>
-        <button onclick="closeEditModal()" class="text-zinc-400 hover:text-white p-1 rounded-lg">
+  <div id="editModal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-3 sm:p-5 lg:p-8">
+    <div class="bg-zinc-900 border border-zinc-800 rounded-2xl max-w-5xl w-full max-h-[92vh] flex flex-col shadow-2xl animate-in fade-in zoom-in-95 duration-150 overflow-hidden">
+      <!-- HEADER -->
+      <div class="flex items-center justify-between px-6 py-4 border-b border-zinc-800 bg-zinc-900/95 backdrop-blur flex-shrink-0">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-xl bg-brand-500/15 border border-brand-500/30 flex items-center justify-center text-brand-400 shadow-inner">
+            <i data-lucide="sliders" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white tracking-tight">Cấu Hình Truyện</h3>
+            <p class="text-xs text-zinc-400">Tùy chỉnh thông tin, giọng đọc AI, lịch tự động và hình ảnh hiển thị</p>
+          </div>
+        </div>
+        <button type="button" onclick="closeEditModal()" class="text-zinc-400 hover:text-white p-2 hover:bg-zinc-800 rounded-xl transition-colors">
           <i data-lucide="x" class="w-5 h-5"></i>
         </button>
       </div>
 
-      <form id="editForm" onsubmit="handleEditSubmit(event)" class="space-y-4">
+      <!-- FORM WITH 2-COLUMN DESKTOP GRID -->
+      <form id="editForm" onsubmit="handleEditSubmit(event)" class="flex-1 overflow-y-auto p-5 sm:p-6 space-y-5">
         <input type="hidden" id="editSlug">
 
-        <div>
-          <label class="block text-xs font-medium text-zinc-300 mb-1">Tên Truyện</label>
-          <input type="text" id="editTitle" required
-            class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-medium text-zinc-300 mb-1">Tác Giả</label>
-            <input type="text" id="editAuthor"
-              class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-zinc-300 mb-1">Giọng Đọc</label>
-            <select id="editVoice" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
-              <option value="OmniVoice - Cố Thương">OmniVoice - Cố Thương</option>
-              <option value="Ngọc Huyền">Ngọc Huyền</option>
-              <option value="Thiện Minh">Thiện Minh</option>
-              <option value="Quỳnh Anh">Quỳnh Anh</option>
-              <option value="Hải Đăng">Hải Đăng</option>
-              <option value="Thái Sơn">Thái Sơn</option>
-              <option value="Mỹ Duyên">Mỹ Duyên</option>
-              <option value="Quang Sơn">Quang Sơn</option>
-            </select>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-medium text-zinc-300 mb-1">Thể Loại</label>
-            <input type="text" id="editGenres" placeholder="Huyền Huyễn, Tiên Hiệp"
-              class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-zinc-300 mb-1">Trạng Thái Truyện</label>
-            <select id="editPublicationStatus" class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500">
-              <option value="Đang ra">Đang ra</option>
-              <option value="Hoàn thành">Hoàn thành</option>
-              <option value="Tạm dừng">Tạm dừng</option>
-            </select>
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-medium text-zinc-300 mb-1">Giới Thiệu / Tóm Tắt Truyện</label>
-          <textarea id="editDescription" rows="3" placeholder="Nhập tóm tắt / giới thiệu nội dung truyện..."
-            class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 resize-none"></textarea>
-        </div>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="block text-xs font-medium text-zinc-300 mb-1">Quota / Ngày (Số chương)</label>
-            <input type="number" id="editQuota" min="1" max="1000"
-              class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 font-mono">
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-zinc-300 mb-1">Giờ Chạy Tự Động</label>
-            <input type="time" id="editScheduleTime"
-              class="w-full bg-zinc-950 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-brand-500 font-mono">
-          </div>
-        </div>
-
-        <!-- Quản lý hình ảnh (Ảnh bìa & Banner) -->
-        <div class="space-y-3 pt-2 border-t border-zinc-800">
-          <div class="text-xs font-semibold text-zinc-200 flex items-center gap-1.5">
-            <i data-lucide="image" class="w-4 h-4 text-brand-400"></i>
-            <span>Hình Ảnh Truyện</span>
-          </div>
-
-          <!-- 1. Ảnh bìa (Dọc - 2:3) -->
-          <div class="p-3 bg-zinc-950/70 rounded-xl border border-zinc-800 space-y-2">
-            <div class="flex items-center justify-between">
-              <label class="text-xs font-medium text-zinc-300">Ảnh Bìa (Dọc - Tỷ lệ 2:3)</label>
-              <span class="text-[10px] text-zinc-500">Hiển thị ở danh sách & card truyện</span>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          
+          <!-- CỘT TRÁI (7/12 cols): THÔNG TIN VĂN BẢN & LỊCH TRÌNH RENDER -->
+          <div class="lg:col-span-7 space-y-4">
+            <!-- Tên Truyện -->
+            <div>
+              <label class="block text-xs font-semibold text-zinc-200 mb-1.5">Tên Truyện <span class="text-rose-400">*</span></label>
+              <input type="text" id="editTitle" required
+                class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-all font-medium">
             </div>
-            <div class="flex gap-3 items-center">
-              <div class="w-16 h-24 flex-shrink-0 bg-zinc-900 border border-zinc-700 rounded-lg overflow-hidden relative flex items-center justify-center shadow-inner">
-                <img id="editCoverImgPreview" src="" alt="Bìa" class="w-full h-full object-cover hidden" onerror="this.classList.add('hidden'); document.getElementById('editCoverPlaceholder').classList.remove('hidden');">
-                <div id="editCoverPlaceholder" class="flex flex-col items-center justify-center text-zinc-500 gap-1 p-1 text-center">
-                  <i data-lucide="image" class="w-5 h-5 text-zinc-600"></i>
-                  <span class="text-[9px] leading-tight">Chưa có bìa</span>
+
+            <!-- Tác Giả & Thể Loại -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label class="block text-xs font-medium text-zinc-300 mb-1.5">Tác Giả</label>
+                <input type="text" id="editAuthor" placeholder="Chưa rõ"
+                  class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition-colors">
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-zinc-300 mb-1.5">Thể Loại</label>
+                <input type="text" id="editGenres" placeholder="Huyền Huyễn, Tiên Hiệp"
+                  class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition-colors">
+              </div>
+            </div>
+
+            <!-- Giọng Đọc & Trạng Thái Truyện -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label class="block text-xs font-medium text-zinc-300 mb-1.5">Giọng Đọc Mặc Định</label>
+                <select id="editVoice" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition-colors">
+                  <option value="OmniVoice - Cố Thương">OmniVoice - Cố Thương (AI Clone)</option>
+                  <option value="Ngọc Huyền">Ngọc Huyền (Nữ · Bắc)</option>
+                  <option value="Thiện Minh">Thiện Minh (Nam · Bắc)</option>
+                  <option value="Quỳnh Anh">Quỳnh Anh (Nữ · Bắc)</option>
+                  <option value="Hải Đăng">Hải Đăng (Nam · Bắc)</option>
+                  <option value="Thái Sơn">Thái Sơn (Nam · Nam)</option>
+                  <option value="Mỹ Duyên">Mỹ Duyên (Nữ · Nam)</option>
+                  <option value="Quang Sơn">Quang Sơn (Nam · Trung)</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-zinc-300 mb-1.5">Trạng Thái Truyện</label>
+                <select id="editPublicationStatus" class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition-colors">
+                  <option value="Đang ra">Đang ra</option>
+                  <option value="Hoàn thành">Hoàn thành</option>
+                  <option value="Tạm dừng">Tạm dừng</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Giới Thiệu / Tóm Tắt -->
+            <div>
+              <label class="block text-xs font-medium text-zinc-300 mb-1.5">Giới Thiệu / Tóm Tắt Truyện</label>
+              <textarea id="editDescription" rows="4" placeholder="Nhập tóm tắt / giới thiệu nội dung truyện..."
+                class="w-full bg-zinc-950 border border-zinc-700 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 transition-colors resize-none leading-relaxed"></textarea>
+            </div>
+
+            <!-- Cấu hình lịch render & Quota -->
+            <div class="p-4 bg-zinc-950/70 rounded-xl border border-zinc-800 space-y-3">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div>
+                  <label class="block text-xs font-medium text-zinc-300 mb-1">Quota / Ngày (Số chương)</label>
+                  <input type="number" id="editQuota" min="1" max="1000"
+                    class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 font-mono">
+                </div>
+                <div>
+                  <label class="block text-xs font-medium text-zinc-300 mb-1">Giờ Chạy Tự Động</label>
+                  <input type="time" id="editScheduleTime"
+                    class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500 font-mono">
                 </div>
               </div>
-              <div class="flex-1 space-y-1.5 min-w-0">
-                <input type="text" id="editCover" placeholder="https://... hoặc URL ảnh bìa" oninput="updateCoverPreview(this.value)"
+              <label class="flex items-center gap-2.5 cursor-pointer pt-1">
+                <input type="checkbox" id="editAutoRender" class="w-4 h-4 rounded text-brand-600 focus:ring-0 bg-zinc-900 border-zinc-700">
+                <span class="text-xs text-zinc-300 font-medium">Bật lịch chạy tự động hàng ngày theo giờ hẹn</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- CỘT PHẢI (5/12 cols): QUẢN LÝ HÌNH ẢNH TRUYỆN (BÌA & BANNER) -->
+          <div class="lg:col-span-5 space-y-4">
+            <div class="text-xs font-semibold text-zinc-200 flex items-center gap-1.5 pb-2 border-b border-zinc-800">
+              <i data-lucide="image" class="w-4 h-4 text-brand-400"></i>
+              <span>Hình Ảnh Truyện</span>
+            </div>
+
+            <!-- 1. Ảnh Bìa (Dọc - Tỷ lệ 2:3) -->
+            <div class="p-4 bg-zinc-950/70 rounded-xl border border-zinc-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-semibold text-zinc-200">Ảnh Bìa (Dọc · 2:3)</label>
+                <span class="text-[10px] text-zinc-400">Card & danh sách truyện</span>
+              </div>
+              <div class="flex gap-3.5 items-start">
+                <div class="w-20 h-28 flex-shrink-0 bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden relative flex items-center justify-center shadow-md">
+                  <img id="editCoverImgPreview" src="" alt="Bìa" class="w-full h-full object-cover hidden" onerror="this.classList.add('hidden'); document.getElementById('editCoverPlaceholder').classList.remove('hidden');">
+                  <div id="editCoverPlaceholder" class="flex flex-col items-center justify-center text-zinc-500 gap-1 p-1 text-center">
+                    <i data-lucide="image" class="w-5 h-5 text-zinc-600"></i>
+                    <span class="text-[9px] leading-tight">Chưa có bìa</span>
+                  </div>
+                </div>
+                <div class="flex-1 space-y-2 min-w-0">
+                  <input type="text" id="editCover" placeholder="URL ảnh bìa (hoặc tải lên)" oninput="updateCoverPreview(this.value)"
+                    class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500 font-mono">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <input type="file" id="editCoverFileInput" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handleCoverFileSelected(event)">
+                    <button type="button" onclick="document.getElementById('editCoverFileInput').click()" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 border border-zinc-700">
+                      <i data-lucide="upload" class="w-3.5 h-3.5 text-brand-400"></i>
+                      <span id="coverUploadBtnText">Tải ảnh bìa</span>
+                    </button>
+                    <span id="coverUploadStatus" class="text-[11px] text-zinc-400 hidden"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 2. Ảnh Banner Ngang (Tùy chọn - 16:9) -->
+            <div class="p-4 bg-zinc-950/70 rounded-xl border border-zinc-800 space-y-3">
+              <div class="flex items-center justify-between">
+                <label class="text-xs font-semibold text-zinc-200">Banner Ngang (Tùy chọn · 16:9)</label>
+                <span class="text-[10px] text-zinc-400">Hero banner trang chủ</span>
+              </div>
+              <div class="space-y-2.5">
+                <div class="w-full h-24 bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden relative flex items-center justify-center shadow-md">
+                  <img id="editBannerImgPreview" src="" alt="Banner" class="w-full h-full object-cover hidden" onerror="this.classList.add('hidden'); document.getElementById('editBannerPlaceholder').classList.remove('hidden');">
+                  <div id="editBannerPlaceholder" class="flex flex-col items-center justify-center text-zinc-500 gap-1 p-2 text-center">
+                    <i data-lucide="layout" class="w-5 h-5 text-zinc-600"></i>
+                    <span class="text-[10px] leading-tight">Chưa có banner ngang (hệ thống sẽ tự dùng ảnh bìa)</span>
+                  </div>
+                </div>
+                <input type="text" id="editBanner" placeholder="URL banner ngang (để trống nếu dùng ảnh bìa)" oninput="updateBannerPreview(this.value)"
                   class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500 font-mono">
-                <div class="flex items-center gap-2">
-                  <input type="file" id="editCoverFileInput" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handleCoverFileSelected(event)">
-                  <button type="button" onclick="document.getElementById('editCoverFileInput').click()" class="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 border border-zinc-700">
-                    <i data-lucide="upload" class="w-3.5 h-3.5 text-brand-400"></i>
-                    <span id="coverUploadBtnText">Tải ảnh bìa</span>
-                  </button>
-                  <span id="coverUploadStatus" class="text-[11px] text-zinc-400 hidden"></span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- 2. Ảnh Banner Ngang (Tùy chọn - 16:9) -->
-          <div class="p-3 bg-zinc-950/70 rounded-xl border border-zinc-800 space-y-2">
-            <div class="flex items-center justify-between">
-              <label class="text-xs font-medium text-zinc-300">Ảnh Banner Ngang (Tùy chọn - Tỷ lệ 16:9)</label>
-              <span class="text-[10px] text-zinc-500">Hiển thị ở Hero banner trang chủ</span>
-            </div>
-            <div class="flex gap-3 items-center">
-              <div class="w-28 h-16 flex-shrink-0 bg-zinc-900 border border-zinc-700 rounded-lg overflow-hidden relative flex items-center justify-center shadow-inner">
-                <img id="editBannerImgPreview" src="" alt="Banner" class="w-full h-full object-cover hidden" onerror="this.classList.add('hidden'); document.getElementById('editBannerPlaceholder').classList.remove('hidden');">
-                <div id="editBannerPlaceholder" class="flex flex-col items-center justify-center text-zinc-500 gap-1 p-1 text-center">
-                  <i data-lucide="layout" class="w-5 h-5 text-zinc-600"></i>
-                  <span class="text-[9px] leading-tight">Chưa có banner</span>
-                </div>
-              </div>
-              <div class="flex-1 space-y-1.5 min-w-0">
-                <input type="text" id="editBanner" placeholder="Để trống nếu muốn dùng ảnh bìa làm banner" oninput="updateBannerPreview(this.value)"
-                  class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500 font-mono">
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                   <input type="file" id="editBannerFileInput" accept="image/jpeg,image/png,image/webp" class="hidden" onchange="handleBannerFileSelected(event)">
-                  <button type="button" onclick="document.getElementById('editBannerFileInput').click()" class="px-2.5 py-1 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 border border-zinc-700">
+                  <button type="button" onclick="document.getElementById('editBannerFileInput').click()" class="px-3 py-1.5 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 border border-zinc-700">
                     <i data-lucide="upload" class="w-3.5 h-3.5 text-brand-400"></i>
                     <span id="bannerUploadBtnText">Tải banner ngang</span>
                   </button>
                   <span id="bannerUploadStatus" class="text-[11px] text-zinc-400 hidden"></span>
                 </div>
-                <p class="text-[10px] text-zinc-400 italic">💡 Nếu không có ảnh ngang, hệ thống tự động dùng ảnh bìa làm banner.</p>
               </div>
             </div>
+
           </div>
+
         </div>
 
-        <div>
-          <label class="flex items-center gap-2 cursor-pointer">
-            <input type="checkbox" id="editAutoRender" class="w-4 h-4 rounded text-brand-600 focus:ring-0 bg-zinc-900 border-zinc-700">
-            <span class="text-xs text-zinc-300 font-medium">Bật lịch chạy tự động hàng ngày</span>
-          </label>
-        </div>
-
-        <div class="pt-3 border-t border-zinc-800 flex items-center justify-between gap-2">
-          <button type="button" onclick="handleDeleteFromEditModal()" class="px-3 py-2 text-xs font-medium text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-lg transition-colors flex items-center gap-1.5">
-            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+        <!-- FOOTER ACTIONS -->
+        <div class="pt-4 border-t border-zinc-800 flex items-center justify-between gap-3 flex-shrink-0">
+          <button type="button" onclick="handleDeleteFromEditModal()" class="px-3.5 py-2 text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 rounded-xl transition-colors flex items-center gap-1.5 border border-rose-500/20">
+            <i data-lucide="trash-2" class="w-4 h-4"></i>
             <span>Xóa Truyện</span>
           </button>
-          <div class="flex items-center gap-2">
-            <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white rounded-lg transition-colors">Hủy</button>
-            <button type="submit" class="px-5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-lg text-xs font-medium transition-all shadow-md shadow-brand-600/20">
-              Lưu Thay Đổi
+          <div class="flex items-center gap-3">
+            <button type="button" onclick="closeEditModal()" class="px-4 py-2 text-xs font-medium text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-xl transition-colors">
+              Hủy
+            </button>
+            <button type="submit" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs sm:text-sm font-semibold transition-all shadow-lg shadow-brand-600/25 flex items-center gap-2">
+              <i data-lucide="check" class="w-4 h-4"></i>
+              <span>Lưu Cấu Hình</span>
             </button>
           </div>
         </div>
