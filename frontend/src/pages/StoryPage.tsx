@@ -8,14 +8,21 @@ import { stories as fallbackStories } from "../data/stories";
 import { getStoryDetail, getStories, type BackendChapter } from "../data/api";
 import type { Story } from "../data/types";
 import { NotFoundPage } from "./NotFoundPage";
+import { useAuth } from "../context/AuthContext";
 
 export function StoryPage() {
+  const { token } = useAuth();
   const [showAll, setShowAll] = useState(false);
   const [story, setStory] = useState<Story | null>(null);
   const [chapters, setChapters] = useState<BackendChapter[]>([]);
   const [allStories, setAllStories] = useState<Story[]>(fallbackStories);
   const [loading, setLoading] = useState(true);
   const { slug } = useParams();
+  const [userProgress, setUserProgress] = useState<{
+    chapter_id: string;
+    chapter_title: string;
+    current_time: number;
+  } | null>(null);
 
   useEffect(() => {
     setShowAll(false);
@@ -42,6 +49,27 @@ export function StoryPage() {
       active = false;
     };
   }, [slug]);
+
+  useEffect(() => {
+    if (!token || !slug) {
+      setUserProgress(null);
+      return;
+    }
+    fetch(`/api/user/history/${slug}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.chapter_id) {
+          setUserProgress({
+            chapter_id: data.chapter_id,
+            chapter_title: data.chapter_title,
+            current_time: data.current_time || 0,
+          });
+        }
+      })
+      .catch(() => {});
+  }, [token, slug]);
 
   if (loading) {
     return (
@@ -110,13 +138,38 @@ export function StoryPage() {
             <span>{story.rating}/5 đánh giá</span>
           </div>
           <div className="story-detail-actions">
-            <Link className="button button-primary" to={`${path}/doc/1`}>
-              Đọc từ đầu
-            </Link>
-            {story.hasAudio && (
-              <Link className="button" to={`${path}/nghe/1`}>
-                Nghe truyện
-              </Link>
+            {userProgress ? (
+              <>
+                <Link
+                  className="button button-primary"
+                  to={`${path}/doc/${userProgress.chapter_id}`}
+                >
+                  📖 Đọc tiếp ({userProgress.chapter_title || `Chương ${userProgress.chapter_id}`})
+                </Link>
+                {story.hasAudio && (
+                  <Link
+                    className="button"
+                    to={`${path}/nghe/${userProgress.chapter_id}`}
+                    state={{ resumeTime: userProgress.current_time, autoPlay: true }}
+                  >
+                    🎧 Nghe tiếp ({userProgress.chapter_title || `Chương ${userProgress.chapter_id}`})
+                  </Link>
+                )}
+                <Link className="button button-outline" to={`${path}/doc/1`} title="Đọc lại từ đầu">
+                  Đọc từ đầu
+                </Link>
+              </>
+            ) : (
+              <>
+                <Link className="button button-primary" to={`${path}/doc/1`}>
+                  Đọc từ đầu
+                </Link>
+                {story.hasAudio && (
+                  <Link className="button" to={`${path}/nghe/1`}>
+                    Nghe truyện
+                  </Link>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -16,6 +16,7 @@ export function AudioPlayer({
   storyTitle = "",
   coverUrl,
   initialAutoPlay = false,
+  initialTime = 0,
 }: {
   storyPath: string;
   chapterIndex: number;
@@ -25,11 +26,13 @@ export function AudioPlayer({
   storyTitle?: string;
   coverUrl?: string;
   initialAutoPlay?: boolean;
+  initialTime?: number;
 }) {
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { token, preferences, updatePreferences } = useAuth();
   const lastSyncRef = useRef<number>(0);
+  const hasSeekedInitialRef = useRef<boolean>(false);
 
   const [playing, setPlaying] = useState(false);
   const [buffering, setBuffering] = useState(false);
@@ -73,8 +76,10 @@ export function AudioPlayer({
   const playlist = chapters.slice(first, first + 8);
 
   useEffect(() => {
+    hasSeekedInitialRef.current = false;
+    const initSec = initialTime && initialTime > 0 ? initialTime : 0;
+    setCurrentTime(initSec);
     setPosition(0);
-    setCurrentTime(0);
     setAudioError(false);
     if (audioRef.current) {
       audioRef.current.playbackRate = Number(speed);
@@ -86,6 +91,14 @@ export function AudioPlayer({
       const audio = audioRef.current;
       if (audio) {
         const startPlay = () => {
+          if (!hasSeekedInitialRef.current && initSec > 0) {
+            try {
+              audio.currentTime = initSec;
+              hasSeekedInitialRef.current = true;
+            } catch (err) {
+              console.warn("Could not seek initial time in startPlay:", err);
+            }
+          }
           audio.playbackRate = Number(speed);
           audio
             .play()
@@ -111,7 +124,7 @@ export function AudioPlayer({
       setPlaying(false);
       setBuffering(false);
     }
-  }, [audioSrc, chapterIndex, initialAutoPlay, speed]);
+  }, [audioSrc, chapterIndex, initialAutoPlay, initialTime, speed]);
 
   const syncProgress = useCallback(
     (curTime: number, dur: number, force = false) => {
@@ -245,11 +258,36 @@ export function AudioPlayer({
           preload="metadata"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={(e) => {
-            e.currentTarget.playbackRate = Number(speed);
+            const el = e.currentTarget;
+            el.playbackRate = Number(speed);
+            const dur = el.duration || 0;
+            setDuration(dur);
+            if (!hasSeekedInitialRef.current && initialTime && initialTime > 0) {
+              try {
+                el.currentTime = initialTime;
+                hasSeekedInitialRef.current = true;
+                setCurrentTime(initialTime);
+                if (dur > 0) {
+                  setPosition(Math.round((initialTime / dur) * 100));
+                }
+              } catch (err) {}
+            }
             handleTimeUpdate();
           }}
           onCanPlay={(e) => {
-            e.currentTarget.playbackRate = Number(speed);
+            const el = e.currentTarget;
+            el.playbackRate = Number(speed);
+            if (!hasSeekedInitialRef.current && initialTime && initialTime > 0) {
+              try {
+                el.currentTime = initialTime;
+                hasSeekedInitialRef.current = true;
+                setCurrentTime(initialTime);
+                const dur = el.duration || 0;
+                if (dur > 0) {
+                  setPosition(Math.round((initialTime / dur) * 100));
+                }
+              } catch (err) {}
+            }
             setBuffering(false);
           }}
           onPlay={(e) => {
@@ -290,7 +328,9 @@ export function AudioPlayer({
           : playing
           ? `Đang phát (${formatTime(currentTime)} / ${formatTime(duration)})`
           : duration > 0
-          ? `Sẵn sàng phát (${formatTime(duration)})`
+          ? currentTime > 0
+            ? `Tiếp tục nghe từ ${formatTime(currentTime)} / ${formatTime(duration)}`
+            : `Sẵn sàng phát (${formatTime(duration)})`
           : "Sẵn sàng nghe truyện"}
       </p>
 

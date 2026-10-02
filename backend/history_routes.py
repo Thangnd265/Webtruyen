@@ -48,6 +48,26 @@ def get_user_history(
         return [dict(r) for r in rows]
 
 
+@router.get("/{book_slug}")
+def get_book_history(
+    book_slug: str,
+    user: Dict[str, Any] = Depends(get_current_user)
+):
+    with get_db() as conn:
+        row = conn.execute(
+            """
+            SELECT book_slug, book_title, book_author, book_cover,
+                   chapter_id, chapter_title, current_time, duration, progress, updated_at
+            FROM user_history
+            WHERE user_id = ? AND book_slug = ?
+            """,
+            (user["id"], book_slug)
+        ).fetchone()
+        if not row:
+            return None
+        return dict(row)
+
+
 @router.post("")
 def save_history_item(
     item: HistoryItem,
@@ -66,9 +86,21 @@ def save_history_item(
                 book_cover = excluded.book_cover,
                 chapter_id = excluded.chapter_id,
                 chapter_title = excluded.chapter_title,
-                current_time = excluded.current_time,
-                duration = excluded.duration,
-                progress = excluded.progress,
+                current_time = CASE 
+                    WHEN excluded.chapter_id = user_history.chapter_id AND (excluded.current_time IS NULL OR excluded.current_time = 0) 
+                    THEN user_history.current_time 
+                    ELSE excluded.current_time 
+                END,
+                duration = CASE 
+                    WHEN excluded.chapter_id = user_history.chapter_id AND (excluded.duration IS NULL OR excluded.duration = 0) 
+                    THEN user_history.duration 
+                    ELSE excluded.duration 
+                END,
+                progress = CASE
+                    WHEN excluded.progress IS NOT NULL AND excluded.progress > 0 
+                    THEN excluded.progress
+                    ELSE user_history.progress
+                END,
                 updated_at = CURRENT_TIMESTAMP
             """,
             (
@@ -100,9 +132,21 @@ def bulk_sync_history(
                     book_cover = excluded.book_cover,
                     chapter_id = excluded.chapter_id,
                     chapter_title = excluded.chapter_title,
-                    current_time = excluded.current_time,
-                    duration = excluded.duration,
-                    progress = excluded.progress,
+                    current_time = CASE 
+                        WHEN excluded.chapter_id = user_history.chapter_id AND (excluded.current_time IS NULL OR excluded.current_time = 0) 
+                        THEN user_history.current_time 
+                        ELSE excluded.current_time 
+                    END,
+                    duration = CASE 
+                        WHEN excluded.chapter_id = user_history.chapter_id AND (excluded.duration IS NULL OR excluded.duration = 0) 
+                        THEN user_history.duration 
+                        ELSE excluded.duration 
+                    END,
+                    progress = CASE
+                        WHEN excluded.progress IS NOT NULL AND excluded.progress > 0 
+                        THEN excluded.progress
+                        ELSE user_history.progress
+                    END,
                     updated_at = CURRENT_TIMESTAMP
                 """,
                 (

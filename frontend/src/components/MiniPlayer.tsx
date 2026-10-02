@@ -21,6 +21,7 @@ interface MiniPlayerProps {
   onScrollToActiveCue: () => void;
   onEnded?: () => void;
   initialAutoPlay?: boolean;
+  initialTime?: number;
 }
 
 export function MiniPlayer({
@@ -38,12 +39,14 @@ export function MiniPlayer({
   onScrollToActiveCue,
   onEnded,
   initialAutoPlay = false,
+  initialTime = 0,
 }: MiniPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { preferences, updatePreferences } = useAuth();
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
+  const hasSeekedInitialRef = useRef(false);
   const [speed, setSpeed] = useState(() => {
     return preferences.playbackSpeed || localStorage.getItem("webtruyen_audio_speed") || "1";
   });
@@ -64,7 +67,9 @@ export function MiniPlayer({
   }, [speed]);
 
   useEffect(() => {
-    setCurrentTime(0);
+    hasSeekedInitialRef.current = false;
+    const initSec = initialTime && initialTime > 0 ? initialTime : 0;
+    setCurrentTime(initSec);
     if (audioRef.current) {
       audioRef.current.playbackRate = Number(speed);
     }
@@ -72,6 +77,12 @@ export function MiniPlayer({
       const audio = audioRef.current;
       if (audio) {
         const startPlay = () => {
+          if (!hasSeekedInitialRef.current && initSec > 0) {
+            try {
+              audio.currentTime = initSec;
+              hasSeekedInitialRef.current = true;
+            } catch (err) {}
+          }
           audio.playbackRate = Number(speed);
           audio
             .play()
@@ -92,7 +103,7 @@ export function MiniPlayer({
     } else {
       setPlaying(false);
     }
-  }, [audioSrc, initialAutoPlay, speed]);
+  }, [audioSrc, initialAutoPlay, initialTime, speed]);
 
   useEffect(() => {
     seekRef.current = (time: number) => {
@@ -183,11 +194,27 @@ export function MiniPlayer({
         preload="metadata"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={(e) => {
-          e.currentTarget.playbackRate = Number(speed);
+          const el = e.currentTarget;
+          el.playbackRate = Number(speed);
+          if (!hasSeekedInitialRef.current && initialTime && initialTime > 0) {
+            try {
+              el.currentTime = initialTime;
+              hasSeekedInitialRef.current = true;
+              setCurrentTime(initialTime);
+            } catch (err) {}
+          }
           handleTimeUpdate();
         }}
         onCanPlay={(e) => {
-          e.currentTarget.playbackRate = Number(speed);
+          const el = e.currentTarget;
+          el.playbackRate = Number(speed);
+          if (!hasSeekedInitialRef.current && initialTime && initialTime > 0) {
+            try {
+              el.currentTime = initialTime;
+              hasSeekedInitialRef.current = true;
+              setCurrentTime(initialTime);
+            } catch (err) {}
+          }
         }}
         onPlay={(e) => {
           e.currentTarget.playbackRate = Number(speed);

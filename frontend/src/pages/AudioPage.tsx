@@ -12,19 +12,54 @@ import {
 import { stories as fallbackStories } from "../data/stories";
 import type { Story } from "../data/types";
 import { NotFoundPage } from "./NotFoundPage";
+import { useAuth } from "../context/AuthContext";
 
 export function AudioPage() {
   const { slug, chapter } = useParams();
   const location = useLocation();
+  const { token } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialVoice = searchParams.get("voice") || localStorage.getItem("webtruyen_voice_pref") || "";
   const initialAutoPlay = Boolean(location.state?.autoPlay);
+  const stateResumeTime = location.state?.resumeTime;
   const [story, setStory] = useState<Story | null>(null);
   const [chapters, setChapters] = useState<BackendChapter[]>([]);
   const [content, setContent] = useState<ChapterContent | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeIdx, setActiveIdx] = useState(0);
   const [selectedVoice, setSelectedVoice] = useState<string>(initialVoice);
+  const [resumeTime, setResumeTime] = useState<number>(() => {
+    return typeof stateResumeTime === "number" ? stateResumeTime : 0;
+  });
+
+  useEffect(() => {
+    if (typeof stateResumeTime === "number") {
+      setResumeTime(stateResumeTime);
+      return;
+    }
+    setResumeTime(0);
+    if (!token || !slug || chapters.length === 0) return;
+    const currentCh = chapters[activeIdx];
+    if (!currentCh) return;
+
+    fetch(`/api/user/history/${slug}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((hist) => {
+        if (!hist) return;
+        if (
+          hist.chapter_id === currentCh.id ||
+          String(activeIdx + 1) === hist.chapter_id ||
+          String(currentCh.chapter_index) === hist.chapter_id
+        ) {
+          if (hist.current_time && hist.current_time > 0) {
+            setResumeTime(hist.current_time);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [token, slug, activeIdx, chapters, stateResumeTime]);
 
   useEffect(() => {
     if (!slug) return;
@@ -150,6 +185,7 @@ export function AudioPage() {
             storyTitle={story.title}
             coverUrl={story.cover}
             initialAutoPlay={initialAutoPlay}
+            initialTime={resumeTime}
           />
 
           <div style={{ marginTop: "16px" }}>

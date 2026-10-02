@@ -21,6 +21,7 @@ export function ReaderPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const initialAutoPlay = Boolean(location.state?.autoPlay);
+  const stateResumeTime = location.state?.resumeTime;
   const { slug, chapter } = useParams();
   const [story, setStory] = useState<Story | null>(null);
   const [chapters, setChapters] = useState<BackendChapter[]>([]);
@@ -32,7 +33,11 @@ export function ReaderPage() {
   const [selectedVoice, setSelectedVoice] = useState<string>(() => {
     return localStorage.getItem("webtruyen_voice_pref") || "";
   });
+  const [resumeTime, setResumeTime] = useState<number>(() => {
+    return typeof stateResumeTime === "number" ? stateResumeTime : 0;
+  });
   const seekRef = useRef<((time: number) => void) | null>(null);
+  const lastSyncRef = useRef<number>(0);
 
   useEffect(() => {
     if (!slug) return;
@@ -88,6 +93,35 @@ export function ReaderPage() {
   }, [slug, chapter]);
 
   useEffect(() => {
+    if (typeof stateResumeTime === "number") {
+      setResumeTime(stateResumeTime);
+      return;
+    }
+    setResumeTime(0);
+    if (!token || !slug || chapters.length === 0) return;
+    const currentCh = chapters[activeIdx];
+    if (!currentCh) return;
+
+    fetch(`/api/user/history/${slug}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((hist) => {
+        if (!hist) return;
+        if (
+          hist.chapter_id === currentCh.id ||
+          String(activeIdx + 1) === hist.chapter_id ||
+          String(currentCh.chapter_index) === hist.chapter_id
+        ) {
+          if (hist.current_time && hist.current_time > 0) {
+            setResumeTime(hist.current_time);
+          }
+        }
+      })
+      .catch(() => {});
+  }, [token, slug, activeIdx, chapters, stateResumeTime]);
+
+  useEffect(() => {
     if (!token || !slug || !story || !chapters[activeIdx]) return;
     const ch = chapters[activeIdx];
     fetch("/api/user/history", {
@@ -125,19 +159,45 @@ export function ReaderPage() {
 
   const cues = content?.cues || [];
 
-  function handleAudioTimeUpdate(cur: number) {
-    if (!cues.length) return;
-    for (let i = 0; i < cues.length; i++) {
-      const c = cues[i];
-      const next = cues[i + 1];
-      const nextStart = next ? next.start : c.end + 0.5;
-      if (cur >= c.start && cur < Math.max(c.end, nextStart)) {
-        if (c.id !== activeCueId) {
-          setActiveCueId(c.id);
+  function handleAudioTimeUpdate(cur: number, dur: number = 0) {
+    if (cues.length) {
+      for (let i = 0; i < cues.length; i++) {
+        const c = cues[i];
+        const next = cues[i + 1];
+        const nextStart = next ? next.start : c.end + 0.5;
+        if (cur >= c.start && cur < Math.max(c.end, nextStart)) {
+          if (c.id !== activeCueId) {
+            setActiveCueId(c.id);
+          }
+          break;
         }
-        break;
       }
     }
+
+    if (!token || !slug || !story || !chapters[activeIdx]) return;
+    const now = Date.now();
+    if (now - lastSyncRef.current < 10000) return;
+    lastSyncRef.current = now;
+
+    const ch = chapters[activeIdx];
+    fetch("/api/user/history", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        book_slug: slug,
+        book_title: story.title || slug,
+        book_author: story.author || "",
+        book_cover: story.cover || "",
+        chapter_id: ch.id,
+        chapter_title: ch.title || `Chương ${activeIdx + 1}`,
+        current_time: cur,
+        duration: dur,
+        progress: dur > 0 ? Number((cur / dur).toFixed(4)) : Number(((activeIdx + 1) / Math.max(chapters.length, 1)).toFixed(4)),
+      }),
+    }).catch(() => {});
   }
 
   useEffect(() => {
@@ -344,6 +404,7 @@ export function ReaderPage() {
           onToggleAutoScroll={() => setAutoScroll((prev) => !prev)}
           onScrollToActiveCue={handleScrollToActiveCue}
           initialAutoPlay={initialAutoPlay}
+          initialTime={resumeTime}
           onEnded={() => {
             if (nextLink) navigate(nextLink, { state: { autoPlay: true } });
           }}

@@ -104,6 +104,7 @@ export function HomePage() {
                         <div className="continue-card-actions">
                           <Link
                             to={`/truyen/${item.book_slug}/nghe/${item.chapter_id}`}
+                            state={{ resumeTime: item.current_time || 0, autoPlay: true }}
                             className="continue-card-btn"
                           >
                             🎧 Nghe tiếp
