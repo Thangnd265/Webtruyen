@@ -67,6 +67,7 @@ def init_db() -> None:
                 genres TEXT DEFAULT '',
                 cover_url TEXT DEFAULT '',
                 banner_url TEXT DEFAULT '',
+                banner_position TEXT DEFAULT 'center 20%',
                 voice TEXT DEFAULT 'Ngọc Huyền',
                 daily_quota INTEGER DEFAULT 50,
                 schedule_time TEXT DEFAULT '02:00',
@@ -104,6 +105,8 @@ def init_db() -> None:
         cols = [r["name"] for r in conn.execute("PRAGMA table_info(admin_books)").fetchall()]
         if "banner_url" not in cols:
             conn.execute("ALTER TABLE admin_books ADD COLUMN banner_url TEXT DEFAULT '';")
+        if "banner_position" not in cols:
+            conn.execute("ALTER TABLE admin_books ADD COLUMN banner_position TEXT DEFAULT 'center 20%';")
         if "description" not in cols:
             conn.execute("ALTER TABLE admin_books ADD COLUMN description TEXT DEFAULT '';")
         if "publication_status" not in cols:

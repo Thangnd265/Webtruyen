@@ -286,6 +286,7 @@ class UpdateBookRequest(BaseModel):
     genres: Optional[str] = None
     cover_url: Optional[str] = None
     banner_url: Optional[str] = None
+    banner_position: Optional[str] = None
     voice: Optional[str] = None
     daily_quota: Optional[int] = None
     schedule_time: Optional[str] = None
@@ -500,6 +501,9 @@ def update_book_settings(slug: str, req: UpdateBookRequest):
         if req.banner_url is not None:
             updates.append("banner_url = ?")
             params.append(req.banner_url)
+        if req.banner_position is not None:
+            updates.append("banner_position = ?")
+            params.append(req.banner_position)
         if req.voice is not None:
             updates.append("voice = ?")
             params.append(req.voice)
@@ -541,6 +545,8 @@ def update_book_settings(slug: str, req: UpdateBookRequest):
                 m_data["cover_url"] = req.cover_url
             if req.banner_url:
                 m_data["banner_url"] = req.banner_url
+            if req.banner_position is not None:
+                m_data["banner_position"] = req.banner_position
             if req.genres:
                 m_data["genres"] = req.genres
             if req.description is not None:

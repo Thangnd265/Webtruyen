@@ -131,6 +131,7 @@ export function StoryPage() {
             src={bannerImage}
             alt=""
             className="story-fullpage-wallpaper-img"
+            style={{ objectPosition: story.bannerPosition || "center 20%" }}
             onError={(e) => {
               e.currentTarget.style.display = "none";
             }}

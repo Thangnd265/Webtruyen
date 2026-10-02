@@ -302,7 +302,7 @@ def list_books():
         with get_db() as conn:
             rows = conn.execute(
                 """
-                SELECT slug, title, author, description, genres, cover_url, banner_url,
+                SELECT slug, title, author, description, genres, cover_url, banner_url, banner_position,
                        total_chapters, current_rendered_chapter,
                        publication_status, views, rating, updated_at
                 FROM admin_books
@@ -312,6 +312,7 @@ def list_books():
             for r in rows:
                 cover_url = r["cover_url"] or f"/api/books/{r['slug']}/cover"
                 banner_url = r["banner_url"] or f"/api/books/{r['slug']}/banner"
+                banner_position = r["banner_position"] if ("banner_position" in r.keys() and r["banner_position"]) else "center 20%"
                 books.append({
                     "slug": r["slug"],
                     "title": r["title"] or r["slug"].replace("-", " ").title(),
@@ -319,6 +320,7 @@ def list_books():
                     "description": r["description"] or "",
                     "cover_url": cover_url,
                     "banner_url": banner_url,
+                    "banner_position": banner_position,
                     "total_chapters": r["total_chapters"] or 0,
                     "genres": r["genres"] or "Huyền Huyễn, Đô Thị",
                     "status": r["publication_status"] or "Đang ra",
@@ -338,6 +340,7 @@ def list_books():
                 for r in rows:
                     cover_url = r["cover_url"] or f"/api/books/{r['slug']}/cover"
                     banner_url = r.get("banner_url") or f"/api/books/{r['slug']}/banner"
+                    banner_position = r.get("banner_position") or "center 20%"
                     books.append({
                         "slug": r["slug"],
                         "title": r["title"] or r["slug"].replace("-", " ").title(),
@@ -345,6 +348,7 @@ def list_books():
                         "description": r["description"] or "",
                         "cover_url": cover_url,
                         "banner_url": banner_url,
+                        "banner_position": banner_position,
                         "total_chapters": r["total_chapters"] or 0,
                         "genres": r["genres"] or "Huyền Huyễn, Đô Thị",
                         "status": r["publication_status"] or "Đang ra",
@@ -364,7 +368,7 @@ def get_book(slug: str):
     with get_db() as conn:
         row = conn.execute(
             """
-            SELECT slug, title, author, description, genres, cover_url, banner_url,
+            SELECT slug, title, author, description, genres, cover_url, banner_url, banner_position,
                    total_chapters, current_rendered_chapter,
                    publication_status, views, rating, updated_at
             FROM admin_books
@@ -424,6 +428,7 @@ def get_book(slug: str):
         total_chapters = row["total_chapters"] or len(chapters)
         cover_url = row["cover_url"] or f"/api/books/{slug}/cover"
         banner_url = row["banner_url"] or f"/api/books/{slug}/banner"
+        banner_position = row["banner_position"] if ("banner_position" in row.keys() and row["banner_position"]) else "center 20%"
         default_voice = row["voice"] if "voice" in row.keys() and row["voice"] else "Ngọc Huyền"
         primary_dir, remote_dir = get_book_storage_dirs(slug)
         search_dirs = [primary_dir]
@@ -438,6 +443,7 @@ def get_book(slug: str):
             "description": row["description"] or "",
             "cover_url": cover_url,
             "banner_url": banner_url,
+            "banner_position": banner_position,
             "total_chapters": total_chapters,
             "genres": row["genres"] or "Huyền Huyễn, Đô Thị",
             "status": row["publication_status"] or "Đang ra",

@@ -427,7 +427,7 @@
 .hero-carousel { position: relative; min-height: clamp(420px, 58svh, 620px); display: flex; align-items: center; justify-content: center; overflow: hidden; padding: 48px 80px 88px; color: #fff; background: #0d0d0d; box-shadow: var(--shadow-card); }
 .hero-carousel-full-bleed { width: 100dvw; margin-top: -32px; margin-inline: calc(50% - 50dvw); }
 .hero-carousel::after { content: ""; position: absolute; inset: 0; background: linear-gradient(90deg, rgb(0 0 0 / 78%), rgb(0 0 0 / 42%) 50%, rgb(0 0 0 / 72%)), linear-gradient(0deg, rgb(0 0 0 / 78%), transparent 55%); }
-.hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hero-image { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 20%; }
 .hero-image-enter { animation: hero-poster-in calc(var(--motion-normal) * 2) cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes hero-poster-in { from { opacity: 0; transform: scale(1.025); } to { opacity: 1; transform: scale(1); } }
 .hero-content { position: relative; width: min(100%, 900px); z-index: 1; text-align: center; text-shadow: 0 2px 18px rgb(0 0 0 / 70%); }

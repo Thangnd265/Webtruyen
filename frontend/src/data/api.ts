@@ -72,6 +72,7 @@ export function mapBackendBookToStory(b: any): Story {
     author: b.author || "Tác giả ẩn danh",
     cover: b.cover_url || `/api/books/${b.slug}/cover`,
     banner: b.banner_url || `/api/books/${b.slug}/banner`,
+    bannerPosition: b.banner_position || "center 20%",
     category,
     tags,
     status: b.status === "Hoàn thành" || b.status === "completed" ? "completed" : "ongoing",

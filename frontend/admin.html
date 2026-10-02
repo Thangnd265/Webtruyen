@@ -732,12 +732,13 @@
                 <span class="text-[10px] text-zinc-400">Hero banner trang chủ</span>
               </div>
               <div class="space-y-2.5">
-                <div class="w-full h-24 bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden relative flex items-center justify-center shadow-md">
-                  <img id="editBannerImgPreview" src="" alt="Banner" class="w-full h-full object-cover hidden" onerror="this.classList.add('hidden'); document.getElementById('editBannerPlaceholder').classList.remove('hidden');">
+                <div class="w-full h-28 bg-zinc-900 border border-zinc-700 rounded-xl overflow-hidden relative flex items-center justify-center shadow-md">
+                  <img id="editBannerImgPreview" src="" alt="Banner" class="w-full h-full object-cover transition-all duration-100 hidden" onerror="this.classList.add('hidden'); document.getElementById('editBannerPlaceholder').classList.remove('hidden');">
                   <div id="editBannerPlaceholder" class="flex flex-col items-center justify-center text-zinc-500 gap-1 p-2 text-center">
                     <i data-lucide="layout" class="w-5 h-5 text-zinc-600"></i>
                     <span class="text-[10px] leading-tight">Chưa có banner ngang (hệ thống sẽ tự dùng ảnh bìa)</span>
                   </div>
+                  <div class="absolute bottom-1 right-2 px-1.5 py-0.5 rounded bg-black/60 backdrop-blur text-[9px] text-zinc-400 pointer-events-none">Xem trước khung banner</div>
                 </div>
                 <input type="text" id="editBanner" placeholder="URL banner ngang (để trống nếu dùng ảnh bìa)" oninput="updateBannerPreview(this.value)"
                   class="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2.5 py-1.5 text-xs text-white focus:outline-none focus:border-brand-500 font-mono">
@@ -749,6 +750,31 @@
                   </button>
                   <span id="bannerUploadStatus" class="text-[11px] text-zinc-400 hidden"></span>
                 </div>
+
+                <!-- CĂN CHỈNH VỊ TRÍ HIỂN THỊ BANNER (DỌC) -->
+                <div class="pt-2.5 mt-2 border-t border-zinc-800/80 space-y-2">
+                  <div class="flex items-center justify-between">
+                    <label class="text-[11px] font-semibold text-zinc-300 flex items-center gap-1.5">
+                      <i data-lucide="move-vertical" class="w-3.5 h-3.5 text-brand-400"></i>
+                      Căn Vị Trí Hiển Thị Banner (Dọc)
+                    </label>
+                    <span id="bannerPosValueText" class="text-[11px] font-mono text-brand-400 font-semibold bg-brand-500/10 px-2 py-0.5 rounded border border-brand-500/20">20% (Mặt/Đầu)</span>
+                  </div>
+                  <input type="range" id="bannerPosSlider" min="0" max="100" value="20"
+                    oninput="onBannerPositionSliderChange(this.value)"
+                    class="w-full accent-brand-500 cursor-pointer h-1.5 bg-zinc-800 rounded-lg">
+                  <div class="grid grid-cols-4 gap-1.5 text-[10px]">
+                    <button type="button" onclick="setBannerPreset(0)" class="px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors text-center">Đỉnh (0%)</button>
+                    <button type="button" onclick="setBannerPreset(20)" class="px-2 py-1 rounded-lg bg-brand-600/25 hover:bg-brand-600/40 text-brand-300 font-semibold border border-brand-500/30 transition-colors text-center" title="Khuyên dùng cho ảnh nhân vật để không bị mất mặt">Mặt (20%)</button>
+                    <button type="button" onclick="setBannerPreset(50)" class="px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors text-center">Giữa (50%)</button>
+                    <button type="button" onclick="setBannerPreset(80)" class="px-2 py-1 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 font-medium transition-colors text-center">Đáy (80%)</button>
+                  </div>
+                  <input type="hidden" id="editBannerPosition" value="center 20%">
+                  <p class="text-[10px] text-zinc-400 leading-tight">
+                    💡 Kéo thanh trượt để chỉnh ảnh lên/xuống, giúp thấy trọn vẹn khuôn mặt hoặc tiêu điểm trên hero banner trang chủ.
+                  </p>
+                </div>
+
               </div>
             </div>
 
@@ -1453,8 +1479,10 @@
       const img = document.getElementById('editBannerImgPreview');
       const ph = document.getElementById('editBannerPlaceholder');
       const effectiveUrl = (url && url.trim()) ? url.trim() : (document.getElementById('editCover').value.trim() || '');
+      const pos = document.getElementById('editBannerPosition') ? document.getElementById('editBannerPosition').value : 'center 20%';
       if (effectiveUrl) {
         img.src = effectiveUrl;
+        img.style.objectPosition = pos;
         img.classList.remove('hidden');
         ph.classList.add('hidden');
       } else {
@@ -1462,6 +1490,32 @@
         img.classList.add('hidden');
         ph.classList.remove('hidden');
       }
+    }
+
+    function onBannerPositionSliderChange(val, updateInput = true) {
+      const posStr = `center ${val}%`;
+      if (updateInput) {
+        const inp = document.getElementById('editBannerPosition');
+        if (inp) inp.value = posStr;
+      }
+      const img = document.getElementById('editBannerImgPreview');
+      if (img) img.style.objectPosition = posStr;
+
+      const txt = document.getElementById('bannerPosValueText');
+      if (txt) {
+        let label = `${val}%`;
+        if (val <= 10) label += ' (Đỉnh)';
+        else if (val <= 35) label += ' (Mặt/Đầu)';
+        else if (val <= 65) label += ' (Giữa)';
+        else label += ' (Đáy)';
+        txt.innerText = label;
+      }
+    }
+
+    function setBannerPreset(val) {
+      const slider = document.getElementById('bannerPosSlider');
+      if (slider) slider.value = val;
+      onBannerPositionSliderChange(val, true);
     }
 
     function handleCoverFileSelected(event) {
@@ -1745,6 +1799,16 @@
       document.getElementById('editBanner').value = b.banner_url || '';
       document.getElementById('editAutoRender').checked = b.auto_render === 1;
 
+      // Banner position initialization
+      const rawPos = b.banner_position || 'center 20%';
+      const posInput = document.getElementById('editBannerPosition');
+      if (posInput) posInput.value = rawPos;
+      const numMatch = rawPos.match(/\d+/);
+      const pctVal = numMatch ? parseInt(numMatch[0]) : 20;
+      const slider = document.getElementById('bannerPosSlider');
+      if (slider) slider.value = pctVal;
+      onBannerPositionSliderChange(pctVal, false);
+
       document.getElementById('coverUploadStatus').classList.add('hidden');
       document.getElementById('bannerUploadStatus').classList.add('hidden');
 
@@ -1776,6 +1840,7 @@
         schedule_time: document.getElementById('editScheduleTime').value,
         cover_url: document.getElementById('editCover').value.trim(),
         banner_url: document.getElementById('editBanner').value.trim(),
+        banner_position: (document.getElementById('editBannerPosition') && document.getElementById('editBannerPosition').value) || 'center 20%',
         auto_render: document.getElementById('editAutoRender').checked,
       };
 
