@@ -209,10 +209,10 @@ const defaultAuthValue: AuthContextType = {
   token: null,
   loading: false,
   preferences: {},
-  login: async () => {},
-  register: async () => {},
+  login: async () => ({ success: false, error: "No auth provider" }),
+  register: async () => ({ success: false, error: "No auth provider" }),
   logout: () => {},
-  updatePreferences: () => {},
+  updatePreferences: async () => {},
 };
 
 export function useAuth() {
