@@ -3008,6 +3008,7 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 .story-page-custom-layout {
   position: relative;
   width: 100%;
+  background-image: radial-gradient(ellipse 90% 50% at 50% 25%, rgba(234, 108, 117, 0.05), transparent 75%);
 }
 
 /* 1. Top Wide Hero Banner (Full-bleed matching HomePage Carousel) */
@@ -3016,8 +3017,8 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   width: 100dvw;
   margin-top: -32px;
   margin-inline: calc(50% - 50dvw);
-  min-height: clamp(420px, 58svh, 620px);
-  height: clamp(420px, 58svh, 620px);
+  min-height: clamp(450px, 62svh, 660px);
+  height: clamp(450px, 62svh, 660px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3034,8 +3035,8 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   height: 100%;
   object-fit: cover;
   filter: none !important;
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 45%, rgba(0, 0, 0, 0.35) 80%, transparent 100%);
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 45%, rgba(0, 0, 0, 0.35) 80%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0.5) 85%, transparent 100%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0.5) 85%, transparent 100%);
   transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -3048,8 +3049,8 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.75) 100%),
-              linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, transparent 30%, rgba(0, 0, 0, 0.45) 60%, var(--color-bg) 100%);
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.15) 50%, rgba(0, 0, 0, 0.72) 100%),
+              linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, transparent 30%, rgba(0, 0, 0, 0.35) 65%, var(--color-bg) 100%);
 }
 
 [data-mode="light"] .story-top-banner-overlay,
@@ -3091,7 +3092,7 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 
 .story-content-container {
   max-width: 1240px;
-  margin: -80px auto 0;
+  margin: -120px auto 0;
   padding: 0 16px 64px;
   position: relative;
   z-index: 3;
@@ -3099,7 +3100,7 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 
 @media (max-width: 767px) {
   .story-content-container {
-    margin: -50px auto 0;
+    margin: -70px auto 0;
     padding: 0 12px 48px;
   }
 }
@@ -3110,11 +3111,13 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   grid-template-columns: 240px 1fr;
   gap: 28px;
   align-items: start;
-  background: rgba(18, 18, 24, 0.95);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  background: rgba(18, 20, 29, 0.65);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 18px;
   padding: 24px;
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
 }
 
 @media (min-width: 1100px) {
@@ -3135,9 +3138,11 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 
 [data-mode="light"] .story-unified-card,
 :root:not([data-mode="dark"]) .story-unified-card {
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(28px) saturate(160%);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
   border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 /* Left Cover Image inside Unified Card */
@@ -3146,7 +3151,7 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   aspect-ratio: 3 / 4;
   border-radius: 12px;
   overflow: hidden;
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.12);
   background: #16181d;
 }
 
@@ -3172,22 +3177,28 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 /* Tabs Bar */
 .story-unified-content .story-tabs .ranking-tabs,
 .story-tabs-card .story-tabs .ranking-tabs {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
   padding: 4px;
   display: flex;
   gap: 6px;
   max-width: 100%;
   overflow-x: auto;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 [data-mode="light"] .story-unified-content .story-tabs .ranking-tabs,
 :root:not([data-mode="dark"]) .story-unified-content .story-tabs .ranking-tabs,
 [data-mode="light"] .story-tabs-card .story-tabs .ranking-tabs,
 :root:not([data-mode="dark"]) .story-tabs-card .story-tabs .ranking-tabs {
-  background: #f1f5f9;
+  background: rgba(241, 245, 249, 0.65);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 .story-unified-content .story-tabs .ranking-tabs button,
@@ -3367,26 +3378,30 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   height: 36px;
   padding: 0 12px 0 32px;
   font-size: 13px;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.3);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   color: #e4e4e7;
   width: 180px;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .chapter-search-input:focus {
   outline: none;
   border-color: #ea6c75;
   width: 220px;
-  background: rgba(0, 0, 0, 0.55);
-  box-shadow: 0 0 0 2px rgba(234, 108, 117, 0.2);
+  background: rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 2px rgba(234, 108, 117, 0.25);
 }
 
 [data-mode="light"] .chapter-search-input,
 :root:not([data-mode="dark"]) .chapter-search-input {
-  background: #f1f5f9;
-  border-color: rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-color: rgba(0, 0, 0, 0.12);
   color: #18181b;
 }
 
@@ -3396,25 +3411,29 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   gap: 6px;
   height: 36px;
   padding: 0 12px;
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 8px;
   color: #d4d4d8;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.15s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
 .chapter-sort-btn:hover {
-  background: rgba(234, 108, 117, 0.12);
+  background: rgba(234, 108, 117, 0.14);
   border-color: rgba(234, 108, 117, 0.35);
   color: #ea6c75;
 }
 
 [data-mode="light"] .chapter-sort-btn,
 :root:not([data-mode="dark"]) .chapter-sort-btn {
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-color: rgba(0, 0, 0, 0.1);
   color: #334155;
 }
@@ -3452,9 +3471,11 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   gap: 12px;
   min-height: 40px;
   padding: 8px 14px;
-  background: rgba(255, 255, 255, 0.025);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 9px;
   color: #d4d4d8;
   font-size: 13.5px;
   text-decoration: none;
@@ -3463,13 +3484,15 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 
 [data-mode="light"] .chapter-item-link,
 :root:not([data-mode="dark"]) .chapter-item-link {
-  background: #f8fafc;
-  border-color: rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-color: rgba(0, 0, 0, 0.07);
   color: #334155;
 }
 
 .chapter-item-link:hover {
-  background: rgba(234, 108, 117, 0.08);
+  background: rgba(234, 108, 117, 0.12);
   border-color: rgba(234, 108, 117, 0.35);
   color: #ea6c75;
   transform: translateX(2px);
@@ -3487,7 +3510,7 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   font-size: 11.5px;
   font-weight: 600;
   color: #ea6c75;
-  background: rgba(234, 108, 117, 0.1);
+  background: rgba(234, 108, 117, 0.12);
   padding: 2px 7px;
   border-radius: 6px;
 }
@@ -3504,6 +3527,8 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   align-items: center;
   padding: 3px 8px;
   background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #a1a1aa;
   border-radius: 6px;
@@ -3513,7 +3538,7 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 
 [data-mode="light"] .chapter-page-badge,
 :root:not([data-mode="dark"]) .chapter-page-badge {
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.6);
   border-color: rgba(0, 0, 0, 0.08);
   color: #64748b;
 }
@@ -3549,6 +3574,8 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   height: 32px;
   padding: 0 8px;
   background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 6px;
   color: #a1a1aa;
@@ -3562,14 +3589,16 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 [data-mode="light"] .chapter-page-nav-btn,
 :root:not([data-mode="dark"]) .chapter-page-btn,
 :root:not([data-mode="dark"]) .chapter-page-nav-btn {
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border-color: rgba(0, 0, 0, 0.08);
   color: #64748b;
 }
 
 .chapter-page-btn:hover:not(.active),
 .chapter-page-nav-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.09);
   color: #ffffff;
   border-color: rgba(255, 255, 255, 0.2);
 }
@@ -3606,6 +3635,23 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   user-select: none;
 }
 
+/* Comments blockquote in Unified Card */
+.story-unified-content .story-comments blockquote {
+  margin: 0;
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.035);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+}
+
+[data-mode="light"] .story-unified-content .story-comments blockquote,
+:root:not([data-mode="dark"]) .story-unified-content .story-comments blockquote {
+  background: rgba(255, 255, 255, 0.55);
+  border-color: rgba(0, 0, 0, 0.06);
+}
+
 /* 3. Bottom Recommendations Section */
 .story-recommendations-section {
   margin-top: 44px;
@@ -3634,6 +3680,30 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   .story-recommendations-grid {
     grid-template-columns: 1fr;
   }
+}
+
+.story-recommendations-section .story-card-horizontal {
+  background: rgba(18, 20, 28, 0.65);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.story-recommendations-section .story-card-horizontal:hover {
+  background: rgba(24, 27, 38, 0.75);
+  border-color: rgba(255, 255, 255, 0.2);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+}
+
+[data-mode="light"] .story-recommendations-section .story-card-horizontal,
+:root:not([data-mode="dark"]) .story-recommendations-section .story-card-horizontal {
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-color: rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }
 
 /* Status Badge on Cover in StoryCard */
