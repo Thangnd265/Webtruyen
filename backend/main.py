@@ -789,7 +789,8 @@ def stream_audio(
             headers={
                 "Content-Length": str(file_size),
                 "Accept-Ranges": "bytes",
-                "Content-Type": content_type
+                "Content-Type": content_type,
+                "Cache-Control": "public, max-age=604800, immutable"
             }
         )
 
