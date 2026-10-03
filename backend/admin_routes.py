@@ -889,12 +889,25 @@ def cancel_queue_item(slug: Optional[str] = Query(None)):
         removed = queue_manager.remove_from_queue(slug)
         if removed:
             return {"status": "ok", "message": f"Đã huỷ '{slug}' khỏi hàng đợi"}
+        return {"status": "ok", "message": f"Truyện '{slug}' không còn trong hàng đợi"}
 
+    # No slug specified: first try to cancel active job
     cancelled = queue_manager.cancel_current()
     if cancelled:
         return {"status": "ok", "message": "Đã gửi lệnh huỷ tác vụ đang chạy"}
 
-    return {"status": "ok", "message": "Không có tác vụ nào đang chạy"}
+    # If no active job is running, cancel the first pending book in the queue
+    next_cancelled = queue_manager.cancel_next_pending()
+    if next_cancelled:
+        return {"status": "ok", "message": f"Đã huỷ '{next_cancelled}' khỏi hàng đợi"}
+
+    return {"status": "ok", "message": "Không có tác vụ nào trong hàng đợi"}
+
+
+@router.post("/queue/clear")
+def clear_entire_queue():
+    cleared = queue_manager.clear_queue()
+    return {"status": "ok", "message": f"Đã xóa toàn bộ hàng đợi ({cleared} tác vụ)"}
 
 
 # -------------------------------------------------------------

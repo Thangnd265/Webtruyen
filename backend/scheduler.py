@@ -218,7 +218,7 @@ class QueueManager:
 
     def cancel_current(self) -> bool:
         with self._lock:
-            if self._current_job and self._current_job.status == "running":
+            if self._current_job:
                 self._current_job.cancelled = True
                 self._current_job.status = "cancelled"
                 self.add_log(f"🛑 Đã gửi lệnh huỷ tác vụ: {self._current_job.book_title}")
@@ -228,25 +228,92 @@ class QueueManager:
                         self.add_log(f"🛑 Đã dừng tiến trình subprocess (PID {self._current_process.pid})")
                     except Exception as e:
                         logger.error(f"Error terminating process: {e}")
+                try:
+                    with get_db() as conn:
+                        conn.execute(
+                            "UPDATE admin_books SET status = 'idle', updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+                            (self._current_job.book_slug,),
+                        )
+                except Exception as e:
+                    logger.error(f"Error updating cancelled book in DB: {e}")
+
+                if not coordinator.is_online():
+                    self._current_job = None
                 return True
         return False
 
+    def cancel_next_pending(self) -> Optional[str]:
+        with self._lock:
+            if self._queue:
+                item = self._queue.pop(0)
+                book_slug = item["book_slug"]
+                book_title = item.get("book_title", book_slug)
+                self.add_log(f"🗑️ Đã huỷ '{book_title}' khỏi hàng đợi.")
+                try:
+                    with get_db() as conn:
+                        conn.execute(
+                            "UPDATE admin_books SET status = 'idle', updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+                            (book_slug,),
+                        )
+                except Exception as e:
+                    logger.error(f"Error resetting book status in DB: {e}")
+                return book_title
+        return None
+
     def remove_from_queue(self, book_slug: str) -> bool:
         with self._lock:
-            for i, item in enumerate(self._queue):
+            found = False
+            # Check current job
+            if self._current_job and self._current_job.book_slug == book_slug:
+                self.cancel_current()
+                if not coordinator.is_online():
+                    self._current_job = None
+                found = True
+
+            # Check queue list
+            for i, item in enumerate(list(self._queue)):
                 if item["book_slug"] == book_slug:
                     self._queue.pop(i)
-                    self.add_log(f"🗑️ Đã xoá '{book_slug}' khỏi hàng đợi.")
-                    try:
-                        with get_db() as conn:
-                            conn.execute(
-                                "UPDATE admin_books SET status = 'idle', updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
-                                (book_slug,),
-                            )
-                    except Exception:
-                        pass
-                    return True
-        return False
+                    self.add_log(f"🗑️ Đã xoá '{item.get('book_title', book_slug)}' khỏi hàng đợi.")
+                    found = True
+                    break
+
+            # Defensively update DB status
+            try:
+                with get_db() as conn:
+                    cur = conn.execute(
+                        "UPDATE admin_books SET status = 'idle', updated_at = CURRENT_TIMESTAMP WHERE slug = ? AND status IN ('queued', 'rendering')",
+                        (book_slug,),
+                    )
+                    if cur.rowcount > 0:
+                        found = True
+            except Exception as e:
+                logger.error(f"Error resetting book status in DB: {e}")
+
+            return found
+
+    def clear_queue(self) -> int:
+        with self._lock:
+            count = 0
+            if self._current_job:
+                self.cancel_current()
+                if not coordinator.is_online():
+                    self._current_job = None
+                count += 1
+
+            count += len(self._queue)
+            self._queue.clear()
+            self.add_log(f"🗑️ Đã xóa toàn bộ hàng đợi render ({count} tác vụ).")
+
+            try:
+                with get_db() as conn:
+                    conn.execute(
+                        "UPDATE admin_books SET status = 'idle', updated_at = CURRENT_TIMESTAMP WHERE status IN ('queued', 'rendering')"
+                    )
+            except Exception as e:
+                logger.error(f"Error clearing queue in DB: {e}")
+
+            return count
 
     def ensure_worker(self):
         if not self._running or self._worker_thread is None or not self._worker_thread.is_alive():

@@ -258,9 +258,13 @@
         </div>
 
         <div class="flex items-center gap-2">
-          <button onclick="cancelActiveJob()" class="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5">
+          <button onclick="cancelActiveJob()" class="px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 active:scale-95 text-amber-300 border border-amber-500/30 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5" title="Hủy tác vụ hiện tại hoặc truyện đầu danh sách chờ">
             <i data-lucide="square" class="w-3.5 h-3.5"></i>
             <span>Dừng Tác Vụ</span>
+          </button>
+          <button onclick="clearEntireQueue()" class="px-3 py-1.5 bg-rose-500/10 hover:bg-rose-500/20 active:scale-95 text-rose-300 border border-rose-500/30 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5" title="Xóa toàn bộ hàng đợi render">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            <span>Xóa Hàng Chờ</span>
           </button>
         </div>
       </div>
@@ -945,6 +949,7 @@
   <script>
     let adminToken = localStorage.getItem('webtruyen_admin_token') || '';
     let currentBooks = [];
+    let currentQueueData = null;
     let activeChapterSlug = '';
 
     // Initialize
@@ -1115,6 +1120,7 @@
     }
 
     function updateQueueUI(q) {
+      currentQueueData = q;
       const qSection = document.getElementById('liveQueueSection');
       if (!q) {
         qSection.classList.add('hidden');
@@ -1147,19 +1153,63 @@
       } else {
         qSection.classList.add('hidden');
       }
+      lucide.createIcons();
     }
 
     async function cancelActiveJob() {
-      if (!confirm('Bạn có chắc chắn muốn hủy tác vụ render đang chạy?')) return;
+      const firstPending = currentQueueData?.pending_queue?.[0];
+      const activeJob = currentQueueData?.current_job;
+      const targetSlug = activeJob?.book_slug || firstPending?.book_slug;
+      const targetTitle = activeJob?.book_title || firstPending?.book_title || 'tác vụ render';
+
+      if (!confirm(`Bạn có chắc chắn muốn hủy "${targetTitle}" khỏi hàng đợi?`)) return;
       try {
-        const res = await fetch('/api/admin/queue/cancel', {
+        const url = targetSlug ? `/api/admin/queue/cancel?slug=${encodeURIComponent(targetSlug)}` : '/api/admin/queue/cancel';
+        const res = await fetch(url, {
           method: 'POST',
           headers: { 'Authorization': `Bearer ${adminToken}` }
         });
         const d = await res.json();
         showToast(d.message);
+        await fetchQueueStatus();
+        await fetchBooks();
       } catch (e) {
         showToast('Lỗi khi hủy tác vụ', true);
+      }
+    }
+
+    async function clearEntireQueue() {
+      const qLen = (currentQueueData?.pending_queue?.length || 0) + (currentQueueData?.is_busy ? 1 : 0);
+      if (!confirm(`Bạn có chắc chắn muốn xóa TOÀN BỘ hàng đợi render (${qLen} truyện)? Tất cả truyện đang chờ sẽ trở về trạng thái bình thường.`)) return;
+      try {
+        const res = await fetch('/api/admin/queue/clear', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const d = await res.json();
+        showToast(d.message);
+        await fetchQueueStatus();
+        await fetchBooks();
+      } catch (e) {
+        showToast('Lỗi khi xóa hàng đợi', true);
+      }
+    }
+
+    async function cancelBookQueue(slug) {
+      const book = (currentBooks || []).find(b => b.slug === slug);
+      const name = book ? book.title : slug;
+      if (!confirm(`Bạn có chắc muốn hủy truyện "${name}" khỏi hàng đợi render?`)) return;
+      try {
+        const res = await fetch(`/api/admin/queue/cancel?slug=${encodeURIComponent(slug)}`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${adminToken}` }
+        });
+        const d = await res.json();
+        showToast(d.message);
+        await fetchQueueStatus();
+        await fetchBooks();
+      } catch (e) {
+        showToast('Lỗi khi hủy hàng chờ', true);
       }
     }
 
@@ -1220,6 +1270,29 @@
           statusBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">Hoàn thành</span>`;
         }
 
+        let renderBtnHtml = `
+          <button onclick="openRunNowModal('${b.slug}')" class="flex-1 py-1.5 px-2 bg-emerald-600/10 hover:bg-emerald-600/20 active:scale-95 text-emerald-400 border border-emerald-500/20 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1" title="Render ngay">
+            <i data-lucide="play" class="w-3.5 h-3.5"></i>
+            <span>Render</span>
+          </button>
+        `;
+
+        if (isQueued) {
+          renderBtnHtml = `
+            <button onclick="cancelBookQueue('${b.slug}')" class="flex-1 py-1.5 px-2 bg-rose-500/10 hover:bg-rose-500/20 active:scale-95 text-rose-400 border border-rose-500/20 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1" title="Hủy khỏi hàng đợi render">
+              <i data-lucide="x" class="w-3.5 h-3.5"></i>
+              <span>Hủy chờ</span>
+            </button>
+          `;
+        } else if (isRendering) {
+          renderBtnHtml = `
+            <button onclick="cancelBookQueue('${b.slug}')" class="flex-1 py-1.5 px-2 bg-amber-500/10 hover:bg-amber-500/20 active:scale-95 text-amber-400 border border-amber-500/20 rounded-lg text-xs font-medium transition-all flex items-center justify-center gap-1" title="Dừng render truyện này">
+              <i data-lucide="square" class="w-3.5 h-3.5"></i>
+              <span>Dừng</span>
+            </button>
+          `;
+        }
+
         const coverHtml = b.cover_url
           ? `<img src="${b.cover_url}" alt="${b.title}" class="w-12 h-16 object-cover rounded-lg border border-zinc-800 shrink-0 shadow-sm" onerror="this.style.display='none'">`
           : `<div class="w-12 h-16 rounded-lg bg-zinc-950 border border-zinc-800 shrink-0 flex items-center justify-center text-zinc-600"><i data-lucide="book" class="w-5 h-5"></i></div>`;
@@ -1266,10 +1339,7 @@
 
           <!-- Action buttons -->
           <div class="flex items-center justify-between gap-1.5 pt-3 border-t border-zinc-800/80">
-            <button onclick="openRunNowModal('${b.slug}')" class="flex-1 py-1.5 px-2 bg-emerald-600/10 hover:bg-emerald-600/20 text-emerald-400 border border-emerald-500/20 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1">
-              <i data-lucide="play" class="w-3.5 h-3.5"></i>
-              <span>Render</span>
-            </button>
+            ${renderBtnHtml}
             <button onclick="openChapterManager('${b.slug}')" class="flex-1 py-1.5 px-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-xs font-medium transition-colors flex items-center justify-center gap-1">
               <i data-lucide="layers" class="w-3.5 h-3.5 text-brand-400"></i>
               <span>Chương</span>
