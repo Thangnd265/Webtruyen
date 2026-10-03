@@ -126,29 +126,39 @@ export function StoryPage() {
 
   const storyComments = comments.filter((comment) => comment.storyId === story.id);
 
-  const bannerImage = story.banner || `/api/books/${story.slug}/banner` || story.cover;
+  const bannerImage =
+    story.banner ||
+    (story.cover?.includes("unsplash.com") ? story.cover.replace("w=480", "w=1600") : "") ||
+    `/api/books/${story.slug}/banner` ||
+    story.cover;
 
   return (
     <div className="story-page story-page-custom-layout">
-      {/* 1. Top Wide Hero Banner with Centered Story Title */}
-      <div className="story-top-banner" aria-label={`Banner truyện ${story.title}`}>
+      {/* 1. Top Wide Hero Banner with Centered Story Title (Full-bleed like HomePage) */}
+      <div className="story-top-banner story-top-banner-full-bleed" aria-label={`Banner truyện ${story.title}`}>
         <img
           src={bannerImage}
           alt={`Banner ${story.title}`}
           className="story-top-banner-img"
           style={{ objectPosition: story.bannerPosition || "center 20%" }}
           onError={(e) => {
-            if (e.currentTarget.src !== story.cover) {
-              e.currentTarget.src = story.cover;
+            const fallback = story.cover?.includes("unsplash.com")
+              ? story.cover.replace("w=480", "w=1600")
+              : story.cover;
+            if (e.currentTarget.src !== fallback) {
+              e.currentTarget.src = fallback;
             }
           }}
         />
         <div className="story-top-banner-overlay" />
-        <h1 className="story-top-banner-title">{story.title}</h1>
+        <div className="story-top-banner-content">
+          <h1 className="story-top-banner-title">{story.title}</h1>
+        </div>
       </div>
 
-      {/* 2. Main Story Detail Row: Left Cover Image + Right Tabs Info Box */}
-      <div className="story-main-row">
+      <div className="story-content-container">
+        {/* 2. Main Story Detail Row: Left Cover Image + Right Tabs Info Box */}
+        <div className="story-main-row">
         {/* Left Column: Cover Image & Quick Action Buttons */}
         <div className="story-cover-col">
           <div className="story-cover-box">
@@ -281,6 +291,7 @@ export function StoryPage() {
           </div>
         </section>
       )}
+      </div>
     </div>
   );
 }

@@ -3007,22 +3007,28 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
    ========================================================== */
 .story-page-custom-layout {
   position: relative;
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 0 16px 48px;
+  width: 100%;
 }
 
-/* 1. Top Wide Hero Banner */
-.story-top-banner {
+/* 1. Top Wide Hero Banner (Full-bleed matching HomePage Carousel) */
+.story-top-banner.story-top-banner-full-bleed {
   position: relative;
-  width: 100%;
-  height: clamp(260px, 32vw, 360px);
-  border-radius: 16px;
+  width: 100dvw;
+  margin-top: -32px;
+  margin-inline: calc(50% - 50dvw);
+  min-height: clamp(420px, 58svh, 620px);
+  height: clamp(420px, 58svh, 620px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  margin-bottom: 24px;
-  background: #111216;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: #0d0d0d;
+  box-shadow: var(--shadow-card);
 }
 
 .story-top-banner-img {
@@ -3031,35 +3037,66 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transition: transform 0.6s ease;
+  filter: none !important;
+  transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.story-top-banner:hover .story-top-banner-img {
+  transform: scale(1.015);
 }
 
 .story-top-banner-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(10, 10, 14, 0.55) 55%, rgba(10, 10, 14, 0.9) 100%),
-              radial-gradient(circle at center, transparent 35%, rgba(0, 0, 0, 0.65) 100%);
+  z-index: 1;
   pointer-events: none;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.7) 100%),
+              linear-gradient(0deg, var(--color-bg) 0%, rgba(0, 0, 0, 0.4) 35%, transparent 65%);
+}
+
+.story-top-banner-content {
+  position: relative;
+  width: min(100%, 1000px);
+  z-index: 2;
+  text-align: center;
+  text-shadow: 0 4px 28px rgba(0, 0, 0, 0.95), 0 2px 10px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+  padding: 0 24px;
 }
 
 .story-top-banner-title {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  margin: 0;
-  padding: 0 20px;
-  width: 100%;
-  max-width: 950px;
-  text-align: center;
-  color: #ffffff;
-  font-size: clamp(28px, 4.2vw, 46px);
+  margin: 0 auto;
+  font-size: clamp(36px, 5.2vw, 64px);
+  line-height: 1.18;
+  text-wrap: balance;
   font-weight: 800;
-  letter-spacing: -0.015em;
-  line-height: 1.25;
-  text-shadow: 0 4px 28px rgba(0, 0, 0, 0.95), 0 2px 8px rgba(0, 0, 0, 0.9);
-  z-index: 2;
-  pointer-events: none;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@media (max-width: 767px) {
+  .story-top-banner.story-top-banner-full-bleed {
+    min-height: 380px;
+    height: 380px;
+  }
+  .story-top-banner-title {
+    font-size: clamp(26px, 7.5vw, 38px);
+  }
+}
+
+.story-content-container {
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 28px 16px 64px;
+  position: relative;
+  z-index: 3;
+}
+
+@media (max-width: 767px) {
+  .story-content-container {
+    padding: 20px 12px 48px;
+  }
 }
 
 /* 2. Main Story Detail Row */
