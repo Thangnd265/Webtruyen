@@ -27,7 +27,8 @@ def range_streamer(file_path: str, range_header: str | None) -> StreamingRespons
             headers={
                 "Content-Length": str(file_size),
                 "Accept-Ranges": "bytes",
-                "Content-Type": content_type
+                "Content-Type": content_type,
+                "Cache-Control": "public, max-age=604800, immutable"
             }
         )
 
@@ -77,6 +78,7 @@ def range_streamer(file_path: str, range_header: str | None) -> StreamingRespons
         "Content-Range": f"bytes {start}-{end}/{file_size}",
         "Accept-Ranges": "bytes",
         "Content-Length": str(chunk_len),
-        "Content-Type": content_type
+        "Content-Type": content_type,
+        "Cache-Control": "public, max-age=604800, immutable"
     }
     return StreamingResponse(range_iter(), status_code=206, headers=headers)

@@ -51,5 +51,7 @@ def setup_test_audiobooks_dir(request, monkeypatch):
         try:
             from apps.web_reader.backend.config import settings
             settings.AUDIOBOOKS_DIR = str(tmp_path)
+            from apps.web_reader.backend.main import clear_api_caches
+            clear_api_caches()
         except (ImportError, AttributeError):
             pass

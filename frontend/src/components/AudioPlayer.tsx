@@ -4,7 +4,7 @@ import { Icon } from "./Icon";
 import { AudioLoader } from "./AudioLoader";
 import { VinylTurntable } from "./VinylTurntable";
 import { Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
-import type { BackendChapter, ChapterCue } from "../data/api";
+import { preloadChapter, type BackendChapter } from "../data/api";
 import { useAuth } from "../context/AuthContext";
 
 export function AudioPlayer({
@@ -17,6 +17,7 @@ export function AudioPlayer({
   coverUrl,
   initialAutoPlay = false,
   initialTime = 0,
+  currentVoice,
 }: {
   storyPath: string;
   chapterIndex: number;
@@ -27,12 +28,14 @@ export function AudioPlayer({
   coverUrl?: string;
   initialAutoPlay?: boolean;
   initialTime?: number;
+  currentVoice?: string;
 }) {
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const { token, preferences, updatePreferences } = useAuth();
   const lastSyncRef = useRef<number>(0);
   const hasSeekedInitialRef = useRef<boolean>(false);
+  const preloadedChapterRef = useRef<string | null>(null);
 
   const [playing, setPlaying] = useState(false);
   const [buffering, setBuffering] = useState(false);
@@ -77,6 +80,7 @@ export function AudioPlayer({
 
   useEffect(() => {
     hasSeekedInitialRef.current = false;
+    preloadedChapterRef.current = null;
     const initSec = initialTime && initialTime > 0 ? initialTime : 0;
     setCurrentTime(initSec);
     setPosition(0);
@@ -195,6 +199,19 @@ export function AudioPlayer({
       setPosition(Math.round((cur / dur) * 100));
     }
     syncProgress(cur, dur, false);
+
+    // Smart Gapless Preload: Preload next chapter when within 30s of end or 75% progress
+    if (autoNext && dur > 0 && chapterIndex < chapters.length - 1) {
+      const remaining = dur - cur;
+      const progress = cur / dur;
+      const nextChapter = chapters[chapterIndex + 1];
+      if (nextChapter && (remaining <= 30 || progress >= 0.75) && preloadedChapterRef.current !== nextChapter.id) {
+        preloadedChapterRef.current = nextChapter.id;
+        const slug = storyPath.replace(/^\/truyen\//, "").replace(/\/.*$/, "");
+        const targetAudioUrl = `/api/books/${slug}/audio/${nextChapter.id}${currentVoice ? `?voice=${encodeURIComponent(currentVoice)}` : ""}`;
+        preloadChapter(slug, nextChapter.id, currentVoice, targetAudioUrl);
+      }
+    }
   }
 
   function handleSeek(val: number) {
@@ -227,7 +244,8 @@ export function AudioPlayer({
   function selectChapter(idx: number, continuePlaying = playing) {
     if (idx < 0 || idx >= chapters.length) return;
     const target = chapters[idx];
-    navigate(`${storyPath}/nghe/${target ? target.id : idx + 1}`, {
+    const query = currentVoice ? `?voice=${encodeURIComponent(currentVoice)}` : "";
+    navigate(`${storyPath}/nghe/${target ? target.id : idx + 1}${query}`, {
       state: { autoPlay: continuePlaying },
     });
   }
@@ -255,7 +273,7 @@ export function AudioPlayer({
         <audio
           ref={audioRef}
           src={audioSrc}
-          preload="metadata"
+          preload="auto"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={(e) => {
             const el = e.currentTarget;

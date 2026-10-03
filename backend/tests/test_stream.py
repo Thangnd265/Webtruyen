@@ -168,3 +168,23 @@ def test_stream_audio_voice_fallback_when_voice_file_missing(tmp_path):
     response = client.get("/api/books/test-book/audio/chapter_001?voice=unknown_voice")
     assert response.status_code == 200
     assert response.headers["Content-Length"] == "500"
+
+
+def test_stream_audio_cache_control_headers(tmp_path):
+    audio_dir = tmp_path / "test-book"
+    audio_dir.mkdir(parents=True, exist_ok=True)
+    audio_file = audio_dir / "chapter_001.mp3"
+    audio_file.write_bytes(b"C" * 1000)
+
+    # Full content (200 OK)
+    res_full = client.get("/api/books/test-book/audio/chapter_001")
+    assert res_full.status_code == 200
+    assert "public" in res_full.headers["Cache-Control"]
+    assert "max-age=" in res_full.headers["Cache-Control"]
+
+    # Partial content (206 Partial Content)
+    res_range = client.get("/api/books/test-book/audio/chapter_001", headers={"Range": "bytes=0-199"})
+    assert res_range.status_code == 206
+    assert "public" in res_range.headers["Cache-Control"]
+    assert "max-age=" in res_range.headers["Cache-Control"]
+

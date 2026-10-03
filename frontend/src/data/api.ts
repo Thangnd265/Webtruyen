@@ -113,13 +113,74 @@ export function buildDynamicHeroSlides(stories: Story[]): HeroSlide[] {
   }));
 }
 
-export async function getStoryDetail(slug: string): Promise<{ story: Story; chapters: BackendChapter[] } | null> {
+const storyDetailCache = new Map<string, { story: Story; chapters: BackendChapter[] }>();
+const chapterContentCache = new Map<string, ChapterContent>();
+const audioPreloadMap = new Map<string, HTMLAudioElement>();
+
+export function preloadAudio(url: string): HTMLAudioElement {
+  if (audioPreloadMap.has(url)) {
+    return audioPreloadMap.get(url)!;
+  }
+  const audio = new Audio();
+  audio.preload = "auto";
+  audio.src = url;
+  audio.load();
+  audioPreloadMap.set(url, audio);
+
+  // Keep cache bounded to 5 items to avoid unnecessary memory consumption
+  if (audioPreloadMap.size > 5) {
+    const firstKey = audioPreloadMap.keys().next().value;
+    if (firstKey) {
+      const oldAudio = audioPreloadMap.get(firstKey);
+      if (oldAudio) {
+        oldAudio.src = "";
+      }
+      audioPreloadMap.delete(firstKey);
+    }
+  }
+  return audio;
+}
+
+export function getCachedChapterContent(
+  slug: string,
+  chapterId: string,
+  voice?: string
+): ChapterContent | null {
+  const cacheKey = `${slug}:${chapterId}:${voice || ""}`;
+  return chapterContentCache.get(cacheKey) || null;
+}
+
+export async function preloadChapter(
+  slug: string,
+  chapterId: string,
+  voice?: string,
+  audioUrl?: string
+): Promise<void> {
+  const targetAudioUrl =
+    audioUrl ||
+    (voice
+      ? `/api/books/${slug}/audio/${chapterId}?voice=${encodeURIComponent(voice)}`
+      : `/api/books/${slug}/audio/${chapterId}`);
+  preloadAudio(targetAudioUrl);
+  await getChapterContent(slug, chapterId, voice);
+}
+
+export async function getStoryDetail(
+  slug: string,
+  forceRefresh = false
+): Promise<{ story: Story; chapters: BackendChapter[] } | null> {
+  if (!forceRefresh && storyDetailCache.has(slug)) {
+    return storyDetailCache.get(slug)!;
+  }
+
   try {
     const res = await fetch(`/api/books/${slug}`, { cache: "no-store" });
     if (res.ok) {
       const data: BackendBookDetail = await res.json();
       const story = mapBackendBookToStory(data);
-      return { story, chapters: data.chapters || [] };
+      const detail = { story, chapters: data.chapters || [] };
+      storyDetailCache.set(slug, detail);
+      return detail;
     }
   } catch (err) {
     console.warn("Could not fetch /api/books/" + slug, err);
@@ -142,6 +203,11 @@ export async function getChapterContent(
   chapterId: string,
   voice?: string
 ): Promise<ChapterContent | null> {
+  const cacheKey = `${slug}:${chapterId}:${voice || ""}`;
+  if (chapterContentCache.has(cacheKey)) {
+    return chapterContentCache.get(cacheKey)!;
+  }
+
   try {
     const url = voice
       ? `/api/books/${slug}/chapters/${chapterId}?voice=${encodeURIComponent(voice)}`
@@ -149,6 +215,7 @@ export async function getChapterContent(
     const res = await fetch(url);
     if (res.ok) {
       const data: ChapterContent = await res.json();
+      chapterContentCache.set(cacheKey, data);
       return data;
     }
   } catch (err) {
@@ -156,3 +223,4 @@ export async function getChapterContent(
   }
   return null;
 }
+

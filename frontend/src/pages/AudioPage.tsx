@@ -6,6 +6,7 @@ import { VoiceSelector } from "../components/VoiceSelector";
 import {
   getStoryDetail,
   getChapterContent,
+  getCachedChapterContent,
   type BackendChapter,
   type ChapterContent,
 } from "../data/api";
@@ -95,6 +96,14 @@ export function AudioPage() {
 
       const targetChapter = chList[targetIdx];
       if (targetChapter) {
+        const cached = getCachedChapterContent(slug, targetChapter.id, selectedVoice || undefined);
+        if (cached) {
+          setContent(cached);
+          if (cached?.current_voice && !selectedVoice) {
+            setSelectedVoice(cached.current_voice);
+          }
+          setLoading(false);
+        }
         getChapterContent(slug, targetChapter.id, selectedVoice || undefined).then((cData) => {
           if (!active) return;
           setContent(cData);
@@ -194,6 +203,7 @@ export function AudioPage() {
             coverUrl={story.cover}
             initialAutoPlay={initialAutoPlay}
             initialTime={resumeTime}
+            currentVoice={selectedVoice}
           />
 
           <div style={{ marginTop: "16px" }}>

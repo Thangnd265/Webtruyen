@@ -7,6 +7,8 @@ import { VoiceSelector } from "../components/VoiceSelector";
 import {
   getStoryDetail,
   getChapterContent,
+  getCachedChapterContent,
+  preloadChapter,
   type BackendChapter,
   type ChapterContent,
   type ChapterCue,
@@ -38,6 +40,11 @@ export function ReaderPage() {
   });
   const seekRef = useRef<((time: number) => void) | null>(null);
   const lastSyncRef = useRef<number>(0);
+  const preloadedChapterRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    preloadedChapterRef.current = null;
+  }, [activeIdx]);
 
   useEffect(() => {
     if (!slug) return;
@@ -75,6 +82,14 @@ export function ReaderPage() {
 
       const targetChapter = chList[targetIdx];
       if (targetChapter) {
+        const cached = getCachedChapterContent(slug, targetChapter.id, selectedVoice || undefined);
+        if (cached) {
+          setContent(cached);
+          if (cached?.current_voice && !selectedVoice) {
+            setSelectedVoice(cached.current_voice);
+          }
+          setLoading(false);
+        }
         getChapterContent(slug, targetChapter.id, selectedVoice || undefined).then((cData) => {
           if (!active) return;
           setContent(cData);
@@ -199,6 +214,18 @@ export function ReaderPage() {
         progress: dur > 0 ? Number((cur / dur).toFixed(4)) : Number(((activeIdx + 1) / Math.max(chapters.length, 1)).toFixed(4)),
       }),
     }).catch(() => {});
+
+    // Smart Gapless Preload: Preload next chapter text, cues, and audio when within 30s of end or 75% progress
+    const nextChapter = activeIdx < chapters.length - 1 ? chapters[activeIdx + 1] : null;
+    if (dur > 0 && nextChapter && slug) {
+      const remaining = dur - cur;
+      const progress = cur / dur;
+      if ((remaining <= 30 || progress >= 0.75) && preloadedChapterRef.current !== nextChapter.id) {
+        preloadedChapterRef.current = nextChapter.id;
+        const targetAudioUrl = `/api/books/${slug}/audio/${nextChapter.id}${selectedVoice ? `?voice=${encodeURIComponent(selectedVoice)}` : ""}`;
+        preloadChapter(slug, nextChapter.id, selectedVoice || undefined, targetAudioUrl);
+      }
+    }
   }
 
   useEffect(() => {

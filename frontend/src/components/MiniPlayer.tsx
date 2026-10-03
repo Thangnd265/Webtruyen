@@ -191,7 +191,7 @@ export function MiniPlayer({
       <audio
         ref={audioRef}
         src={audioSrc}
-        preload="metadata"
+        preload="auto"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={(e) => {
           const el = e.currentTarget;
