@@ -77,6 +77,22 @@ export function StoryPage() {
       .catch(() => {});
   }, [token, slug]);
 
+  const sortedAndFilteredChapters = useMemo(() => {
+    let list = [...chapters];
+    if (!chapterSortAsc) {
+      list.reverse();
+    }
+    if (chapterSearch.trim()) {
+      const q = chapterSearch.toLowerCase().trim();
+      list = list.filter((ch, idx) => {
+        const chNum = ch.chapter_index !== undefined ? ch.chapter_index : idx + 1;
+        const title = (ch.title || `Chương ${chNum}`).toLowerCase();
+        return title.includes(q) || String(chNum).includes(q);
+      });
+    }
+    return list;
+  }, [chapters, chapterSortAsc, chapterSearch]);
+
   if (loading) {
     return (
       <div className="story-page">
@@ -98,22 +114,6 @@ export function StoryPage() {
     .slice(0, 6);
 
   const totalChaptersCount = Math.max(story.chapters, chapters.length);
-
-  const sortedAndFilteredChapters = useMemo(() => {
-    let list = [...chapters];
-    if (!chapterSortAsc) {
-      list.reverse();
-    }
-    if (chapterSearch.trim()) {
-      const q = chapterSearch.toLowerCase().trim();
-      list = list.filter((ch, idx) => {
-        const chNum = ch.chapter_index !== undefined ? ch.chapter_index : idx + 1;
-        const title = (ch.title || `Chương ${chNum}`).toLowerCase();
-        return title.includes(q) || String(chNum).includes(q);
-      });
-    }
-    return list;
-  }, [chapters, chapterSortAsc, chapterSearch]);
 
   const displayedChapters =
     showAll || chapterSearch.trim().length > 0
