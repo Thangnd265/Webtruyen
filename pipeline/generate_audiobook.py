@@ -456,64 +456,114 @@ def extract_epub_chapters(epub_path: Path) -> Tuple[Dict[str, Any], List[Dict[st
     chapter_index = 1
     has_intro = False
 
+    def get_top_block(elem, r):
+        curr = elem
+        while curr.parent and curr.parent != r:
+            curr = curr.parent
+        return curr
+
     for item in document_items:
         content = item.get_content().decode("utf-8", errors="ignore")
         soup = BeautifulSoup(content, "html.parser")
         text = soup.get_text(separator=" ", strip=True)
 
-        # Ignore tiny non-content items (e.g. toc, nav, title page)
+        # Ignore tiny non-content items (e.g. empty pages, cover wrappers)
         if len(text) < 40 and not soup.find(["p", "article"]):
             continue
 
-        chapter_title = ""
+        # Detect and skip Table of Contents (Mục Lục) files that contain only chapter links
+        links = soup.find_all("a")
+        item_name = (item.get_name() or "").lower()
+        is_toc = False
+        if "toc" in item_name or "nav" in item_name:
+            is_toc = True
+        elif len(links) >= 20 and len(links) / max(1, len(soup.find_all(["p", "div", "li"]))) > 0.4:
+            is_toc = True
 
-        # 1. Check title tag first (often cleanest and most reliable in EPUBs)
-        title_tag = soup.find("title")
-        if title_tag and title_tag.get_text(strip=True):
-            t_raw = title_tag.get_text(strip=True)
-            t_clean = t_raw.split(" - ")[0].split(" | ")[0].strip()
-            if re.search(r"(?:chương|hồi|tiết|bài|chapter)\s*\d+", t_clean, re.IGNORECASE):
-                chapter_title = t_clean
+        if is_toc:
+            logger.info(f"Skipping TOC document item: {item.get_name()} ({len(links)} links)")
+            continue
 
-        # 2. Check headings h1-h6
-        if not chapter_title:
-            heading = soup.find(["h1", "h2", "h3", "h4", "h5", "h6"])
-            if heading and heading.get_text(strip=True):
-                h_text = heading.get_text(strip=True)
-                if len(h_text) < 150:
-                    chapter_title = h_text
+        root = soup.body or soup
+        headings = root.find_all(["h1", "h2", "h3", "h4", "h5", "h6"])
+        ch_headings = [h for h in headings if re.search(r"(?:chương|hồi|tiết|bài|chapter)\s*\d+", h.get_text(), re.I)]
 
-        # 3. Check for specific chapter title pattern in text snippet
-        if not chapter_title:
-            m = re.search(r"((?:chương|hồi|tiết|bài|chapter)\s*\d+[^<\n\r]{0,60})", text, re.IGNORECASE)
-            if m:
-                chapter_title = m.group(1).strip()
+        if len(ch_headings) > 1:
+            # Case A: Multiple chapters bundled inside a single document item
+            for idx, h in enumerate(ch_headings):
+                b_start = get_top_block(h, root)
+                b_end = get_top_block(ch_headings[idx + 1], root) if idx + 1 < len(ch_headings) else None
 
-        # 4. Determine if introduction or normal chapter
-        is_intro = False
-        if chapter_index == 1 and not has_intro:
-            has_ch_kw = bool(re.search(r"(?:chương|hồi|tiết|bài|chapter)\s*\d+", chapter_title or text, re.IGNORECASE))
-            if not has_ch_kw:
-                is_intro = True
+                parts = []
+                curr = b_start
+                while curr and curr != b_end:
+                    parts.append(str(curr))
+                    curr = curr.next_sibling
 
-        if is_intro:
-            chapter_title = chapter_title or "Giới Thiệu"
-            ch_id = "chapter_000"
-            curr_idx = 0
-            has_intro = True
+                ch_html = "".join(parts).strip()
+                ch_title = h.get_text(strip=True)
+
+                chapters.append({
+                    "id": f"chapter_{chapter_index:03d}",
+                    "title": ch_title,
+                    "chapter_index": chapter_index,
+                    "html": ch_html,
+                })
+                chapter_index += 1
         else:
-            if not chapter_title:
-                chapter_title = f"Chương {chapter_index}"
-            ch_id = f"chapter_{chapter_index:03d}"
-            curr_idx = chapter_index
-            chapter_index += 1
+            # Case B: Standard single-chapter document item
+            chapter_title = ""
 
-        chapters.append({
-            "id": ch_id,
-            "title": chapter_title,
-            "chapter_index": curr_idx,
-            "html": content,
-        })
+            # 1. Check title tag first
+            title_tag = soup.find("title")
+            if title_tag and title_tag.get_text(strip=True):
+                t_raw = title_tag.get_text(strip=True)
+                t_clean = t_raw.split(" - ")[0].split(" | ")[0].strip()
+                if re.search(r"(?:chương|hồi|tiết|bài|chapter)\s*\d+", t_clean, re.IGNORECASE):
+                    chapter_title = t_clean
+
+            # 2. Check headings h1-h6
+            if not chapter_title:
+                if ch_headings:
+                    chapter_title = ch_headings[0].get_text(strip=True)
+                else:
+                    heading = soup.find(["h1", "h2", "h3", "h4", "h5", "h6"])
+                    if heading and heading.get_text(strip=True):
+                        h_text = heading.get_text(strip=True)
+                        if len(h_text) < 150:
+                            chapter_title = h_text
+
+            # 3. Check for specific chapter title pattern in text snippet
+            if not chapter_title:
+                m = re.search(r"((?:chương|hồi|tiết|bài|chapter)\s*\d+[^<\n\r]{0,60})", text, re.IGNORECASE)
+                if m:
+                    chapter_title = m.group(1).strip()
+
+            # 4. Determine if introduction or normal chapter
+            is_intro = False
+            if chapter_index == 1 and not has_intro:
+                has_ch_kw = bool(re.search(r"(?:chương|hồi|tiết|bài|chapter)\s*\d+", chapter_title or text, re.IGNORECASE))
+                if not has_ch_kw:
+                    is_intro = True
+
+            if is_intro:
+                chapter_title = chapter_title or "Giới Thiệu"
+                ch_id = "chapter_000"
+                curr_idx = 0
+                has_intro = True
+            else:
+                if not chapter_title:
+                    chapter_title = f"Chương {chapter_index}"
+                ch_id = f"chapter_{chapter_index:03d}"
+                curr_idx = chapter_index
+                chapter_index += 1
+
+            chapters.append({
+                "id": ch_id,
+                "title": chapter_title,
+                "chapter_index": curr_idx,
+                "html": content,
+            })
 
     return metadata_info, chapters
 
