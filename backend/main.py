@@ -425,6 +425,74 @@ def get_book(slug: str):
             except Exception:
                 pass
 
+        if not chapters:
+            try:
+                books_dir = Path(settings.AUDIOBOOKS_DIR).resolve()
+                incoming_dir = books_dir / "incoming_books"
+                candidates = list(incoming_dir.glob(f"{slug}.*")) + list(incoming_dir.glob(f"*{slug}*"))
+                if row and row["source_filename"]:
+                    db_source = incoming_dir / row["source_filename"]
+                    if db_source.is_file() and db_source not in candidates:
+                        candidates.insert(0, db_source)
+
+                for cand in candidates:
+                    if cand.is_file():
+                        try:
+                            from pipeline.universal_extractor import extract_book_chapters
+                            meta_info, ch_list = extract_book_chapters(cand)
+                            if ch_list:
+                                conn.executemany(
+                                    """
+                                    INSERT OR IGNORE INTO book_chapters (book_slug, chapter_id, chapter_index, title, has_audio, audio_url)
+                                    VALUES (?, ?, ?, ?, 0, ?)
+                                    """,
+                                    [
+                                        (slug, ch.get("id", f"chapter_{i+1:03d}"), ch.get("chapter_index", i + 1), ch.get("title", f"Chương {i+1}"), f"/api/books/{slug}/audio/{ch.get('id', f'chapter_{i+1:03d}')}")
+                                        for i, ch in enumerate(ch_list)
+                                    ],
+                                )
+                                conn.execute(
+                                    "UPDATE admin_books SET total_chapters = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+                                    (len(ch_list), slug),
+                                )
+                                local_book_dir = Path(settings.LOCAL_DATA_DIR).resolve() / slug
+                                local_book_dir.mkdir(parents=True, exist_ok=True)
+                                (books_dir / slug).mkdir(parents=True, exist_ok=True)
+                                if meta_info.get("cover_bytes"):
+                                    try:
+                                        (local_book_dir / "cover.jpg").write_bytes(meta_info["cover_bytes"])
+                                        (books_dir / slug / "cover.jpg").write_bytes(meta_info["cover_bytes"])
+                                        conn.execute(
+                                            "UPDATE admin_books SET cover_url = ? WHERE slug = ? AND (cover_url IS NULL OR cover_url = '')",
+                                            (f"/api/books/{slug}/cover", slug),
+                                        )
+                                    except Exception:
+                                        pass
+                                for i, ch in enumerate(ch_list):
+                                    if ch.get("html"):
+                                        ch_id = ch.get("id", f"chapter_{i+1:03d}")
+                                        ch_html_file = local_book_dir / f"{ch_id}.html"
+                                        if not ch_html_file.is_file():
+                                            try:
+                                                ch_html_file.write_text(ch["html"], encoding="utf-8")
+                                            except Exception:
+                                                pass
+                                ch_rows = conn.execute(
+                                    """
+                                    SELECT chapter_id as id, title, chapter_index, has_audio, audio_url
+                                    FROM book_chapters
+                                    WHERE book_slug = ?
+                                    ORDER BY chapter_index ASC
+                                    """,
+                                    (slug,),
+                                ).fetchall()
+                                chapters = [dict(c) for c in ch_rows]
+                                break
+                        except Exception:
+                            pass
+            except Exception:
+                pass
+
         total_chapters = row["total_chapters"] or len(chapters)
         cover_url = row["cover_url"] or f"/api/books/{slug}/cover"
         banner_url = row["banner_url"] or f"/api/books/{slug}/banner"

@@ -394,6 +394,18 @@ def extract_epub_chapters(epub_path: Path) -> Tuple[Dict[str, Any], List[Dict[st
     from bs4 import BeautifulSoup
     from ebooklib import epub  # type: ignore
 
+    # Tolerant zip reading: do not crash if manifest has typos or missing files
+    try:
+        orig_read_file = epub.EpubReader.read_file
+        def safe_read_file(self, name):
+            try:
+                return orig_read_file(self, name)
+            except (KeyError, FileNotFoundError):
+                return b""
+        epub.EpubReader.read_file = safe_read_file
+    except Exception:
+        pass
+
     book = epub.read_epub(str(epub_path))
 
     title_meta = book.get_metadata("DC", "title")

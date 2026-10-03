@@ -368,16 +368,31 @@ async def upload_book(
     # Initialize book directory & cover
     book_dir = books_dir / canonical_slug
     book_dir.mkdir(parents=True, exist_ok=True)
+    local_book_dir = Path(settings.LOCAL_DATA_DIR).resolve() / canonical_slug
+    local_book_dir.mkdir(parents=True, exist_ok=True)
 
     cover_url = None
     if meta_info.get("cover_bytes"):
         try:
             (book_dir / "cover.jpg").write_bytes(meta_info["cover_bytes"])
+            (local_book_dir / "cover.jpg").write_bytes(meta_info["cover_bytes"])
             cover_url = f"/api/books/{canonical_slug}/cover"
         except Exception as e:
             logger.warning(f"Could not save cover image: {e}")
-    elif (book_dir / "cover.jpg").is_file():
+    elif (book_dir / "cover.jpg").is_file() or (local_book_dir / "cover.jpg").is_file():
         cover_url = f"/api/books/{canonical_slug}/cover"
+
+    # Save chapter html files locally for immediate reading
+    if ch_list:
+        for i, ch in enumerate(ch_list):
+            if ch.get("html"):
+                ch_id = ch.get("id", f"chapter_{i+1:03d}")
+                ch_html_file = local_book_dir / f"{ch_id}.html"
+                if not ch_html_file.is_file():
+                    try:
+                        ch_html_file.write_text(ch["html"], encoding="utf-8")
+                    except Exception:
+                        pass
 
     # Save initial metadata.json if not present
     meta_path = book_dir / "metadata.json"
@@ -751,6 +766,37 @@ def list_book_chapters(slug: str):
                                     for i, ch in enumerate(ch_list)
                                 ],
                             )
+                            # Update total_chapters in admin_books
+                            conn.execute(
+                                "UPDATE admin_books SET total_chapters = ?, updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+                                (len(ch_list), slug),
+                            )
+
+                            # Save cover and chapter html files locally
+                            local_book_dir = Path(settings.LOCAL_DATA_DIR).resolve() / slug
+                            local_book_dir.mkdir(parents=True, exist_ok=True)
+                            (books_dir / slug).mkdir(parents=True, exist_ok=True)
+                            if meta_info.get("cover_bytes"):
+                                try:
+                                    (local_book_dir / "cover.jpg").write_bytes(meta_info["cover_bytes"])
+                                    (books_dir / slug / "cover.jpg").write_bytes(meta_info["cover_bytes"])
+                                    conn.execute(
+                                        "UPDATE admin_books SET cover_url = ? WHERE slug = ? AND (cover_url IS NULL OR cover_url = '')",
+                                        (f"/api/books/{slug}/cover", slug),
+                                    )
+                                except Exception:
+                                    pass
+
+                            for i, ch in enumerate(ch_list):
+                                if ch.get("html"):
+                                    ch_id = ch.get("id", f"chapter_{i+1:03d}")
+                                    ch_html_file = local_book_dir / f"{ch_id}.html"
+                                    if not ch_html_file.is_file():
+                                        try:
+                                            ch_html_file.write_text(ch["html"], encoding="utf-8")
+                                        except Exception:
+                                            pass
+
                             rows = conn.execute(
                                 """
                                 SELECT chapter_id as id, title, chapter_index, has_audio, audio_url
