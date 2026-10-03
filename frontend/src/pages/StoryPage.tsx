@@ -157,128 +157,91 @@ export function StoryPage() {
       </div>
 
       <div className="story-content-container">
-        {/* 2. Main Story Detail Row: Left Cover Image + Right Tabs Info Box */}
-        <div className="story-main-row">
-        {/* Left Column: Cover Image & Quick Action Buttons */}
-        <div className="story-cover-col">
-          <div className="story-cover-box">
+        {/* 2. Unified Story Detail Box: Cover on Left, Tabs on Right inside a Single Card */}
+        <div className="story-unified-card">
+          {/* Left Column: Book Cover (No action buttons) */}
+          <div className="story-unified-cover">
             <img src={story.cover} alt={`Bìa truyện ${story.title}`} />
           </div>
-          <div className="story-cover-actions">
-            {userProgress ? (
-              <>
-                <Link
-                  className="button button-primary story-btn-read"
-                  to={`${path}/doc/${userProgress.chapter_id}`}
-                >
-                  📖 Đọc tiếp ({userProgress.chapter_title || `Chương ${userProgress.chapter_id}`})
-                </Link>
-                {story.hasAudio && (
-                  <Link
-                    className="button story-btn-audio"
-                    to={`${path}/nghe/${userProgress.chapter_id}`}
-                    state={{ resumeTime: userProgress.current_time, autoPlay: true }}
-                  >
-                    🎧 Nghe tiếp ({userProgress.chapter_title || `Chương ${userProgress.chapter_id}`})
-                  </Link>
-                )}
-                <Link className="button button-outline" to={`${path}/doc/${firstChapterId}`} title="Đọc lại từ đầu">
-                  Đọc từ đầu
-                </Link>
-              </>
-            ) : (
-              <>
-                <Link className="button button-primary story-btn-read" to={`${path}/doc/${firstChapterId}`}>
-                  📖 Đọc từ đầu
-                </Link>
-                {story.hasAudio && (
-                  <Link className="button story-btn-audio" to={`${path}/nghe/${firstChapterId}`}>
-                    🎧 Nghe audio
-                  </Link>
-                )}
-              </>
-            )}
+
+          {/* Right Column: Tabs (Thông tin, Chương, Audio, Bình luận) */}
+          <div className="story-unified-content">
+            <Tabs
+              label="Nội dung truyện"
+              items={[
+                {
+                  id: "info",
+                  label: "Thông tin",
+                  content: (
+                    <div className="story-tab-info-content">
+                      <h2 className="story-info-heading">Giới thiệu truyện</h2>
+                      <p className="story-desc">
+                        {story.description || `Bộ truyện ${story.title} của tác giả ${story.author}.`}
+                      </p>
+                      <div className="story-tags">
+                        {story.tags && story.tags.length > 0
+                          ? story.tags.map((tag) => <span key={tag}>{tag}</span>)
+                          : <span key={story.category}>{story.category}</span>}
+                      </div>
+                      <p className="story-rating-row">
+                        Độc giả đánh giá <strong className="rating-highlight">{story.rating || 4.8}/5</strong>
+                      </p>
+                      <div className="story-quick-meta">
+                        <span>Tác giả: <strong>{story.author}</strong></span>
+                        <span>Trạng thái: <strong>{story.status === "completed" ? "Hoàn thành" : "Đang ra"}</strong></span>
+                        <span>Số chương: <strong>{totalChaptersCount}</strong></span>
+                        <span>Lượt xem: <strong>{new Intl.NumberFormat("vi-VN").format(story.views)}</strong></span>
+                      </div>
+                    </div>
+                  ),
+                },
+                {
+                  id: "chapters",
+                  label: "Chương",
+                  content: (
+                    <div className="story-tab-chapters-content">
+                      <h2 className="story-info-heading">Danh sách chương</h2>
+                      <p style={{ color: "var(--color-muted)" }}>Chọn một chương để bắt đầu đọc nội dung.</p>
+                      {chapterList(false)}
+                    </div>
+                  ),
+                },
+                {
+                  id: "audio",
+                  label: "Audio",
+                  content: (
+                    <div className="story-tab-audio-content">
+                      <h2 className="story-info-heading">Danh sách audio</h2>
+                      <p style={{ color: "var(--color-muted)" }}>Nghe giọng đọc AI đồng bộ theo từng chương.</p>
+                      {chapterList(true)}
+                    </div>
+                  ),
+                },
+                {
+                  id: "comments",
+                  label: "Bình luận",
+                  content: (
+                    <div className="story-tab-comments-content">
+                      <h2 className="story-info-heading">Bình luận độc giả</h2>
+                      {storyComments.length ? (
+                        <div className="story-comments">
+                          {storyComments.map((comment) => (
+                            <blockquote key={comment.id}>
+                              <p>{comment.content}</p>
+                              <footer>{comment.author}</footer>
+                            </blockquote>
+                          ))}
+                        </div>
+                      ) : (
+                        <p style={{ color: "var(--color-muted)" }}>Chưa có bình luận cho truyện này.</p>
+                      )}
+                    </div>
+                  ),
+                },
+              ]}
+            />
           </div>
         </div>
-
-        {/* Right Column: Dark Rounded Box with Tabs */}
-        <div className="story-tabs-card">
-          <Tabs
-            label="Nội dung truyện"
-            items={[
-              {
-                id: "info",
-                label: "Thông tin",
-                content: (
-                  <div className="story-tab-info-content">
-                    <h2 className="story-info-heading">Giới thiệu truyện</h2>
-                    <p className="story-desc">
-                      {story.description || `Bộ truyện ${story.title} của tác giả ${story.author}.`}
-                    </p>
-                    <div className="story-tags">
-                      {story.tags && story.tags.length > 0
-                        ? story.tags.map((tag) => <span key={tag}>{tag}</span>)
-                        : <span key={story.category}>{story.category}</span>}
-                    </div>
-                    <p className="story-rating-row">
-                      Độc giả đánh giá <strong className="rating-highlight">{story.rating || 4.8}/5</strong>
-                    </p>
-                    <div className="story-quick-meta">
-                      <span>Tác giả: <strong>{story.author}</strong></span>
-                      <span>Trạng thái: <strong>{story.status === "completed" ? "Hoàn thành" : "Đang ra"}</strong></span>
-                      <span>Số chương: <strong>{totalChaptersCount}</strong></span>
-                      <span>Lượt xem: <strong>{new Intl.NumberFormat("vi-VN").format(story.views)}</strong></span>
-                    </div>
-                  </div>
-                ),
-              },
-              {
-                id: "chapters",
-                label: "Chương",
-                content: (
-                  <div className="story-tab-chapters-content">
-                    <h2 className="story-info-heading">Danh sách chương</h2>
-                    <p style={{ color: "var(--color-muted)" }}>Chọn một chương để bắt đầu đọc nội dung.</p>
-                    {chapterList(false)}
-                  </div>
-                ),
-              },
-              {
-                id: "audio",
-                label: "Audio",
-                content: (
-                  <div className="story-tab-audio-content">
-                    <h2 className="story-info-heading">Danh sách audio</h2>
-                    <p style={{ color: "var(--color-muted)" }}>Nghe giọng đọc AI đồng bộ theo từng chương.</p>
-                    {chapterList(true)}
-                  </div>
-                ),
-              },
-              {
-                id: "comments",
-                label: "Bình luận",
-                content: (
-                  <div className="story-tab-comments-content">
-                    <h2 className="story-info-heading">Bình luận độc giả</h2>
-                    {storyComments.length ? (
-                      <div className="story-comments">
-                        {storyComments.map((comment) => (
-                          <blockquote key={comment.id}>
-                            <p>{comment.content}</p>
-                            <footer>{comment.author}</footer>
-                          </blockquote>
-                        ))}
-                      </div>
-                    ) : (
-                      <p style={{ color: "var(--color-muted)" }}>Chưa có bình luận cho truyện này.</p>
-                    )}
-                  </div>
-                ),
-              },
-            ]}
-          />
-        </div>
-      </div>
 
       {/* 3. Bottom Section: "Đề xuất cho bạn" (2-Column Grid) */}
       {recommendations.length > 0 && (
