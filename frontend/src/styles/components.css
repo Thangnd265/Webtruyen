@@ -3002,6 +3002,386 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   }
 }
 
+/* ==========================================================
+   Story Page Custom Redesign (Top Banner, 2-Col Main, 2-Col Recommendations)
+   ========================================================== */
+.story-page-custom-layout {
+  position: relative;
+  max-width: 1240px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+
+/* 1. Top Wide Hero Banner */
+.story-top-banner {
+  position: relative;
+  width: 100%;
+  height: clamp(260px, 32vw, 360px);
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 24px;
+  background: #111216;
+}
+
+.story-top-banner-img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.6s ease;
+}
+
+.story-top-banner-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, rgba(10, 10, 14, 0.55) 55%, rgba(10, 10, 14, 0.9) 100%),
+              radial-gradient(circle at center, transparent 35%, rgba(0, 0, 0, 0.65) 100%);
+  pointer-events: none;
+}
+
+.story-top-banner-title {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  margin: 0;
+  padding: 0 20px;
+  width: 100%;
+  max-width: 950px;
+  text-align: center;
+  color: #ffffff;
+  font-size: clamp(28px, 4.2vw, 46px);
+  font-weight: 800;
+  letter-spacing: -0.015em;
+  line-height: 1.25;
+  text-shadow: 0 4px 28px rgba(0, 0, 0, 0.95), 0 2px 8px rgba(0, 0, 0, 0.9);
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* 2. Main Story Detail Row */
+.story-main-row {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 24px;
+  align-items: start;
+}
+
+@media (min-width: 1100px) {
+  .story-main-row {
+    grid-template-columns: 260px 1fr;
+    gap: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .story-main-row {
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+/* Left Cover Column */
+.story-cover-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (max-width: 768px) {
+  .story-cover-col {
+    max-width: 260px;
+    margin: 0 auto;
+    width: 100%;
+  }
+}
+
+.story-cover-box {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  background: #16181d;
+}
+
+.story-cover-box img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.story-cover-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.story-cover-actions .button {
+  width: 100%;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 13.5px;
+  min-height: 42px;
+  border-radius: 10px;
+}
+
+.story-cover-actions .story-btn-read {
+  background: #ea6c75;
+  border-color: #ea6c75;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(234, 108, 117, 0.35);
+}
+
+.story-cover-actions .story-btn-read:hover {
+  background: #e05663;
+  border-color: #e05663;
+  box-shadow: 0 6px 20px rgba(234, 108, 117, 0.5);
+  transform: translateY(-1px);
+}
+
+.story-cover-actions .story-btn-audio {
+  background: rgba(234, 108, 117, 0.15);
+  border: 1px solid rgba(234, 108, 117, 0.35);
+  color: #ea6c75;
+}
+
+.story-cover-actions .story-btn-audio:hover {
+  background: rgba(234, 108, 117, 0.25);
+  color: #ffffff;
+  border-color: #ea6c75;
+  transform: translateY(-1px);
+}
+
+/* Right Tabs Box */
+.story-tabs-card {
+  background: rgba(18, 18, 24, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+  min-width: 0;
+}
+
+[data-mode="light"] .story-tabs-card,
+:root:not([data-mode="dark"]) .story-tabs-card {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+}
+
+/* Tabs Bar */
+.story-tabs-card .story-tabs .ranking-tabs {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 4px;
+  display: flex;
+  gap: 6px;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+[data-mode="light"] .story-tabs-card .story-tabs .ranking-tabs,
+:root:not([data-mode="dark"]) .story-tabs-card .story-tabs .ranking-tabs {
+  background: #f1f5f9;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.story-tabs-card .story-tabs .ranking-tabs button {
+  border: none;
+  background: transparent;
+  color: #a1a1aa;
+  font-weight: 600;
+  font-size: 14px;
+  padding: 8px 24px;
+  border-radius: 8px;
+  transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+  min-width: auto;
+  cursor: pointer;
+}
+
+.story-tabs-card .story-tabs .ranking-tabs button:hover:not([aria-selected="true"]) {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.story-tabs-card .story-tabs .ranking-tabs button[aria-selected="true"] {
+  background: #ea6c75 !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 10px rgba(234, 108, 117, 0.38) !important;
+}
+
+/* Story Tab Content Elements */
+.story-info-heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 20px 0 12px 0;
+}
+
+[data-mode="light"] .story-info-heading,
+:root:not([data-mode="dark"]) .story-info-heading {
+  color: #18181b;
+}
+
+.story-desc {
+  color: #d4d4d8;
+  line-height: 1.75;
+  font-size: 14.5px;
+  margin-bottom: 18px;
+}
+
+[data-mode="light"] .story-desc,
+:root:not([data-mode="dark"]) .story-desc {
+  color: #3f3f46;
+}
+
+.story-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0;
+}
+
+.story-tags span {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(234, 108, 117, 0.08);
+  border: 1px solid rgba(234, 108, 117, 0.3);
+  color: #ea6c75;
+  border-radius: 9999px;
+  padding: 5px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.story-rating-row {
+  margin: 16px 0;
+  font-size: 14.5px;
+  color: #a1a1aa;
+}
+
+.story-rating-row .rating-highlight {
+  color: #ea6c75;
+  font-weight: 700;
+  font-size: 16px;
+}
+
+.story-quick-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 13.5px;
+  color: #94a3b8;
+}
+
+.story-quick-meta strong {
+  color: #e4e4e7;
+}
+
+[data-mode="light"] .story-quick-meta,
+:root:not([data-mode="dark"]) .story-quick-meta {
+  border-top-color: rgba(0, 0, 0, 0.08);
+  color: #64748b;
+}
+
+[data-mode="light"] .story-quick-meta strong,
+:root:not([data-mode="dark"]) .story-quick-meta strong {
+  color: #18181b;
+}
+
+/* 3. Bottom Recommendations Section */
+.story-recommendations-section {
+  margin-top: 44px;
+  padding-top: 24px;
+}
+
+.story-recommendations-heading {
+  font-size: 22px;
+  font-weight: 700;
+  color: #ffffff;
+  margin: 0 0 20px 0;
+}
+
+[data-mode="light"] .story-recommendations-heading,
+:root:not([data-mode="dark"]) .story-recommendations-heading {
+  color: #18181b;
+}
+
+.story-recommendations-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+@media (max-width: 768px) {
+  .story-recommendations-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Status Badge on Cover in StoryCard */
+.story-card-status-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5px 9px;
+  background: #ea6c75;
+  color: #ffffff;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 9999px;
+  box-shadow: 0 2px 8px rgba(234, 108, 117, 0.4);
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+.story-card-status-badge.status-completed {
+  background: #10b981;
+  box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+/* Star Rating in Horizontal Card */
+.story-card-horizontal .story-rating-horizontal {
+  display: flex;
+  align-items: center;
+  gap: 4.5px;
+  margin: 6px 0 10px 0;
+  color: #fbbf24;
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.story-card-horizontal .story-rating-horizontal svg {
+  color: #fbbf24;
+  fill: #fbbf24;
+}
+
+.story-card-horizontal .story-audio-btn {
+  background-color: #ea6c75;
+  box-shadow: 0 2px 10px rgba(234, 108, 117, 0.35);
+}
+
+.story-card-horizontal .story-audio-btn:hover {
+  background-color: #e05663;
+  box-shadow: 0 4px 14px rgba(234, 108, 117, 0.5);
+}
+
+
 
 
 

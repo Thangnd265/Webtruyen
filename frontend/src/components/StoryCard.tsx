@@ -98,9 +98,8 @@ export function StoryCard({
           </span>
         )}
         <div className="story-cover-wrapper">
-          <span className="story-audio-badge">
-            <Icon icon={Headphones} size={11} />
-            <span>Audio</span>
+          <span className={`story-card-status-badge ${isCompleted ? "status-completed" : "status-ongoing"}`}>
+            {statusText}
           </span>
           <Link className="story-cover" to={`/truyen/${story.slug}`} tabIndex={-1} aria-hidden="true">
             {!coverFailed ? (
@@ -151,6 +150,11 @@ export function StoryCard({
           {story.description && (
             <p className="story-description">{story.description}</p>
           )}
+
+          <div className="story-rating-horizontal">
+            <Icon icon={Star} size={13} />
+            <span>{(story.rating || 4.8).toFixed(1)}</span>
+          </div>
 
           <div className="story-actions">
             <Link to={audioUrl} className="story-audio-btn">
