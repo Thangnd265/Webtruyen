@@ -164,6 +164,16 @@ export function StoryPage() {
 
   const totalChaptersCount = Math.max(story.chapters, regularChapters.length);
 
+  const audioChaptersCount = useMemo(
+    () => regularChapters.filter((c) => Boolean(c.has_audio)).length,
+    [regularChapters]
+  );
+
+  const firstAudioChapter = useMemo(
+    () => regularChapters.find((c) => Boolean(c.has_audio)) || chapters.find((c) => Boolean(c.has_audio)),
+    [regularChapters, chapters]
+  );
+
   const chapterList = (audio: boolean) => {
     const totalPages = Math.max(1, Math.ceil(sortedAndFilteredChapters.length / CHAPTERS_PER_PAGE));
     const currentPage = audio ? Math.min(audioPage, totalPages) : Math.min(chapterPage, totalPages);
@@ -174,7 +184,11 @@ export function StoryPage() {
       <div className="story-chapter-section">
         <div className="chapter-toolbar">
           <div className="chapter-toolbar-left">
-            <span className="chapter-count-badge">Tổng số: {regularChapters.length} chương</span>
+            <span className="chapter-count-badge">
+              {audio
+                ? `Audio: ${audioChaptersCount} chương`
+                : `Tổng số: ${regularChapters.length} chương`}
+            </span>
             {totalPages > 1 && (
               <span className="chapter-page-badge">
                 Trang {currentPage}/{totalPages}
@@ -223,6 +237,24 @@ export function StoryPage() {
               const chNum = ch.chapter_index !== undefined ? ch.chapter_index : idx + 1;
               const chParam = ch.id || String(chNum);
               const title = ch.title || (ch.chapter_index === 0 ? "Giới Thiệu" : `Chương ${chNum}`);
+              const hasAudio = Boolean(ch.has_audio);
+
+              // In Audio tab: chapters without audio cannot be clicked and don't show the audio badge
+              if (audio && !hasAudio) {
+                return (
+                  <li key={ch.id || idx}>
+                    <div
+                      className="chapter-item-link chapter-item-disabled"
+                      title="Chương này chưa có bản thu Audio"
+                      aria-disabled="true"
+                    >
+                      <span className="chapter-item-title">{title}</span>
+                    </div>
+                  </li>
+                );
+              }
+
+              // Clickable chapter link
               return (
                 <li key={ch.id || idx}>
                   <Link
@@ -231,7 +263,7 @@ export function StoryPage() {
                     title={title}
                   >
                     <span className="chapter-item-title">{title}</span>
-                    {audio && <span className="chapter-item-badge">🎧 Audio</span>}
+                    {hasAudio && <span className="chapter-item-badge">🎧 Audio</span>}
                   </Link>
                 </li>
               );
@@ -362,9 +394,9 @@ export function StoryPage() {
                 <Icon icon={BookOpen} size={16} />
                 <span>{userProgress ? "Đọc tiếp" : "Đọc từ đầu"}</span>
               </Link>
-              {story.hasAudio && (
+              {firstAudioChapter && (
                 <Link
-                  to={`${path}/nghe/${userProgress?.chapter_id || regularChapters[0]?.id || chapters[0]?.id || "1"}`}
+                  to={`${path}/nghe/${(userProgress && chapters.find((c) => c.id === userProgress.chapter_id)?.has_audio ? userProgress.chapter_id : null) || firstAudioChapter.id}`}
                   className="story-action-btn story-action-btn-secondary"
                 >
                   <Icon icon={Headphones} size={16} />

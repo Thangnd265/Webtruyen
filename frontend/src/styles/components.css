@@ -3838,6 +3838,51 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   gap: 4px;
 }
 
+/* Disabled Chapter Item (No Audio in Audio Tab) */
+.story-chapter-section .chapter-item-disabled,
+.chapter-item-link.chapter-item-disabled {
+  opacity: 0.38 !important;
+  cursor: not-allowed !important;
+  user-select: none;
+  background: rgba(255, 255, 255, 0.015) !important;
+  border-color: rgba(255, 255, 255, 0.04) !important;
+  color: #71717a !important;
+  transform: none !important;
+}
+
+.story-chapter-section .chapter-item-disabled:hover,
+.chapter-item-link.chapter-item-disabled:hover {
+  background: rgba(255, 255, 255, 0.015) !important;
+  border-color: rgba(255, 255, 255, 0.04) !important;
+  color: #71717a !important;
+  transform: none !important;
+  cursor: not-allowed !important;
+}
+
+[data-mode="light"] .story-chapter-section .chapter-item-disabled,
+[data-mode="light"] .chapter-item-link.chapter-item-disabled,
+:root:not([data-mode="dark"]) .story-chapter-section .chapter-item-disabled,
+:root:not([data-mode="dark"]) .chapter-item-link.chapter-item-disabled {
+  opacity: 0.42 !important;
+  cursor: not-allowed !important;
+  background: rgba(0, 0, 0, 0.02) !important;
+  border-color: rgba(0, 0, 0, 0.04) !important;
+  color: #94a3b8 !important;
+  transform: none !important;
+}
+
+[data-mode="light"] .story-chapter-section .chapter-item-disabled:hover,
+[data-mode="light"] .chapter-item-link.chapter-item-disabled:hover,
+:root:not([data-mode="dark"]) .story-chapter-section .chapter-item-disabled:hover,
+:root:not([data-mode="dark"]) .chapter-item-link.chapter-item-disabled:hover {
+  background: rgba(0, 0, 0, 0.02) !important;
+  border-color: rgba(0, 0, 0, 0.04) !important;
+  color: #94a3b8 !important;
+  transform: none !important;
+  cursor: not-allowed !important;
+}
+
+
 .chapter-empty-state {
   text-align: center;
   padding: 36px 16px;
