@@ -1451,6 +1451,10 @@
         });
         const chapters = await res.json();
         renderChaptersTable(chapters);
+        if (book) {
+          book.total_chapters = chapters.length;
+        }
+        document.getElementById('chapterModalSub').innerText = `Tổng: ${chapters.length} chương | Giọng: ${book ? (book.voice || 'Ngọc Huyền') : 'Ngọc Huyền'}`;
       } catch (err) {
         document.getElementById('chapterTableBody').innerHTML = `
           <tr><td colspan="4" class="text-center py-6 text-rose-400">Không thể tải danh sách chương</td></tr>
