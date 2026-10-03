@@ -3011,6 +3011,49 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   background-image: radial-gradient(ellipse 90% 50% at 50% 25%, rgba(234, 108, 117, 0.05), transparent 75%);
 }
 
+/* Dynamic Ambient Backdrop adapted to the Story's Banner */
+.story-ambient-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 0;
+}
+
+.story-ambient-glow {
+  position: absolute;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(100vw, 1360px);
+  height: 980px;
+  background-size: cover;
+  background-position: center 25%;
+  filter: blur(90px) saturate(220%) brightness(40%);
+  opacity: 0.5;
+  mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, black 20%, transparent 85%);
+  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, black 20%, transparent 85%);
+  will-change: transform, opacity;
+}
+
+[data-mode="light"] .story-ambient-glow,
+:root:not([data-mode="dark"]) .story-ambient-glow {
+  filter: blur(90px) saturate(180%) brightness(108%);
+  opacity: 0.22;
+}
+
+/* Subtle Film Grain Texture to prevent digital banding */
+.story-ambient-noise {
+  position: absolute;
+  inset: 0;
+  opacity: 0.025;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.4) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
 /* 1. Top Wide Hero Banner (Full-bleed matching HomePage Carousel) */
 .story-top-banner.story-top-banner-full-bleed {
   position: relative;

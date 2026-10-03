@@ -266,6 +266,15 @@ export function StoryPage() {
 
   return (
     <div className="story-page story-page-custom-layout">
+      {/* Dynamic Ambient Background matching the story's banner */}
+      <div className="story-ambient-backdrop" aria-hidden="true">
+        <div
+          className="story-ambient-glow"
+          style={{ backgroundImage: `url(${bannerImage})` }}
+        />
+        <div className="story-ambient-noise" />
+      </div>
+
       {/* 1. Top Wide Hero Banner with Centered Story Title (Full-bleed like HomePage) */}
       <div className="story-top-banner story-top-banner-full-bleed" aria-label={`Banner truyện ${story.title}`}>
         <img
