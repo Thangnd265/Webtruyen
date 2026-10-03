@@ -3017,11 +3017,12 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   width: 100dvw;
   margin-top: -32px;
   margin-inline: calc(50% - 50dvw);
-  min-height: clamp(450px, 62svh, 660px);
-  height: clamp(450px, 62svh, 660px);
+  min-height: clamp(680px, 80svh, 840px);
+  height: clamp(680px, 80svh, 840px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
+  padding-top: clamp(48px, 6.5vw, 76px);
   overflow: hidden;
   border-radius: 0;
   border: none;
@@ -3035,8 +3036,8 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   height: 100%;
   object-fit: cover;
   filter: none !important;
-  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0.5) 85%, transparent 100%);
-  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 50%, rgba(0, 0, 0, 0.5) 85%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 68%, rgba(0, 0, 0, 0.45) 88%, transparent 100%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 68%, rgba(0, 0, 0, 0.45) 88%, transparent 100%);
   transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -3049,14 +3050,14 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.15) 50%, rgba(0, 0, 0, 0.72) 100%),
-              linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, transparent 30%, rgba(0, 0, 0, 0.35) 65%, var(--color-bg) 100%);
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.1) 50%, rgba(0, 0, 0, 0.65) 100%),
+              linear-gradient(180deg, rgba(0, 0, 0, 0.25) 0%, transparent 22%, rgba(10, 11, 14, 0.25) 60%, var(--color-bg) 100%);
 }
 
 [data-mode="light"] .story-top-banner-overlay,
 :root:not([data-mode="dark"]) .story-top-banner-overlay {
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.15) 50%, rgba(0, 0, 0, 0.6) 100%),
-              linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, transparent 30%, rgba(255, 255, 255, 0.35) 65%, var(--color-bg) 100%);
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.1) 50%, rgba(0, 0, 0, 0.5) 100%),
+              linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, transparent 25%, rgba(255, 255, 255, 0.3) 65%, var(--color-bg) 100%);
 }
 
 .story-top-banner-content {
@@ -3082,8 +3083,9 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 
 @media (max-width: 767px) {
   .story-top-banner.story-top-banner-full-bleed {
-    min-height: 380px;
-    height: 380px;
+    min-height: 560px;
+    height: 560px;
+    padding-top: 36px;
   }
   .story-top-banner-title {
     font-size: clamp(26px, 7.5vw, 38px);
@@ -3092,7 +3094,7 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 
 .story-content-container {
   max-width: 1240px;
-  margin: -120px auto 0;
+  margin: clamp(-460px, -52svh, -500px) auto 0;
   padding: 0 16px 64px;
   position: relative;
   z-index: 3;
@@ -3100,7 +3102,7 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 
 @media (max-width: 767px) {
   .story-content-container {
-    margin: -70px auto 0;
+    margin: -380px auto 0;
     padding: 0 12px 48px;
   }
 }
@@ -3111,13 +3113,13 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   grid-template-columns: 240px 1fr;
   gap: 28px;
   align-items: start;
-  background: rgba(18, 20, 29, 0.65);
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(14, 16, 24, 0.45) 45%, rgba(14, 16, 24, 0.55) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 @media (min-width: 1100px) {
@@ -3138,10 +3140,10 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 
 [data-mode="light"] .story-unified-card,
 :root:not([data-mode="dark"]) .story-unified-card {
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(28px) saturate(160%);
-  -webkit-backdrop-filter: blur(28px) saturate(160%);
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(248, 250, 252, 0.6) 100%);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.8);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
