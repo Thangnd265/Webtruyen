@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { ArrowUpDown, Search } from "lucide-react";
+import { Icon } from "../components/Icon";
 import { Tabs } from "../components/Tabs";
 import { StoryCard } from "../components/StoryCard";
 import { TextLoader } from "../components/TextLoader";
@@ -13,6 +15,8 @@ import { useAuth } from "../context/AuthContext";
 export function StoryPage() {
   const { token } = useAuth();
   const [showAll, setShowAll] = useState(false);
+  const [chapterSortAsc, setChapterSortAsc] = useState(true);
+  const [chapterSearch, setChapterSearch] = useState("");
   const [story, setStory] = useState<Story | null>(null);
   const [chapters, setChapters] = useState<BackendChapter[]>([]);
   const [allStories, setAllStories] = useState<Story[]>(fallbackStories);
@@ -26,6 +30,8 @@ export function StoryPage() {
 
   useEffect(() => {
     setShowAll(false);
+    setChapterSearch("");
+    setChapterSortAsc(true);
     if (!slug) return;
     let active = true;
 
@@ -92,36 +98,99 @@ export function StoryPage() {
     .slice(0, 6);
 
   const totalChaptersCount = Math.max(story.chapters, chapters.length);
-  const displayedChapters = showAll ? chapters : chapters.slice(0, 24);
 
-  const firstChapterId = chapters[0]?.id || "1";
+  const sortedAndFilteredChapters = useMemo(() => {
+    let list = [...chapters];
+    if (!chapterSortAsc) {
+      list.reverse();
+    }
+    if (chapterSearch.trim()) {
+      const q = chapterSearch.toLowerCase().trim();
+      list = list.filter((ch, idx) => {
+        const chNum = ch.chapter_index !== undefined ? ch.chapter_index : idx + 1;
+        const title = (ch.title || `Chương ${chNum}`).toLowerCase();
+        return title.includes(q) || String(chNum).includes(q);
+      });
+    }
+    return list;
+  }, [chapters, chapterSortAsc, chapterSearch]);
+
+  const displayedChapters =
+    showAll || chapterSearch.trim().length > 0
+      ? sortedAndFilteredChapters
+      : sortedAndFilteredChapters.slice(0, 30);
 
   const chapterList = (audio: boolean) => (
-    <>
-      <ol className="chapter-list">
-        {displayedChapters.map((ch, idx) => {
-          const chNum = ch.chapter_index !== undefined ? ch.chapter_index : idx + 1;
-          const chParam = ch.id || String(chNum);
-          return (
-            <li key={ch.id || idx}>
-              <Link to={`${path}/${audio ? "nghe" : "doc"}/${chParam}`}>
-                {ch.title || (ch.chapter_index === 0 ? "Giới Thiệu" : `Chương ${chNum}`)}
-              </Link>
-            </li>
-          );
-        })}
-      </ol>
-      {chapters.length > 24 && (
-        <button
-          className="button chapter-expand"
-          type="button"
-          aria-expanded={showAll}
-          onClick={() => setShowAll(!showAll)}
-        >
-          {showAll ? "Thu gọn danh sách" : `Xem tất cả ${chapters.length} chương`}
-        </button>
+    <div className="story-chapter-section">
+      <div className="chapter-toolbar">
+        <div className="chapter-toolbar-left">
+          <span className="chapter-count-badge">Tổng số: {chapters.length} chương</span>
+        </div>
+        <div className="chapter-toolbar-right">
+          <div className="chapter-search-box">
+            <Icon icon={Search} className="chapter-search-icon" />
+            <input
+              type="text"
+              placeholder="Tìm số hoặc tên chương..."
+              value={chapterSearch}
+              onChange={(e) => setChapterSearch(e.target.value)}
+              className="chapter-search-input"
+              aria-label="Tìm kiếm chương"
+            />
+          </div>
+          <button
+            type="button"
+            className="chapter-sort-btn"
+            onClick={() => setChapterSortAsc(!chapterSortAsc)}
+            title={chapterSortAsc ? "Sắp xếp: Cũ nhất trước (Bấm để đảo)" : "Sắp xếp: Mới nhất trước (Bấm để đảo)"}
+          >
+            <Icon icon={ArrowUpDown} />
+            <span>{chapterSortAsc ? "Cũ nhất" : "Mới nhất"}</span>
+          </button>
+        </div>
+      </div>
+
+      {displayedChapters.length === 0 ? (
+        <div className="chapter-empty-state">
+          <p>Không tìm thấy chương nào phù hợp với &quot;{chapterSearch}&quot;</p>
+        </div>
+      ) : (
+        <ol className="chapter-list">
+          {displayedChapters.map((ch, idx) => {
+            const chNum = ch.chapter_index !== undefined ? ch.chapter_index : idx + 1;
+            const chParam = ch.id || String(chNum);
+            const title = ch.title || (ch.chapter_index === 0 ? "Giới Thiệu" : `Chương ${chNum}`);
+            return (
+              <li key={ch.id || idx}>
+                <Link
+                  to={`${path}/${audio ? "nghe" : "doc"}/${chParam}`}
+                  className="chapter-item-link"
+                  title={title}
+                >
+                  <span className="chapter-item-title">{title}</span>
+                  {audio && <span className="chapter-item-badge">🎧 Audio</span>}
+                </Link>
+              </li>
+            );
+          })}
+        </ol>
       )}
-    </>
+
+      {!chapterSearch && chapters.length > 30 && (
+        <div className="chapter-expand-wrapper">
+          <button
+            className="chapter-expand-btn"
+            type="button"
+            aria-expanded={showAll}
+            onClick={() => setShowAll(!showAll)}
+          >
+            {showAll
+              ? "Thu gọn danh sách"
+              : `Xem tất cả ${chapters.length} chương (${chapters.length - displayedChapters.length} chương còn lại)`}
+          </button>
+        </div>
+      )}
+    </div>
   );
 
   const storyComments = comments.filter((comment) => comment.storyId === story.id);
@@ -200,8 +269,6 @@ export function StoryPage() {
                   label: "Chương",
                   content: (
                     <div className="story-tab-chapters-content">
-                      <h2 className="story-info-heading">Danh sách chương</h2>
-                      <p style={{ color: "var(--color-muted)" }}>Chọn một chương để bắt đầu đọc nội dung.</p>
                       {chapterList(false)}
                     </div>
                   ),
@@ -211,8 +278,6 @@ export function StoryPage() {
                   label: "Audio",
                   content: (
                     <div className="story-tab-audio-content">
-                      <h2 className="story-info-heading">Danh sách audio</h2>
-                      <p style={{ color: "var(--color-muted)" }}>Nghe giọng đọc AI đồng bộ theo từng chương.</p>
                       {chapterList(true)}
                     </div>
                   ),
