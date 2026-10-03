@@ -142,6 +142,16 @@ export function StoryPage() {
     return list;
   }, [regularChapters, chapterSortAsc, chapterSearch]);
 
+  const audioChaptersCount = useMemo(
+    () => regularChapters.filter((c) => Boolean(c.has_audio)).length,
+    [regularChapters]
+  );
+
+  const firstAudioChapter = useMemo(
+    () => regularChapters.find((c) => Boolean(c.has_audio)) || chapters.find((c) => Boolean(c.has_audio)),
+    [regularChapters, chapters]
+  );
+
   if (loading) {
     return (
       <div className="story-page">
@@ -163,16 +173,6 @@ export function StoryPage() {
     .slice(0, 6);
 
   const totalChaptersCount = Math.max(story.chapters, regularChapters.length);
-
-  const audioChaptersCount = useMemo(
-    () => regularChapters.filter((c) => Boolean(c.has_audio)).length,
-    [regularChapters]
-  );
-
-  const firstAudioChapter = useMemo(
-    () => regularChapters.find((c) => Boolean(c.has_audio)) || chapters.find((c) => Boolean(c.has_audio)),
-    [regularChapters, chapters]
-  );
 
   const chapterList = (audio: boolean) => {
     const totalPages = Math.max(1, Math.ceil(sortedAndFilteredChapters.length / CHAPTERS_PER_PAGE));
