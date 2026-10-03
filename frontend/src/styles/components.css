@@ -20,13 +20,19 @@
 .theme-panel { margin-top: 24px; }
 .theme-panel input { max-width: 100%; accent-color: var(--color-accent); }
 .theme-panel input[type="color"] { min-height: 44px; width: 64px; cursor: pointer; }
-.site-footer { padding: 48px 0 24px; background: var(--color-surface); border-top: 1px solid var(--color-border); }
+.site-footer {
+  position: relative;
+  z-index: 5;
+  padding: 48px 0 24px;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
 .footer-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 24px; }
 .footer-intro { grid-column: 1 / -1; }
 .footer-intro strong { font-size: 20px; color: var(--color-accent-hover); }
 .footer-intro p { max-width: 320px; color: var(--color-muted); }
 .footer-grid nav { display: grid; align-content: start; gap: 8px; }
-.footer-grid h2 { margin: 0 0 4px; font-size: 15px; }
+.footer-grid h2 { margin: 0 0 4px; font-size: 15px; color: var(--color-text); }
 .footer-grid nav a { width: fit-content; color: var(--color-muted); }
 .footer-grid nav a:hover { color: var(--color-accent-hover); }
 .footer-bottom { margin-top: 48px; padding-top: 16px; border-top: 1px solid var(--color-border); color: var(--color-muted); font-size: 13px; }
@@ -3009,6 +3015,7 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   position: relative;
   width: 100%;
   background: transparent;
+  isolation: isolate;
 }
 
 /* Dynamic Ambient Backdrop adapted to the Story's Banner */
