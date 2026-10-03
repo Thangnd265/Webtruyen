@@ -1,18 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { ArrowUpDown, BookOpen, ChevronLeft, ChevronRight, Headphones, Search } from "lucide-react";
 import { Icon } from "../components/Icon";
 import { Tabs } from "../components/Tabs";
 import { StoryCard } from "../components/StoryCard";
 import { TextLoader } from "../components/TextLoader";
-import { comments } from "../data/site";
 import { stories as fallbackStories } from "../data/stories";
 import { getStoryDetail, getStories, type BackendChapter } from "../data/api";
 import type { Story } from "../data/types";
 import { NotFoundPage } from "./NotFoundPage";
 import { useAuth } from "../context/AuthContext";
 
-const CHAPTERS_PER_PAGE = 10;
+const CHAPTERS_PER_PAGE = 50;
 
 function getPaginationPages(current: number, total: number): (number | string)[] {
   if (total <= 5) {
@@ -256,8 +255,6 @@ export function StoryPage() {
     );
   };
 
-  const storyComments = comments.filter((comment) => comment.storyId === story.id);
-
   const bannerImage =
     story.banner ||
     (story.cover?.includes("unsplash.com") ? story.cover.replace("w=480", "w=1600") : "") ||
@@ -299,86 +296,79 @@ export function StoryPage() {
       </div>
 
       <div className="story-content-container">
-        {/* 2. Unified Story Detail Box: Cover on Left, Tabs on Right inside a Single Card */}
-        <div className="story-unified-card">
-          {/* Left Column: Book Cover (No action buttons) */}
+        {/* 2. Upper Box: Story Detail Info Box (Cover on Left, Full Info on Right) */}
+        <div className="story-unified-card story-detail-info-card">
+          {/* Left Column: Book Cover */}
           <div className="story-unified-cover">
             <img src={story.cover} alt={`Bìa truyện ${story.title}`} />
           </div>
 
-          {/* Right Column: Tabs (Thông tin, Chương, Audio, Bình luận) */}
+          {/* Right Column: Information & Actions */}
           <div className="story-unified-content">
-            <Tabs
-              label="Nội dung truyện"
-              items={[
-                {
-                  id: "info",
-                  label: "Thông tin",
-                  content: (
-                    <div className="story-tab-info-content">
-                      <h2 className="story-info-heading">Giới thiệu truyện</h2>
-                      <p className="story-desc">
-                        {story.description || `Bộ truyện ${story.title} của tác giả ${story.author}.`}
-                      </p>
-                      <div className="story-tags">
-                        {story.tags && story.tags.length > 0
-                          ? story.tags.map((tag) => <span key={tag}>{tag}</span>)
-                          : <span key={story.category}>{story.category}</span>}
-                      </div>
-                      <p className="story-rating-row">
-                        Độc giả đánh giá <strong className="rating-highlight">{story.rating || 4.8}/5</strong>
-                      </p>
-                      <div className="story-quick-meta">
-                        <span>Tác giả: <strong>{story.author}</strong></span>
-                        <span>Trạng thái: <strong>{story.status === "completed" ? "Hoàn thành" : "Đang ra"}</strong></span>
-                        <span>Số chương: <strong>{totalChaptersCount}</strong></span>
-                        <span>Lượt xem: <strong>{new Intl.NumberFormat("vi-VN").format(story.views)}</strong></span>
-                      </div>
-                    </div>
-                  ),
-                },
-                {
-                  id: "chapters",
-                  label: "Chương",
-                  content: (
-                    <div className="story-tab-chapters-content">
-                      {chapterList(false)}
-                    </div>
-                  ),
-                },
-                {
-                  id: "audio",
-                  label: "Audio",
-                  content: (
-                    <div className="story-tab-audio-content">
-                      {chapterList(true)}
-                    </div>
-                  ),
-                },
-                {
-                  id: "comments",
-                  label: "Bình luận",
-                  content: (
-                    <div className="story-tab-comments-content">
-                      <h2 className="story-info-heading">Bình luận độc giả</h2>
-                      {storyComments.length ? (
-                        <div className="story-comments">
-                          {storyComments.map((comment) => (
-                            <blockquote key={comment.id}>
-                              <p>{comment.content}</p>
-                              <footer>{comment.author}</footer>
-                            </blockquote>
-                          ))}
-                        </div>
-                      ) : (
-                        <p style={{ color: "var(--color-muted)" }}>Chưa có bình luận cho truyện này.</p>
-                      )}
-                    </div>
-                  ),
-                },
-              ]}
-            />
+            <h2 className="story-info-heading">Giới thiệu truyện</h2>
+            <p className="story-desc">
+              {story.description || `Bộ truyện ${story.title} của tác giả ${story.author}.`}
+            </p>
+            <div className="story-tags">
+              {story.tags && story.tags.length > 0
+                ? story.tags.map((tag) => <span key={tag}>{tag}</span>)
+                : <span key={story.category}>{story.category}</span>}
+            </div>
+            <p className="story-rating-row">
+              Độc giả đánh giá <strong className="rating-highlight">{story.rating || 4.8}/5</strong>
+            </p>
+            <div className="story-quick-meta">
+              <span>Tác giả: <strong>{story.author}</strong></span>
+              <span>Trạng thái: <strong>{story.status === "completed" ? "Hoàn thành" : "Đang ra"}</strong></span>
+              <span>Số chương: <strong>{totalChaptersCount}</strong></span>
+              <span>Lượt xem: <strong>{new Intl.NumberFormat("vi-VN").format(story.views)}</strong></span>
+            </div>
+            <div className="story-info-actions">
+              <Link
+                to={`${path}/doc/${userProgress?.chapter_id || chapters[0]?.id || "1"}`}
+                className="story-action-btn story-action-btn-primary"
+              >
+                <Icon icon={BookOpen} size={16} />
+                <span>{userProgress ? "Đọc tiếp" : "Đọc từ đầu"}</span>
+              </Link>
+              {story.hasAudio && (
+                <Link
+                  to={`${path}/nghe/${userProgress?.chapter_id || chapters[0]?.id || "1"}`}
+                  className="story-action-btn story-action-btn-secondary"
+                >
+                  <Icon icon={Headphones} size={16} />
+                  <span>Nghe Audio</span>
+                </Link>
+              )}
+            </div>
           </div>
+        </div>
+
+        {/* 3. Lower Box: Dedicated Chapters & Audio Box (50 chapters/page) */}
+        <div className="story-chapters-card">
+          <Tabs
+            label="Danh sách chương và audio"
+            items={[
+              {
+                id: "chapters",
+                label: "Chương",
+                content: (
+                  <div className="story-tab-chapters-content">
+                    {chapterList(false)}
+                  </div>
+                ),
+              },
+              {
+                id: "audio",
+                label: "Audio",
+                content: (
+                  <div className="story-tab-audio-content">
+                    {chapterList(true)}
+                  </div>
+                ),
+              },
+            ]}
+          />
         </div>
 
       {/* 3. Bottom Section: "Đề xuất cho bạn" (2-Column Grid) */}
