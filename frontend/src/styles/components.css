@@ -3008,16 +3008,15 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 .story-page-custom-layout {
   position: relative;
   width: 100%;
-  background-image: radial-gradient(ellipse 90% 50% at 50% 25%, rgba(234, 108, 117, 0.05), transparent 75%);
+  background: transparent;
 }
 
 /* Dynamic Ambient Backdrop adapted to the Story's Banner */
 .story-ambient-backdrop {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
   pointer-events: none;
   overflow: hidden;
   z-index: 0;
@@ -3025,32 +3024,48 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 
 .story-ambient-glow {
   position: absolute;
-  top: 60px;
+  top: -15vh;
   left: 50%;
   transform: translateX(-50%);
-  width: min(100vw, 1360px);
-  height: 980px;
+  width: 140vw;
+  min-width: 1200px;
+  height: 125vh;
   background-size: cover;
-  background-position: center 25%;
-  filter: blur(90px) saturate(220%) brightness(40%);
-  opacity: 0.5;
-  mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, black 20%, transparent 85%);
-  -webkit-mask-image: radial-gradient(ellipse 75% 65% at 50% 45%, black 20%, transparent 85%);
+  background-position: center 30%;
+  background-repeat: no-repeat;
+  filter: blur(80px) saturate(240%) brightness(75%);
+  opacity: 0.68;
   will-change: transform, opacity;
 }
 
 [data-mode="light"] .story-ambient-glow,
 :root:not([data-mode="dark"]) .story-ambient-glow {
-  filter: blur(90px) saturate(180%) brightness(108%);
-  opacity: 0.22;
+  filter: blur(80px) saturate(180%) brightness(105%);
+  opacity: 0.38;
+}
+
+/* Ambient Vignette Overlay: gently blends glow into page background while keeping center alive */
+.story-ambient-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 110% 85% at 50% 25%, transparent 25%, rgba(10, 11, 14, 0.42) 60%, var(--color-bg) 96%),
+    linear-gradient(180deg, rgba(10, 11, 14, 0.2) 0%, rgba(10, 11, 14, 0.45) 50%, var(--color-bg) 92%);
+}
+
+[data-mode="light"] .story-ambient-overlay,
+:root:not([data-mode="dark"]) .story-ambient-overlay {
+  background:
+    radial-gradient(ellipse 110% 85% at 50% 25%, transparent 25%, rgba(248, 250, 252, 0.42) 60%, var(--color-bg) 96%),
+    linear-gradient(180deg, rgba(248, 250, 252, 0.2) 0%, rgba(248, 250, 252, 0.45) 50%, var(--color-bg) 92%);
 }
 
 /* Subtle Film Grain Texture to prevent digital banding */
 .story-ambient-noise {
   position: absolute;
   inset: 0;
-  opacity: 0.025;
-  background-image: radial-gradient(rgba(255, 255, 255, 0.4) 1px, transparent 1px);
+  opacity: 0.035;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.5) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
@@ -3069,7 +3084,7 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   overflow: hidden;
   border-radius: 0;
   border: none;
-  background: var(--color-bg);
+  background: transparent;
 }
 
 .story-top-banner-img {
@@ -3079,8 +3094,8 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   height: 100%;
   object-fit: cover;
   filter: none !important;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 48%, rgba(0, 0, 0, 0.85) 68%, rgba(0, 0, 0, 0.45) 86%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 48%, rgba(0, 0, 0, 0.85) 68%, rgba(0, 0, 0, 0.45) 86%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 48%, rgba(0, 0, 0, 0.8) 68%, transparent 98%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 48%, rgba(0, 0, 0, 0.8) 68%, transparent 98%);
   transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -3093,14 +3108,14 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.65) 0%, rgba(0, 0, 0, 0.08) 50%, rgba(0, 0, 0, 0.65) 100%),
-              linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, transparent 25%, rgba(10, 11, 14, 0.25) 55%, var(--color-bg) 100%);
+  background: linear-gradient(90deg, rgba(10, 11, 14, 0.5) 0%, rgba(10, 11, 14, 0.06) 40%, rgba(10, 11, 14, 0.06) 60%, rgba(10, 11, 14, 0.5) 100%),
+              linear-gradient(180deg, rgba(10, 11, 14, 0.3) 0%, transparent 22%, rgba(10, 11, 14, 0.2) 65%, transparent 100%);
 }
 
 [data-mode="light"] .story-top-banner-overlay,
 :root:not([data-mode="dark"]) .story-top-banner-overlay {
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.5) 0%, rgba(0, 0, 0, 0.1) 50%, rgba(0, 0, 0, 0.5) 100%),
-              linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, transparent 25%, rgba(255, 255, 255, 0.35) 65%, var(--color-bg) 100%);
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.06) 40%, rgba(255, 255, 255, 0.06) 60%, rgba(255, 255, 255, 0.45) 100%),
+              linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, transparent 22%, rgba(255, 255, 255, 0.15) 65%, transparent 100%);
 }
 
 .story-top-banner-content {
@@ -3158,19 +3173,19 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   align-items: start;
   background: linear-gradient(
     180deg,
-    rgba(255, 255, 255, 0.06) 0%,
-    rgba(14, 16, 24, 0.38) 25%,
-    rgba(10, 12, 18, 0.58) 100%
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(14, 16, 24, 0.44) 22%,
+    rgba(10, 12, 18, 0.72) 100%
   );
-  backdrop-filter: blur(20px) saturate(170%);
-  -webkit-backdrop-filter: blur(20px) saturate(170%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-top: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.11);
+  border-top: 1px solid rgba(255, 255, 255, 0.22);
   border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.65),
-              0 0 0 1px rgba(255, 255, 255, 0.03),
-              inset 0 1px 0 rgba(255, 255, 255, 0.14);
+  box-shadow: 0 24px 64px -12px rgba(0, 0, 0, 0.7),
+              0 0 0 1px rgba(255, 255, 255, 0.04),
+              inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 @media (min-width: 1100px) {

@@ -270,8 +270,9 @@ export function StoryPage() {
       <div className="story-ambient-backdrop" aria-hidden="true">
         <div
           className="story-ambient-glow"
-          style={{ backgroundImage: `url(${bannerImage})` }}
+          style={{ backgroundImage: `url("${bannerImage}")` }}
         />
+        <div className="story-ambient-overlay" />
         <div className="story-ambient-noise" />
       </div>
 
