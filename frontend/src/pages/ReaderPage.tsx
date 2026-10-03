@@ -47,6 +47,12 @@ export function ReaderPage() {
   }, [activeIdx]);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [slug, chapter, activeIdx, content?.chapter_id]);
+
+  useEffect(() => {
     if (!slug) return;
     let active = true;
     if (!story || story.slug !== slug) {

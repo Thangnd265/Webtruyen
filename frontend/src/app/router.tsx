@@ -1,4 +1,5 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Layout } from "../components/Layout";
 import { NotFoundPage } from "../pages/NotFoundPage";
 import { HomePage } from "../pages/HomePage";
@@ -10,6 +11,24 @@ import { StoryPage } from "../pages/StoryPage";
 import { ReaderPage } from "../pages/ReaderPage";
 import { AudioPage } from "../pages/AudioPage";
 import { InfoPage } from "../pages/InfoPage";
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      if ("scrollRestoration" in window.history) {
+        window.history.scrollRestoration = "manual";
+      }
+      window.scrollTo(0, 0);
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
+  }, [pathname]);
+
+  return null;
+}
+
 
 export function App() {
   return <Layout><Routes>
@@ -45,5 +64,11 @@ export function App() {
 }
 
 export function AppRouter() {
-  return <BrowserRouter><App /></BrowserRouter>;
+  return (
+    <BrowserRouter>
+      <ScrollToTop />
+      <App />
+    </BrowserRouter>
+  );
 }
+

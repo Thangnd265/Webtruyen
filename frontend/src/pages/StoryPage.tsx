@@ -46,6 +46,9 @@ export function StoryPage() {
   } | null>(null);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
     setChapterPage(1);
     setAudioPage(1);
     setChapterSearch("");
