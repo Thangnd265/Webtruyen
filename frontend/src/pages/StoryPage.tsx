@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowUpDown, Search } from "lucide-react";
+import { ArrowUpDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { Icon } from "../components/Icon";
 import { Tabs } from "../components/Tabs";
 import { StoryCard } from "../components/StoryCard";
@@ -12,9 +12,27 @@ import type { Story } from "../data/types";
 import { NotFoundPage } from "./NotFoundPage";
 import { useAuth } from "../context/AuthContext";
 
+const CHAPTERS_PER_PAGE = 10;
+
+function getPaginationPages(current: number, total: number): (number | string)[] {
+  if (total <= 5) {
+    return Array.from({ length: total }, (_, i) => i + 1);
+  }
+  const pages: (number | string)[] = [];
+  if (current <= 3) {
+    pages.push(1, 2, 3, 4, "...", total);
+  } else if (current >= total - 2) {
+    pages.push(1, "...", total - 3, total - 2, total - 1, total);
+  } else {
+    pages.push(1, "...", current - 1, current, current + 1, "...", total);
+  }
+  return pages;
+}
+
 export function StoryPage() {
   const { token } = useAuth();
-  const [showAll, setShowAll] = useState(false);
+  const [chapterPage, setChapterPage] = useState(1);
+  const [audioPage, setAudioPage] = useState(1);
   const [chapterSortAsc, setChapterSortAsc] = useState(true);
   const [chapterSearch, setChapterSearch] = useState("");
   const [story, setStory] = useState<Story | null>(null);
@@ -29,7 +47,8 @@ export function StoryPage() {
   } | null>(null);
 
   useEffect(() => {
-    setShowAll(false);
+    setChapterPage(1);
+    setAudioPage(1);
     setChapterSearch("");
     setChapterSortAsc(true);
     if (!slug) return;
@@ -115,83 +134,127 @@ export function StoryPage() {
 
   const totalChaptersCount = Math.max(story.chapters, chapters.length);
 
-  const displayedChapters =
-    showAll || chapterSearch.trim().length > 0
-      ? sortedAndFilteredChapters
-      : sortedAndFilteredChapters.slice(0, 30);
+  const chapterList = (audio: boolean) => {
+    const totalPages = Math.max(1, Math.ceil(sortedAndFilteredChapters.length / CHAPTERS_PER_PAGE));
+    const currentPage = audio ? Math.min(audioPage, totalPages) : Math.min(chapterPage, totalPages);
+    const startIndex = (currentPage - 1) * CHAPTERS_PER_PAGE;
+    const displayedChapters = sortedAndFilteredChapters.slice(startIndex, startIndex + CHAPTERS_PER_PAGE);
 
-  const chapterList = (audio: boolean) => (
-    <div className="story-chapter-section">
-      <div className="chapter-toolbar">
-        <div className="chapter-toolbar-left">
-          <span className="chapter-count-badge">Tổng số: {chapters.length} chương</span>
-        </div>
-        <div className="chapter-toolbar-right">
-          <div className="chapter-search-box">
-            <Icon icon={Search} className="chapter-search-icon" />
-            <input
-              type="text"
-              placeholder="Tìm số hoặc tên chương..."
-              value={chapterSearch}
-              onChange={(e) => setChapterSearch(e.target.value)}
-              className="chapter-search-input"
-              aria-label="Tìm kiếm chương"
-            />
+    return (
+      <div className="story-chapter-section">
+        <div className="chapter-toolbar">
+          <div className="chapter-toolbar-left">
+            <span className="chapter-count-badge">Tổng số: {chapters.length} chương</span>
+            {totalPages > 1 && (
+              <span className="chapter-page-badge">
+                Trang {currentPage}/{totalPages}
+              </span>
+            )}
           </div>
-          <button
-            type="button"
-            className="chapter-sort-btn"
-            onClick={() => setChapterSortAsc(!chapterSortAsc)}
-            title={chapterSortAsc ? "Sắp xếp: Cũ nhất trước (Bấm để đảo)" : "Sắp xếp: Mới nhất trước (Bấm để đảo)"}
-          >
-            <Icon icon={ArrowUpDown} />
-            <span>{chapterSortAsc ? "Cũ nhất" : "Mới nhất"}</span>
-          </button>
+          <div className="chapter-toolbar-right">
+            <div className="chapter-search-box">
+              <Icon icon={Search} className="chapter-search-icon" />
+              <input
+                type="text"
+                placeholder="Tìm số hoặc tên chương..."
+                value={chapterSearch}
+                onChange={(e) => {
+                  setChapterSearch(e.target.value);
+                  setChapterPage(1);
+                  setAudioPage(1);
+                }}
+                className="chapter-search-input"
+                aria-label="Tìm kiếm chương"
+              />
+            </div>
+            <button
+              type="button"
+              className="chapter-sort-btn"
+              onClick={() => {
+                setChapterSortAsc(!chapterSortAsc);
+                setChapterPage(1);
+                setAudioPage(1);
+              }}
+              title={chapterSortAsc ? "Sắp xếp: Cũ nhất trước (Bấm để đảo)" : "Sắp xếp: Mới nhất trước (Bấm để đảo)"}
+            >
+              <Icon icon={ArrowUpDown} />
+              <span>{chapterSortAsc ? "Cũ nhất" : "Mới nhất"}</span>
+            </button>
+          </div>
         </div>
+
+        {displayedChapters.length === 0 ? (
+          <div className="chapter-empty-state">
+            <p>Không tìm thấy chương nào phù hợp với &quot;{chapterSearch}&quot;</p>
+          </div>
+        ) : (
+          <ol className="chapter-list">
+            {displayedChapters.map((ch, idx) => {
+              const chNum = ch.chapter_index !== undefined ? ch.chapter_index : idx + 1;
+              const chParam = ch.id || String(chNum);
+              const title = ch.title || (ch.chapter_index === 0 ? "Giới Thiệu" : `Chương ${chNum}`);
+              return (
+                <li key={ch.id || idx}>
+                  <Link
+                    to={`${path}/${audio ? "nghe" : "doc"}/${chParam}`}
+                    className="chapter-item-link"
+                    title={title}
+                  >
+                    <span className="chapter-item-title">{title}</span>
+                    {audio && <span className="chapter-item-badge">🎧 Audio</span>}
+                  </Link>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+
+        {totalPages > 1 && (
+          <nav className="chapter-pagination" aria-label="Phân trang chương">
+            <button
+              type="button"
+              className="chapter-page-nav-btn"
+              disabled={currentPage <= 1}
+              onClick={() => (audio ? setAudioPage(currentPage - 1) : setChapterPage(currentPage - 1))}
+              aria-label="Trang trước"
+            >
+              <Icon icon={ChevronLeft} size={16} />
+            </button>
+
+            <div className="chapter-page-numbers">
+              {getPaginationPages(currentPage, totalPages).map((p, idx) =>
+                typeof p === "number" ? (
+                  <button
+                    key={`page-${p}`}
+                    type="button"
+                    className={`chapter-page-btn ${currentPage === p ? "active" : ""}`}
+                    onClick={() => (audio ? setAudioPage(p) : setChapterPage(p))}
+                    aria-current={currentPage === p ? "page" : undefined}
+                  >
+                    {p}
+                  </button>
+                ) : (
+                  <span key={`ellipsis-${idx}`} className="chapter-page-ellipsis">
+                    {p}
+                  </span>
+                )
+              )}
+            </div>
+
+            <button
+              type="button"
+              className="chapter-page-nav-btn"
+              disabled={currentPage >= totalPages}
+              onClick={() => (audio ? setAudioPage(currentPage + 1) : setChapterPage(currentPage + 1))}
+              aria-label="Trang tiếp"
+            >
+              <Icon icon={ChevronRight} size={16} />
+            </button>
+          </nav>
+        )}
       </div>
-
-      {displayedChapters.length === 0 ? (
-        <div className="chapter-empty-state">
-          <p>Không tìm thấy chương nào phù hợp với &quot;{chapterSearch}&quot;</p>
-        </div>
-      ) : (
-        <ol className="chapter-list">
-          {displayedChapters.map((ch, idx) => {
-            const chNum = ch.chapter_index !== undefined ? ch.chapter_index : idx + 1;
-            const chParam = ch.id || String(chNum);
-            const title = ch.title || (ch.chapter_index === 0 ? "Giới Thiệu" : `Chương ${chNum}`);
-            return (
-              <li key={ch.id || idx}>
-                <Link
-                  to={`${path}/${audio ? "nghe" : "doc"}/${chParam}`}
-                  className="chapter-item-link"
-                  title={title}
-                >
-                  <span className="chapter-item-title">{title}</span>
-                  {audio && <span className="chapter-item-badge">🎧 Audio</span>}
-                </Link>
-              </li>
-            );
-          })}
-        </ol>
-      )}
-
-      {!chapterSearch && chapters.length > 30 && (
-        <div className="chapter-expand-wrapper">
-          <button
-            className="chapter-expand-btn"
-            type="button"
-            aria-expanded={showAll}
-            onClick={() => setShowAll(!showAll)}
-          >
-            {showAll
-              ? "Thu gọn danh sách"
-              : `Xem tất cả ${chapters.length} chương (${chapters.length - displayedChapters.length} chương còn lại)`}
-          </button>
-        </div>
-      )}
-    </div>
-  );
+    );
+  };
 
   const storyComments = comments.filter((comment) => comment.storyId === story.id);
 

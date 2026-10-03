@@ -3494,34 +3494,111 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   font-size: 14px;
 }
 
-.chapter-expand-wrapper {
-  display: flex;
-  justify-content: center;
-  padding-top: 14px;
+.chapter-page-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #a1a1aa;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 500;
 }
 
-.chapter-expand-btn {
+[data-mode="light"] .chapter-page-badge,
+:root:not([data-mode="dark"]) .chapter-page-badge {
+  background: #f1f5f9;
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #64748b;
+}
+
+/* Chapter Pagination */
+.chapter-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding-top: 14px;
+  margin-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+[data-mode="light"] .chapter-pagination,
+:root:not([data-mode="dark"]) .chapter-pagination {
+  border-top-color: rgba(0, 0, 0, 0.06);
+}
+
+.chapter-page-numbers {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.chapter-page-btn,
+.chapter-page-nav-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 38px;
-  padding: 8px 24px;
-  background: rgba(234, 108, 117, 0.08);
-  border: 1px solid rgba(234, 108, 117, 0.3);
-  color: #ea6c75;
-  border-radius: 9999px;
-  font-size: 13px;
+  min-width: 32px;
+  height: 32px;
+  padding: 0 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  color: #a1a1aa;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.23, 1, 0.32, 1);
+  transition: all 0.15s cubic-bezier(0.23, 1, 0.32, 1);
 }
 
-.chapter-expand-btn:hover {
-  background: #ea6c75;
+[data-mode="light"] .chapter-page-btn,
+[data-mode="light"] .chapter-page-nav-btn,
+:root:not([data-mode="dark"]) .chapter-page-btn,
+:root:not([data-mode="dark"]) .chapter-page-nav-btn {
+  background: #f1f5f9;
+  border-color: rgba(0, 0, 0, 0.08);
+  color: #64748b;
+}
+
+.chapter-page-btn:hover:not(.active),
+.chapter-page-nav-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
-  border-color: #ea6c75;
-  box-shadow: 0 4px 14px rgba(234, 108, 117, 0.35);
-  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+[data-mode="light"] .chapter-page-btn:hover:not(.active),
+[data-mode="light"] .chapter-page-nav-btn:hover:not(:disabled),
+:root:not([data-mode="dark"]) .chapter-page-btn:hover:not(.active),
+:root:not([data-mode="dark"]) .chapter-page-nav-btn:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.chapter-page-btn.active {
+  background: #ea6c75 !important;
+  color: #ffffff !important;
+  border-color: #ea6c75 !important;
+  box-shadow: 0 2px 8px rgba(234, 108, 117, 0.35);
+}
+
+.chapter-page-nav-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.chapter-page-ellipsis {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 32px;
+  color: #71717a;
+  font-size: 13px;
+  user-select: none;
 }
 
 /* 3. Bottom Recommendations Section */
