@@ -587,6 +587,183 @@ def update_book_settings(slug: str, req: UpdateBookRequest):
     return {"status": "ok", "message": f"Đã cập nhật cấu hình cho truyện '{slug}'"}
 
 
+@router.post("/books/{slug}/update-file")
+async def update_book_file(
+    slug: str,
+    file: UploadFile = File(...),
+    overwrite_text: bool = Form(True),
+    authorization: Optional[str] = Header(None),
+):
+    """
+    Updates or appends chapters from a new book file (.epub, .txt, .mobi, .docx, .pdf, etc.)
+    for an existing book.
+    - Overwrites chapter HTML files if overwrite_text is True (useful for typo/content fixes).
+    - Preserves existing rendered audio (has_audio and audio_url).
+    - Inserts new chapters and updates total_chapters count in database and metadata.json.
+    """
+    verify_admin_token(authorization)
+
+    with get_db() as conn:
+        book_row = conn.execute("SELECT * FROM admin_books WHERE slug = ?", (slug,)).fetchone()
+    if not book_row:
+        raise HTTPException(status_code=404, detail="Không tìm thấy truyện trong hệ thống")
+
+    orig_filename = file.filename or "unknown"
+    ext = Path(orig_filename).suffix.lower()
+    valid_exts = [".epub", ".txt", ".mobi", ".pdf", ".docx", ".fb2", ".prc", ".azw", ".azw3", ".zip", ".html", ".htm"]
+    if ext not in valid_exts:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Định dạng file '{ext}' không được hỗ trợ. Vui lòng tải lên một trong các định dạng: {', '.join(valid_exts)}",
+        )
+
+    # Save to incoming_books
+    books_dir = Path(settings.AUDIOBOOKS_DIR).resolve()
+    incoming_dir = books_dir / "incoming_books"
+    incoming_dir.mkdir(parents=True, exist_ok=True)
+
+    timestamp = int(time.time())
+    dest_file = incoming_dir / f"{slug}_update_{timestamp}{ext}"
+    try:
+        content = await file.read()
+        if not content:
+            raise HTTPException(status_code=400, detail="File tải lên rỗng")
+        dest_file.write_bytes(content)
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception(f"Lỗi khi lưu file cập nhật: {e}")
+        raise HTTPException(status_code=500, detail=f"Không thể lưu file trên máy chủ: {e}")
+
+    if not extract_book_chapters:
+        raise HTTPException(status_code=500, detail="Bộ giải nén chương truyện (universal_extractor) chưa sẵn sàng")
+
+    try:
+        meta_info, ch_list = extract_book_chapters(dest_file)
+    except Exception as e:
+        logger.exception(f"Lỗi khi trích xuất file truyện {dest_file}: {e}")
+        raise HTTPException(status_code=400, detail=f"Không thể trích xuất chương từ file: {str(e)}")
+
+    if not ch_list:
+        raise HTTPException(status_code=400, detail="Không tìm thấy chương truyện hợp lệ nào trong file tải lên")
+
+    local_book_dir = Path(settings.LOCAL_DATA_DIR).resolve() / slug
+    local_book_dir.mkdir(parents=True, exist_ok=True)
+    story_book_dir = books_dir / slug
+    story_book_dir.mkdir(parents=True, exist_ok=True)
+
+    # Check existing chapters in database
+    with get_db() as conn:
+        existing_rows = conn.execute(
+            "SELECT chapter_id, chapter_index, title, has_audio FROM book_chapters WHERE book_slug = ?",
+            (slug,),
+        ).fetchall()
+        existing_map = {r["chapter_id"]: dict(r) for r in existing_rows}
+
+    new_count = 0
+    updated_count = 0
+
+    # Write / overwrite chapter HTMLs
+    for i, ch in enumerate(ch_list):
+        ch_id = ch.get("id", f"chapter_{i+1:03d}")
+        ch_html = ch.get("html", "")
+        is_existing = ch_id in existing_map
+
+        if is_existing:
+            updated_count += 1
+        else:
+            new_count += 1
+
+        if ch_html:
+            ch_file = local_book_dir / f"{ch_id}.html"
+            if not ch_file.exists() or overwrite_text:
+                try:
+                    ch_file.write_text(ch_html, encoding="utf-8")
+                except Exception as e:
+                    logger.warning(f"Could not write chapter HTML {ch_file}: {e}")
+
+    # Upsert chapters into database (keeping existing has_audio!)
+    with get_db() as conn:
+        conn.executemany(
+            """
+            INSERT INTO book_chapters (book_slug, chapter_id, chapter_index, title, has_audio, audio_url)
+            VALUES (?, ?, ?, ?, 0, ?)
+            ON CONFLICT(book_slug, chapter_id) DO UPDATE SET
+                chapter_index = excluded.chapter_index,
+                title = excluded.title
+            """,
+            [
+                (
+                    slug,
+                    ch.get("id", f"chapter_{i+1:03d}"),
+                    ch.get("chapter_index", i + 1),
+                    ch.get("title", f"Chương {i + 1}"),
+                    f"/api/books/{slug}/audio/{ch.get('id', f'chapter_{i+1:03d}')}",
+                )
+                for i, ch in enumerate(ch_list)
+            ],
+        )
+
+        total_row = conn.execute(
+            "SELECT COUNT(*) as cnt FROM book_chapters WHERE book_slug = ?", (slug,)
+        ).fetchone()
+        total_chapters = total_row["cnt"] if total_row else len(ch_list)
+
+        conn.execute(
+            """
+            UPDATE admin_books
+            SET total_chapters = ?, source_filename = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE slug = ?
+            """,
+            (total_chapters, dest_file.name, slug),
+        )
+
+    # Sync metadata.json
+    for b_dir in [story_book_dir, local_book_dir]:
+        if not b_dir.exists():
+            continue
+        meta_path = b_dir / "metadata.json"
+        try:
+            m_data = {}
+            if meta_path.is_file():
+                m_data = json.loads(meta_path.read_text(encoding="utf-8"))
+            m_data["total_chapters"] = total_chapters
+            if "chapters" in m_data:
+                m_data["chapters"] = [
+                    {"id": ch.get("id", f"chapter_{i+1:03d}"), "title": ch.get("title", f"Chương {i+1}"), "chapter_index": ch.get("chapter_index", i + 1)}
+                    for i, ch in enumerate(ch_list)
+                ]
+            meta_path.write_text(json.dumps(m_data, ensure_ascii=False, indent=2), encoding="utf-8")
+        except Exception as e:
+            logger.warning(f"Could not update metadata.json for {slug}: {e}")
+
+    # Invalidate cache
+    try:
+        from main import clear_api_caches
+        clear_api_caches(slug)
+    except Exception:
+        try:
+            from backend.main import clear_api_caches
+            clear_api_caches(slug)
+        except Exception:
+            pass
+
+    book_title = book_row["title"] or slug
+    queue_manager.add_log(
+        f"📥 Cập nhật file truyện '{book_title}': +{new_count} chương mới, cập nhật {updated_count} chương. Tổng: {total_chapters} chương."
+    )
+
+    return {
+        "status": "ok",
+        "slug": slug,
+        "title": book_title,
+        "new_chapters": new_count,
+        "updated_chapters": updated_count,
+        "total_chapters": total_chapters,
+        "message": f"Cập nhật file thành công! Thêm mới {new_count} chương, cập nhật {updated_count} chương (Tổng: {total_chapters} chương).",
+    }
+
+
 @router.post("/books/{slug}/upload-cover")
 async def upload_cover_image(slug: str, file: UploadFile = File(...)):
     """Uploads a portrait cover image for a book."""
