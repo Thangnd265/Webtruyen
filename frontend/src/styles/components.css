@@ -3023,12 +3023,8 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   justify-content: center;
   overflow: hidden;
   border-radius: 0;
-  border-left: none;
-  border-right: none;
-  border-top: none;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-  background: #0d0d0d;
-  box-shadow: var(--shadow-card);
+  border: none;
+  background: var(--color-bg);
 }
 
 .story-top-banner-img {
@@ -3038,6 +3034,8 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   height: 100%;
   object-fit: cover;
   filter: none !important;
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 45%, rgba(0, 0, 0, 0.35) 80%, transparent 100%);
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 1) 0%, rgba(0, 0, 0, 1) 45%, rgba(0, 0, 0, 0.35) 80%, transparent 100%);
   transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -3050,8 +3048,14 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.35) 50%, rgba(0, 0, 0, 0.7) 100%),
-              linear-gradient(0deg, var(--color-bg) 0%, rgba(0, 0, 0, 0.4) 35%, transparent 65%);
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.2) 50%, rgba(0, 0, 0, 0.75) 100%),
+              linear-gradient(180deg, rgba(0, 0, 0, 0.2) 0%, transparent 30%, rgba(0, 0, 0, 0.45) 60%, var(--color-bg) 100%);
+}
+
+[data-mode="light"] .story-top-banner-overlay,
+:root:not([data-mode="dark"]) .story-top-banner-overlay {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.6) 0%, rgba(0, 0, 0, 0.15) 50%, rgba(0, 0, 0, 0.6) 100%),
+              linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, transparent 30%, rgba(255, 255, 255, 0.35) 65%, var(--color-bg) 100%);
 }
 
 .story-top-banner-content {
@@ -3087,15 +3091,16 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
 
 .story-content-container {
   max-width: 1240px;
-  margin: 0 auto;
-  padding: 28px 16px 64px;
+  margin: -80px auto 0;
+  padding: 0 16px 64px;
   position: relative;
   z-index: 3;
 }
 
 @media (max-width: 767px) {
   .story-content-container {
-    padding: 20px 12px 48px;
+    margin: -50px auto 0;
+    padding: 0 12px 48px;
   }
 }
 
