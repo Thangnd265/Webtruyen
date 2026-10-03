@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { ArrowUpDown, BookOpen, ChevronLeft, ChevronRight, Headphones, Search } from "lucide-react";
+import { ArrowUpDown, BookOpen, ChevronLeft, ChevronRight, Headphones, Info, List, Search } from "lucide-react";
 import { Icon } from "../components/Icon";
 import { Tabs } from "../components/Tabs";
 import { StoryCard } from "../components/StoryCard";
@@ -11,7 +11,7 @@ import type { Story } from "../data/types";
 import { NotFoundPage } from "./NotFoundPage";
 import { useAuth } from "../context/AuthContext";
 
-const CHAPTERS_PER_PAGE = 50;
+const CHAPTERS_PER_PAGE = 30;
 
 function getPaginationPages(current: number, total: number): (number | string)[] {
   if (total <= 5) {
@@ -95,8 +95,39 @@ export function StoryPage() {
       .catch(() => {});
   }, [token, slug]);
 
+  // Separate intro/TOC chapters from regular chapters starting from Chapter 1
+  const { introChapters, regularChapters } = useMemo(() => {
+    const intros: BackendChapter[] = [];
+    const regular: BackendChapter[] = [];
+    let foundFirstRegular = false;
+
+    for (const c of chapters) {
+      if (foundFirstRegular) {
+        regular.push(c);
+        continue;
+      }
+      const titleLower = (c.title || "").toLowerCase().trim();
+      const idx = c.chapter_index;
+      if (
+        idx === 0 ||
+        titleLower.includes("mục lục") ||
+        titleLower.includes("giới thiệu") ||
+        !titleLower.startsWith("chương")
+      ) {
+        intros.push(c);
+      } else {
+        foundFirstRegular = true;
+        regular.push(c);
+      }
+    }
+    return {
+      introChapters: intros,
+      regularChapters: regular.length > 0 ? regular : chapters,
+    };
+  }, [chapters]);
+
   const sortedAndFilteredChapters = useMemo(() => {
-    let list = [...chapters];
+    let list = [...regularChapters];
     if (!chapterSortAsc) {
       list.reverse();
     }
@@ -109,7 +140,7 @@ export function StoryPage() {
       });
     }
     return list;
-  }, [chapters, chapterSortAsc, chapterSearch]);
+  }, [regularChapters, chapterSortAsc, chapterSearch]);
 
   if (loading) {
     return (
@@ -131,7 +162,7 @@ export function StoryPage() {
     })
     .slice(0, 6);
 
-  const totalChaptersCount = Math.max(story.chapters, chapters.length);
+  const totalChaptersCount = Math.max(story.chapters, regularChapters.length);
 
   const chapterList = (audio: boolean) => {
     const totalPages = Math.max(1, Math.ceil(sortedAndFilteredChapters.length / CHAPTERS_PER_PAGE));
@@ -143,7 +174,7 @@ export function StoryPage() {
       <div className="story-chapter-section">
         <div className="chapter-toolbar">
           <div className="chapter-toolbar-left">
-            <span className="chapter-count-badge">Tổng số: {chapters.length} chương</span>
+            <span className="chapter-count-badge">Tổng số: {regularChapters.length} chương</span>
             {totalPages > 1 && (
               <span className="chapter-page-badge">
                 Trang {currentPage}/{totalPages}
@@ -325,7 +356,7 @@ export function StoryPage() {
             </div>
             <div className="story-info-actions">
               <Link
-                to={`${path}/doc/${userProgress?.chapter_id || chapters[0]?.id || "1"}`}
+                to={`${path}/doc/${userProgress?.chapter_id || regularChapters[0]?.id || chapters[0]?.id || "1"}`}
                 className="story-action-btn story-action-btn-primary"
               >
                 <Icon icon={BookOpen} size={16} />
@@ -333,18 +364,40 @@ export function StoryPage() {
               </Link>
               {story.hasAudio && (
                 <Link
-                  to={`${path}/nghe/${userProgress?.chapter_id || chapters[0]?.id || "1"}`}
+                  to={`${path}/nghe/${userProgress?.chapter_id || regularChapters[0]?.id || chapters[0]?.id || "1"}`}
                   className="story-action-btn story-action-btn-secondary"
                 >
                   <Icon icon={Headphones} size={16} />
                   <span>Nghe Audio</span>
                 </Link>
               )}
+              {introChapters.map((intro) => {
+                const titleLower = (intro.title || "").toLowerCase();
+                const isToc = titleLower.includes("mục lục");
+                const label = isToc
+                  ? "Mục lục"
+                  : titleLower.includes("giới thiệu")
+                  ? "Giới thiệu"
+                  : intro.title && intro.title.length <= 20
+                  ? intro.title
+                  : "Giới thiệu";
+                return (
+                  <Link
+                    key={intro.id}
+                    to={`${path}/doc/${intro.id}`}
+                    className="story-action-btn story-action-btn-secondary story-action-btn-intro"
+                    title={`Đọc ${intro.title || label}`}
+                  >
+                    <Icon icon={isToc ? List : Info} size={16} />
+                    <span>{label}</span>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </div>
 
-        {/* 3. Lower Box: Dedicated Chapters & Audio Box (50 chapters/page) */}
+        {/* 3. Lower Box: Dedicated Chapters & Audio Box (30 chapters/page) */}
         <div className="story-chapters-card">
           <Tabs
             label="Danh sách chương và audio"
