@@ -3085,6 +3085,32 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   border-radius: 0;
   border: none;
   background: transparent;
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 30%,
+    rgba(0, 0, 0, 0.85) 45%,
+    rgba(0, 0, 0, 0.45) 60%,
+    rgba(0, 0, 0, 0.15) 72%,
+    rgba(0, 0, 0, 0.03) 82%,
+    transparent 88%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 30%,
+    rgba(0, 0, 0, 0.85) 45%,
+    rgba(0, 0, 0, 0.45) 60%,
+    rgba(0, 0, 0, 0.15) 72%,
+    rgba(0, 0, 0, 0.03) 82%,
+    transparent 88%,
+    transparent 100%
+  );
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
 }
 
 .story-top-banner-img {
@@ -3094,8 +3120,30 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   height: 100%;
   object-fit: cover;
   filter: none !important;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 48%, rgba(0, 0, 0, 0.8) 68%, transparent 98%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 48%, rgba(0, 0, 0, 0.8) 68%, transparent 98%);
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 25%,
+    rgba(0, 0, 0, 0.82) 42%,
+    rgba(0, 0, 0, 0.42) 58%,
+    rgba(0, 0, 0, 0.12) 70%,
+    transparent 82%,
+    transparent 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    #000 0%,
+    #000 25%,
+    rgba(0, 0, 0, 0.82) 42%,
+    rgba(0, 0, 0, 0.42) 58%,
+    rgba(0, 0, 0, 0.12) 70%,
+    transparent 82%,
+    transparent 100%
+  );
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
   transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -3108,14 +3156,16 @@ dialog.spotty-modal .auth-footer-hint .link-btn:hover {
   inset: 0;
   z-index: 1;
   pointer-events: none;
-  background: linear-gradient(90deg, rgba(10, 11, 14, 0.5) 0%, rgba(10, 11, 14, 0.06) 40%, rgba(10, 11, 14, 0.06) 60%, rgba(10, 11, 14, 0.5) 100%),
-              linear-gradient(180deg, rgba(10, 11, 14, 0.3) 0%, transparent 22%, rgba(10, 11, 14, 0.2) 65%, transparent 100%);
+  background:
+    radial-gradient(ellipse 110% 70% at 50% 25%, transparent 35%, rgba(10, 11, 14, 0.45) 100%),
+    linear-gradient(180deg, rgba(10, 11, 14, 0.35) 0%, transparent 20%, transparent 70%, transparent 100%);
 }
 
 [data-mode="light"] .story-top-banner-overlay,
 :root:not([data-mode="dark"]) .story-top-banner-overlay {
-  background: linear-gradient(90deg, rgba(255, 255, 255, 0.45) 0%, rgba(255, 255, 255, 0.06) 40%, rgba(255, 255, 255, 0.06) 60%, rgba(255, 255, 255, 0.45) 100%),
-              linear-gradient(180deg, rgba(255, 255, 255, 0.25) 0%, transparent 22%, rgba(255, 255, 255, 0.15) 65%, transparent 100%);
+  background:
+    radial-gradient(ellipse 110% 70% at 50% 25%, transparent 35%, rgba(255, 255, 255, 0.4) 100%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 20%, transparent 70%, transparent 100%);
 }
 
 .story-top-banner-content {
