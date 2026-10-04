@@ -432,12 +432,12 @@
 }
 .hero-carousel {
   position: relative;
-  min-height: clamp(480px, 60svh, 650px);
+  min-height: clamp(400px, 52svh, 540px);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  padding: 48px 80px 88px;
+  padding: 40px 60px 60px;
   color: #fff;
   background: transparent;
   box-shadow: none;
@@ -450,21 +450,21 @@
 }
 .hero-ambient-glow {
   position: absolute;
-  inset: -40px -10% -60px -10%;
+  inset: -20px -5% -30px -5%;
   background-size: cover;
   background-position: center 20%;
-  filter: blur(80px) saturate(1.4) brightness(0.5);
-  opacity: 0.65;
+  filter: blur(60px) saturate(1.3) brightness(0.6);
+  opacity: 0.45;
   pointer-events: none;
   z-index: 0;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 25%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.15) 75%, transparent 92%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 25%, rgba(0,0,0,0.6) 50%, rgba(0,0,0,0.15) 75%, transparent 92%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 75%, transparent 96%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 75%, transparent 96%);
   transition: opacity 0.6s ease;
 }
 [data-mode="light"] .hero-ambient-glow,
 :root:not([data-mode="dark"]) .hero-ambient-glow {
-  filter: blur(80px) saturate(1.2) brightness(0.9);
-  opacity: 0.35;
+  filter: blur(60px) saturate(1.2) brightness(0.9);
+  opacity: 0.3;
 }
 .hero-banner-link {
   position: absolute;
@@ -477,8 +477,8 @@
   cursor: pointer;
   z-index: 1;
   overflow: hidden;
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 32%, rgba(0,0,0,0.88) 46%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.22) 74%, rgba(0,0,0,0.05) 86%, transparent 96%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 32%, rgba(0,0,0,0.88) 46%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.22) 74%, rgba(0,0,0,0.05) 86%, transparent 96%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 85%, rgba(0,0,0,0.85) 90%, rgba(0,0,0,0.4) 96%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 85%, rgba(0,0,0,0.85) 90%, rgba(0,0,0,0.4) 96%, transparent 100%);
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
@@ -495,12 +495,6 @@
   object-fit: cover;
   object-position: center 20%;
   transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 32%, rgba(0,0,0,0.88) 46%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.22) 74%, rgba(0,0,0,0.05) 86%, transparent 96%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 32%, rgba(0,0,0,0.88) 46%, rgba(0,0,0,0.55) 60%, rgba(0,0,0,0.22) 74%, rgba(0,0,0,0.05) 86%, transparent 96%, transparent 100%);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-repeat: no-repeat;
 }
 .hero-image-enter { animation: hero-poster-in calc(var(--motion-normal) * 2) cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes hero-poster-in { from { opacity: 0; transform: scale(1.025); } to { opacity: 1; transform: scale(1); } }
@@ -510,20 +504,14 @@
   z-index: 1;
   pointer-events: none;
   background:
-    radial-gradient(ellipse 110% 75% at 50% 30%, transparent 35%, rgba(0,0,0,0.45) 100%),
-    linear-gradient(90deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.72) 100%),
-    linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 22%, transparent 48%, rgba(0,0,0,0.75) 76%, var(--color-bg) 100%);
-  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 38%, rgba(0,0,0,0.9) 52%, rgba(0,0,0,0.6) 66%, rgba(0,0,0,0.25) 78%, rgba(0,0,0,0.05) 88%, transparent 96%, transparent 100%);
-  mask-image: linear-gradient(to bottom, #000 0%, #000 38%, rgba(0,0,0,0.9) 52%, rgba(0,0,0,0.6) 66%, rgba(0,0,0,0.25) 78%, rgba(0,0,0,0.05) 88%, transparent 96%, transparent 100%);
-  -webkit-mask-size: 100% 100%;
-  mask-size: 100% 100%;
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, transparent 25%, transparent 75%, rgba(0, 0, 0, 0.6) 92%, var(--color-bg) 100%),
+    radial-gradient(ellipse 95% 65% at 50% 50%, transparent 55%, rgba(0, 0, 0, 0.3) 100%);
 }
 [data-mode="light"] .hero-overlay,
 :root:not([data-mode="dark"]) .hero-overlay {
   background:
-    radial-gradient(ellipse 110% 75% at 50% 30%, transparent 35%, rgba(255,255,255,0.45) 100%),
-    linear-gradient(90deg, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.15) 50%, rgba(255,255,255,0.7) 100%),
-    linear-gradient(180deg, rgba(255,255,255,0.3) 0%, transparent 22%, transparent 48%, rgba(255,255,255,0.8) 76%, var(--color-bg) 100%);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, transparent 25%, transparent 75%, rgba(255, 255, 255, 0.7) 92%, var(--color-bg) 100%),
+    radial-gradient(ellipse 95% 65% at 50% 50%, transparent 55%, rgba(255, 255, 255, 0.25) 100%);
 }
 .hero-content { position: relative; width: min(100%, 1000px); z-index: 2; text-align: center; text-shadow: 0 4px 28px rgb(0 0 0 / 95%), 0 2px 10px rgb(0 0 0 / 90%); pointer-events: none; padding: 0 24px; }
 .hero-content h2 { margin: 0 auto; font-size: clamp(38px, 5.5vw, 68px); line-height: 1.15; text-wrap: balance; font-weight: 800; letter-spacing: -0.02em; color: #ffffff; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
@@ -553,9 +541,9 @@
 @media (min-width: 768px) { .story-grid-compact { grid-template-columns: repeat(4, minmax(0, 1fr)); } .filter-panel { grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: end; } }
 @media (max-width: 767px) { .header-inner { flex-wrap: wrap; gap: 8px; padding-block: 8px; } .brand { font-size: 16px; } .header-search { order: 3; flex: 1 0 100%; } .hero-carousel { min-height: 460px; padding: 40px 24px 80px; } .hero-content h2 { font-size: clamp(32px, 10vw, 44px); } .hero-description { display: none; } .hero-meta { font-size: 13px; border-radius: 16px; } .carousel-controls { inset: auto 12px 12px; transform: none; } .carousel-count { display: none; } .carousel-dots { bottom: 12px; } .story-card { gap: 12px; } .story-card-compact { padding: 8px; } }
 
-.home-page .hero-carousel { min-height: clamp(480px, 60svh, 650px); }
+.home-page .hero-carousel { min-height: clamp(400px, 52svh, 540px); }
 .home-layout { display: grid; gap: 32px; margin-top: 24px; }
-.home-container { display: flex; flex-direction: column; gap: 48px; margin-top: 16px; }
+.home-container { display: flex; flex-direction: column; gap: 48px; margin-top: 20px; }
 
 /* Home Split Section (Mới cập nhật & Bảng xếp hạng) */
 .home-split-section {
