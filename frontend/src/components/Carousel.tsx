@@ -15,6 +15,12 @@ export function Carousel({ slides, stories }: { slides: HeroSlide[]; stories: St
 
   return (
     <section className="hero-carousel hero-carousel-full-bleed" aria-label="Truyện nổi bật" aria-roledescription="carousel">
+      {/* Ambient background glow matching the active slide */}
+      <div
+        className="hero-ambient-glow"
+        style={{ backgroundImage: `url("${heroImage}")` }}
+        aria-hidden="true"
+      />
       {story ? (
         <Link
           to={`/truyen/${story.slug}`}
