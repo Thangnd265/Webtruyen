@@ -7,6 +7,8 @@ import { Pause, Play, SkipBack, SkipForward, Volume2, Timer } from "lucide-react
 import { preloadChapter, type BackendChapter } from "../data/api";
 import { useAuth } from "../context/AuthContext";
 import { useSleepTimer, type SleepTimerMode } from "../hooks/useSleepTimer";
+import { savePlaybackProgress } from "../data/playbackProgress";
+import { preloadNextChapter } from "../data/audioPreloader";
 
 export function AudioPlayer({
   storyPath,
@@ -89,6 +91,12 @@ export function AudioPlayer({
     if (audioRef.current) {
       audioRef.current.playbackRate = Number(speed);
       audioRef.current.volume = volume / 100;
+      if (initSec > 0) {
+        try {
+          audioRef.current.currentTime = initSec;
+          hasSeekedInitialRef.current = true;
+        } catch (err) {}
+      }
     }
 
     if (initialAutoPlay && audioSrc && !locked) {
@@ -131,24 +139,32 @@ export function AudioPlayer({
     }
   }, [audioSrc, chapterIndex, initialAutoPlay, initialTime, speed]);
 
+  // Ensure late-arriving initialTime (e.g. from async API history) properly seeks the audio
+  useEffect(() => {
+    if (initialTime && initialTime > 0 && !hasSeekedInitialRef.current && audioRef.current) {
+      try {
+        audioRef.current.currentTime = initialTime;
+        hasSeekedInitialRef.current = true;
+        setCurrentTime(initialTime);
+        if (audioRef.current.duration > 0) {
+          setPosition(Math.round((initialTime / audioRef.current.duration) * 100));
+        }
+      } catch (err) {}
+    }
+  }, [initialTime]);
+
   const syncProgress = useCallback(
-    (curTime: number, dur: number, force = false) => {
-      if (!token) return;
+    (curTime: number, dur: number, force = false, keepalive = false) => {
       const now = Date.now();
-      if (!force && now - lastSyncRef.current < 10000) return;
+      if (!force && now - lastSyncRef.current < 4000) return;
       lastSyncRef.current = now;
 
       const slug = storyPath.replace(/^\/truyen\//, "").replace(/\/.*$/, "");
       const ch = chapters[chapterIndex];
       if (!slug || !ch) return;
 
-      fetch("/api/user/history", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
+      savePlaybackProgress(
+        {
           book_slug: slug,
           book_title: storyTitle || slug,
           book_author: "",
@@ -158,11 +174,39 @@ export function AudioPlayer({
           current_time: curTime,
           duration: dur,
           progress: dur > 0 ? Number((curTime / dur).toFixed(4)) : 0,
-        }),
-      }).catch((err) => console.warn("Sync history error:", err));
+        },
+        token,
+        { keepalive }
+      );
     },
     [token, storyPath, chapters, chapterIndex, storyTitle, coverUrl]
   );
+
+  // Sync on tab close, page refresh, app switch, or phone lock
+  useEffect(() => {
+    const handleSave = () => {
+      if (audioRef.current) {
+        syncProgress(audioRef.current.currentTime, audioRef.current.duration || 0, true, true);
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        handleSave();
+      }
+    };
+
+    window.addEventListener("pagehide", handleSave);
+    window.addEventListener("beforeunload", handleSave);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      handleSave();
+      window.removeEventListener("pagehide", handleSave);
+      window.removeEventListener("beforeunload", handleSave);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [syncProgress]);
 
   const stopPlayback = useCallback(() => {
     if (audioRef.current) {
@@ -221,16 +265,15 @@ export function AudioPlayer({
     }
     syncProgress(cur, dur, false);
 
-    // Smart Gapless Preload: Preload next chapter when within 30s of end or 75% progress
-    if (autoNext && dur > 0 && chapterIndex < chapters.length - 1) {
+    // Smart Gapless Preload: Preload next chapter earlier (progress >= 60% or remaining <= 45s)
+    if (dur > 0 && chapterIndex < chapters.length - 1) {
       const remaining = dur - cur;
       const progress = cur / dur;
       const nextChapter = chapters[chapterIndex + 1];
-      if (nextChapter && (remaining <= 30 || progress >= 0.75) && preloadedChapterRef.current !== nextChapter.id) {
+      if (nextChapter && (remaining <= 45 || progress >= 0.6) && preloadedChapterRef.current !== nextChapter.id) {
         preloadedChapterRef.current = nextChapter.id;
         const slug = storyPath.replace(/^\/truyen\//, "").replace(/\/.*$/, "");
-        const targetAudioUrl = `/api/books/${slug}/audio/${nextChapter.id}${currentVoice ? `?voice=${encodeURIComponent(currentVoice)}` : ""}`;
-        preloadChapter(slug, nextChapter.id, currentVoice, targetAudioUrl);
+        preloadNextChapter(slug, nextChapter.id, currentVoice);
       }
     }
   }

@@ -13,6 +13,8 @@ import {
   type ChapterContent,
   type ChapterCue,
 } from "../data/api";
+import { savePlaybackProgress, getLocalPlaybackProgress, getBestPlaybackProgress } from "../data/playbackProgress";
+import { preloadNextChapter } from "../data/audioPreloader";
 import { stories as fallbackStories } from "../data/stories";
 import type { Story } from "../data/types";
 import { NotFoundPage } from "./NotFoundPage";
@@ -36,10 +38,13 @@ export function ReaderPage() {
     return localStorage.getItem("webtruyen_voice_pref") || "";
   });
   const [resumeTime, setResumeTime] = useState<number>(() => {
-    return typeof stateResumeTime === "number" ? stateResumeTime : 0;
+    if (typeof stateResumeTime === "number") return stateResumeTime;
+    const local = slug ? getLocalPlaybackProgress(slug) : null;
+    return local?.current_time || 0;
   });
   const seekRef = useRef<((time: number) => void) | null>(null);
   const lastSyncRef = useRef<number>(0);
+  const currentTimeRef = useRef<{ cur: number; dur: number }>({ cur: 0, dur: 0 });
   const preloadedChapterRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -120,27 +125,37 @@ export function ReaderPage() {
       return;
     }
     setResumeTime(0);
-    if (!token || !slug || chapters.length === 0) return;
+    if (!slug || chapters.length === 0) return;
     const currentCh = chapters[activeIdx];
     if (!currentCh) return;
 
-    fetch(`/api/user/history/${slug}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((hist) => {
-        if (!hist) return;
+    // Fast check local storage (instant, survives network delay)
+    const local = getLocalPlaybackProgress(slug);
+    if (
+      local &&
+      (local.chapter_id === currentCh.id ||
+        String(activeIdx + 1) === local.chapter_id ||
+        String(currentCh.chapter_index) === local.chapter_id)
+    ) {
+      if (local.current_time && local.current_time > 0) {
+        setResumeTime(local.current_time);
+      }
+    }
+
+    if (token) {
+      getBestPlaybackProgress(slug, token).then((best) => {
+        if (!best) return;
         if (
-          hist.chapter_id === currentCh.id ||
-          String(activeIdx + 1) === hist.chapter_id ||
-          String(currentCh.chapter_index) === hist.chapter_id
+          best.chapter_id === currentCh.id ||
+          String(activeIdx + 1) === best.chapter_id ||
+          String(currentCh.chapter_index) === best.chapter_id
         ) {
-          if (hist.current_time && hist.current_time > 0) {
-            setResumeTime(hist.current_time);
+          if (best.current_time && best.current_time > 0) {
+            setResumeTime(best.current_time);
           }
         }
-      })
-      .catch(() => {});
+      });
+    }
   }, [token, slug, activeIdx, chapters, stateResumeTime]);
 
   useEffect(() => {
@@ -196,43 +211,83 @@ export function ReaderPage() {
       }
     }
 
-    if (!token || !slug || !story || !chapters[activeIdx]) return;
+    currentTimeRef.current = { cur, dur };
+
+    if (!slug || !story || !chapters[activeIdx]) return;
     const now = Date.now();
-    if (now - lastSyncRef.current < 10000) return;
-    lastSyncRef.current = now;
+    if (now - lastSyncRef.current >= 4000) {
+      lastSyncRef.current = now;
+      const ch = chapters[activeIdx];
+      savePlaybackProgress(
+        {
+          book_slug: slug,
+          book_title: story.title || slug,
+          book_author: story.author || "",
+          book_cover: story.cover || "",
+          chapter_id: ch.id,
+          chapter_title: ch.title || `Chương ${activeIdx + 1}`,
+          current_time: cur,
+          duration: dur,
+          progress: dur > 0 ? Number((cur / dur).toFixed(4)) : 0,
+        },
+        token
+      );
+    }
 
-    const ch = chapters[activeIdx];
-    fetch("/api/user/history", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({
-        book_slug: slug,
-        book_title: story.title || slug,
-        book_author: story.author || "",
-        book_cover: story.cover || "",
-        chapter_id: ch.id,
-        chapter_title: ch.title || `Chương ${activeIdx + 1}`,
-        current_time: cur,
-        duration: dur,
-        progress: dur > 0 ? Number((cur / dur).toFixed(4)) : Number(((activeIdx + 1) / Math.max(chapters.length, 1)).toFixed(4)),
-      }),
-    }).catch(() => {});
-
-    // Smart Gapless Preload: Preload next chapter text, cues, and audio when within 30s of end or 75% progress
+    // Smart Gapless Preload: Preload next chapter text, cues, and audio when within 45s of end or 60% progress
     const nextChapter = activeIdx < chapters.length - 1 ? chapters[activeIdx + 1] : null;
     if (dur > 0 && nextChapter && slug) {
       const remaining = dur - cur;
       const progress = cur / dur;
-      if ((remaining <= 30 || progress >= 0.75) && preloadedChapterRef.current !== nextChapter.id) {
+      if ((remaining <= 45 || progress >= 0.6) && preloadedChapterRef.current !== nextChapter.id) {
         preloadedChapterRef.current = nextChapter.id;
-        const targetAudioUrl = `/api/books/${slug}/audio/${nextChapter.id}${selectedVoice ? `?voice=${encodeURIComponent(selectedVoice)}` : ""}`;
-        preloadChapter(slug, nextChapter.id, selectedVoice || undefined, targetAudioUrl);
+        preloadNextChapter(slug, nextChapter.id, selectedVoice || undefined);
       }
     }
   }
+
+  // Ensure progress is immediately persisted on tab close, page refresh, app switch, or phone lock
+  useEffect(() => {
+    const handleSave = () => {
+      if (!slug || !story || !chapters[activeIdx]) return;
+      const ch = chapters[activeIdx];
+      const { cur, dur } = currentTimeRef.current;
+      if (cur > 0) {
+        savePlaybackProgress(
+          {
+            book_slug: slug,
+            book_title: story.title || slug,
+            book_author: story.author || "",
+            book_cover: story.cover || "",
+            chapter_id: ch.id,
+            chapter_title: ch.title || `Chương ${activeIdx + 1}`,
+            current_time: cur,
+            duration: dur,
+            progress: dur > 0 ? Number((cur / dur).toFixed(4)) : 0,
+          },
+          token,
+          { keepalive: true }
+        );
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        handleSave();
+      }
+    };
+
+    window.addEventListener("pagehide", handleSave);
+    window.addEventListener("beforeunload", handleSave);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      handleSave();
+      window.removeEventListener("pagehide", handleSave);
+      window.removeEventListener("beforeunload", handleSave);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [slug, story, chapters, activeIdx, token]);
 
   useEffect(() => {
     if (!activeCueId) return;

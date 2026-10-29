@@ -7,6 +7,7 @@ import { StoryCard } from "../components/StoryCard";
 import { TextLoader } from "../components/TextLoader";
 import { stories as fallbackStories } from "../data/stories";
 import { getStoryDetail, getStories, type BackendChapter } from "../data/api";
+import { getLocalPlaybackProgress, getBestPlaybackProgress } from "../data/playbackProgress";
 import type { Story } from "../data/types";
 import { NotFoundPage } from "./NotFoundPage";
 import { useAuth } from "../context/AuthContext";
@@ -26,6 +27,13 @@ function getPaginationPages(current: number, total: number): (number | string)[]
     pages.push(1, "...", current - 1, current, current + 1, "...", total);
   }
   return pages;
+}
+
+function formatResumeTime(sec?: number): string {
+  if (!sec || isNaN(sec) || sec <= 0) return "0:00";
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s < 10 ? "0" : ""}${s}`;
 }
 
 export function StoryPage() {
@@ -78,24 +86,32 @@ export function StoryPage() {
   }, [slug]);
 
   useEffect(() => {
-    if (!token || !slug) {
+    if (!slug) {
       setUserProgress(null);
       return;
     }
-    fetch(`/api/user/history/${slug}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
-        if (data && data.chapter_id) {
+    // 1. Immediately read local progress (0ms latency, survives crashes & refreshes)
+    const local = getLocalPlaybackProgress(slug);
+    if (local && local.chapter_id) {
+      setUserProgress({
+        chapter_id: local.chapter_id,
+        chapter_title: local.chapter_title,
+        current_time: local.current_time || 0,
+      });
+    }
+
+    // 2. Fetch best cross-device progress if authenticated
+    if (token) {
+      getBestPlaybackProgress(slug, token).then((best) => {
+        if (best && best.chapter_id) {
           setUserProgress({
-            chapter_id: data.chapter_id,
-            chapter_title: data.chapter_title,
-            current_time: data.current_time || 0,
+            chapter_id: best.chapter_id,
+            chapter_title: best.chapter_title,
+            current_time: best.current_time || 0,
           });
         }
-      })
-      .catch(() => {});
+      });
+    }
   }, [token, slug]);
 
   // Separate intro/TOC chapters from regular chapters starting from Chapter 1
@@ -400,10 +416,15 @@ export function StoryPage() {
               {firstAudioChapter && (
                 <Link
                   to={`${path}/nghe/${(userProgress && chapters.find((c) => c.id === userProgress.chapter_id)?.has_audio ? userProgress.chapter_id : null) || firstAudioChapter.id}`}
+                  state={userProgress?.current_time ? { resumeTime: userProgress.current_time, autoPlay: true } : undefined}
                   className="story-action-btn story-action-btn-secondary"
                 >
                   <Icon icon={Headphones} size={16} />
-                  <span>Nghe Audio</span>
+                  <span>
+                    {userProgress && chapters.find((c) => c.id === userProgress.chapter_id)?.has_audio
+                      ? `Nghe tiếp (${formatResumeTime(userProgress.current_time)})`
+                      : "Nghe Audio"}
+                  </span>
                 </Link>
               )}
               {introChapters.map((intro) => {

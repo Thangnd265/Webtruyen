@@ -3,6 +3,7 @@ import { Link, useParams, useLocation, useSearchParams } from "react-router-dom"
 import { AudioPlayer } from "../components/AudioPlayer";
 import { AudioLoader } from "../components/AudioLoader";
 import { VoiceSelector } from "../components/VoiceSelector";
+import { getBestPlaybackProgress, getLocalPlaybackProgress } from "../data/playbackProgress";
 import {
   getStoryDetail,
   getChapterContent,
@@ -29,8 +30,11 @@ export function AudioPage() {
   const [loading, setLoading] = useState(true);
   const [activeIdx, setActiveIdx] = useState(0);
   const [selectedVoice, setSelectedVoice] = useState<string>(initialVoice);
+  const localProg = slug ? getLocalPlaybackProgress(slug) : null;
   const [resumeTime, setResumeTime] = useState<number>(() => {
-    return typeof stateResumeTime === "number" ? stateResumeTime : 0;
+    if (typeof stateResumeTime === "number") return stateResumeTime;
+    if (localProg && localProg.current_time > 0) return localProg.current_time;
+    return 0;
   });
 
   useEffect(() => {
@@ -44,28 +48,22 @@ export function AudioPage() {
       setResumeTime(stateResumeTime);
       return;
     }
-    setResumeTime(0);
-    if (!token || !slug || chapters.length === 0) return;
+    if (!slug || chapters.length === 0) return;
     const currentCh = chapters[activeIdx];
     if (!currentCh) return;
 
-    fetch(`/api/user/history/${slug}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((hist) => {
-        if (!hist) return;
-        if (
-          hist.chapter_id === currentCh.id ||
-          String(activeIdx + 1) === hist.chapter_id ||
-          String(currentCh.chapter_index) === hist.chapter_id
-        ) {
-          if (hist.current_time && hist.current_time > 0) {
-            setResumeTime(hist.current_time);
-          }
+    getBestPlaybackProgress(slug, token).then((best) => {
+      if (!best) return;
+      if (
+        best.chapter_id === currentCh.id ||
+        String(activeIdx + 1) === best.chapter_id ||
+        String(currentCh.chapter_index) === best.chapter_id
+      ) {
+        if (best.current_time && best.current_time > 0) {
+          setResumeTime(best.current_time);
         }
-      })
-      .catch(() => {});
+      }
+    });
   }, [token, slug, activeIdx, chapters, stateResumeTime]);
 
   useEffect(() => {
@@ -97,6 +95,24 @@ export function AudioPage() {
           found = chList.findIndex((_, i) => String(i + 1) === chapter);
         }
         if (found >= 0) targetIdx = found;
+      } else {
+        // Fallback: check saved local progress if user navigated without chapter in URL
+        const saved = getLocalPlaybackProgress(slug);
+        if (saved && saved.chapter_id) {
+          let found = chList.findIndex((c) => c.id === saved.chapter_id);
+          if (found < 0) {
+            found = chList.findIndex((c) => c.chapter_index !== undefined && String(c.chapter_index) === saved.chapter_id);
+          }
+          if (found < 0) {
+            found = chList.findIndex((_, i) => String(i + 1) === saved.chapter_id);
+          }
+          if (found >= 0) {
+            targetIdx = found;
+            if (saved.current_time && saved.current_time > 0) {
+              setResumeTime(saved.current_time);
+            }
+          }
+        }
       }
       setActiveIdx(targetIdx);
 

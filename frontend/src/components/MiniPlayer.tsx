@@ -90,6 +90,12 @@ export function MiniPlayer({
     setCurrentTime(initSec);
     if (audioRef.current) {
       audioRef.current.playbackRate = Number(speed);
+      if (initSec > 0) {
+        try {
+          audioRef.current.currentTime = initSec;
+          hasSeekedInitialRef.current = true;
+        } catch (err) {}
+      }
     }
     if (initialAutoPlay && audioSrc) {
       const audio = audioRef.current;
@@ -122,6 +128,17 @@ export function MiniPlayer({
       setPlaying(false);
     }
   }, [audioSrc, initialAutoPlay, initialTime, speed]);
+
+  // Ensure late-arriving initialTime (e.g. from async API history) properly seeks the audio
+  useEffect(() => {
+    if (initialTime && initialTime > 0 && !hasSeekedInitialRef.current && audioRef.current) {
+      try {
+        audioRef.current.currentTime = initialTime;
+        hasSeekedInitialRef.current = true;
+        setCurrentTime(initialTime);
+      } catch (err) {}
+    }
+  }, [initialTime]);
 
   useEffect(() => {
     seekRef.current = (time: number) => {
