@@ -227,7 +227,7 @@ export async function getChapterContent(
     const localRaw = localStorage.getItem(`${CONTENT_STORAGE_PREFIX}${cacheKey}`);
     if (localRaw) {
       const parsed: ChapterContent = JSON.parse(localRaw);
-      if (parsed && (parsed.text || parsed.cues)) {
+      if (parsed && (parsed.html || parsed.cues)) {
         chapterContentCache.set(cacheKey, parsed);
         return parsed;
       }
