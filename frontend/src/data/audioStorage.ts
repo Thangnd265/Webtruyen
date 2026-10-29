@@ -50,19 +50,32 @@ function openAudioDB(): Promise<IDBDatabase | null> {
   });
 }
 
+function createBlobUrl(blob: Blob): string {
+  if (typeof URL !== "undefined" && typeof URL.createObjectURL === "function") {
+    return URL.createObjectURL(blob);
+  }
+  return `blob:mock-${Date.now()}-${Math.random()}`;
+}
+
+function revokeBlobUrl(url: string): void {
+  if (typeof URL !== "undefined" && typeof URL.revokeObjectURL === "function") {
+    try {
+      URL.revokeObjectURL(url);
+    } catch {}
+  }
+}
+
 /**
  * Saves a downloaded audio Blob directly to device storage and returns a Blob URL.
  */
 export async function saveAudioToDevice(url: string, blob: Blob): Promise<string> {
   const now = Date.now();
-  const blobUrl = URL.createObjectURL(blob);
+  const blobUrl = createBlobUrl(blob);
 
   // Revoke previous blobUrl for this exact URL if one existed
   const oldUrl = activeBlobUrlMap.get(url);
   if (oldUrl) {
-    try {
-      URL.revokeObjectURL(oldUrl);
-    } catch {}
+    revokeBlobUrl(oldUrl);
   }
   activeBlobUrlMap.set(url, blobUrl);
 
@@ -115,7 +128,7 @@ export async function getAudioFromDevice(url: string): Promise<string | null> {
   // 2. Memory fallback check
   if (memoryFallbackMap.has(url)) {
     const item = memoryFallbackMap.get(url)!;
-    const blobUrl = URL.createObjectURL(item.blob);
+    const blobUrl = createBlobUrl(item.blob);
     activeBlobUrlMap.set(url, blobUrl);
     return blobUrl;
   }
@@ -133,7 +146,7 @@ export async function getAudioFromDevice(url: string): Promise<string | null> {
       req.onsuccess = () => {
         const record = req.result as StoredAudio | undefined;
         if (record && record.blob) {
-          const blobUrl = URL.createObjectURL(record.blob);
+          const blobUrl = createBlobUrl(record.blob);
           activeBlobUrlMap.set(url, blobUrl);
           resolve(blobUrl);
         } else {
@@ -183,9 +196,7 @@ async function pruneOldAudio(db: IDBDatabase): Promise<void> {
             const oldUrl = cursor.value.url;
             const memBlobUrl = activeBlobUrlMap.get(oldUrl);
             if (memBlobUrl) {
-              try {
-                URL.revokeObjectURL(memBlobUrl);
-              } catch {}
+              revokeBlobUrl(memBlobUrl);
               activeBlobUrlMap.delete(oldUrl);
             }
             cursor.delete();
@@ -213,9 +224,7 @@ function enforceMemoryLimit(): void {
     for (const [key] of toRemove) {
       const url = activeBlobUrlMap.get(key);
       if (url) {
-        try {
-          URL.revokeObjectURL(url);
-        } catch {}
+        revokeBlobUrl(url);
         activeBlobUrlMap.delete(key);
       }
       memoryFallbackMap.delete(key);

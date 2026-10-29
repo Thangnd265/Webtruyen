@@ -9,6 +9,11 @@ import { resolveAudioUrl, resolveAudioUrlSync } from "../data/audioPreloader";
 describe("audioStorage & audioPreloader", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
+    let counter = 0;
+    vi.stubGlobal("URL", {
+      createObjectURL: vi.fn(() => `blob:http://localhost/test-${++counter}`),
+      revokeObjectURL: vi.fn(),
+    });
   });
 
   it("saves audio blob and returns a valid blob URL", async () => {
