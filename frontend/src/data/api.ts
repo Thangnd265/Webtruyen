@@ -115,6 +115,7 @@ export function buildDynamicHeroSlides(stories: Story[]): HeroSlide[] {
 
 const storyDetailCache = new Map<string, { story: Story; chapters: BackendChapter[] }>();
 const chapterContentCache = new Map<string, ChapterContent>();
+const CONTENT_STORAGE_PREFIX = "webtruyen_content_";
 const audioPreloadMap = new Map<string, HTMLAudioElement>();
 
 export function preloadAudio(url: string): HTMLAudioElement {
@@ -147,7 +148,20 @@ export function getCachedChapterContent(
   voice?: string
 ): ChapterContent | null {
   const cacheKey = `${slug}:${chapterId}:${voice || ""}`;
-  return chapterContentCache.get(cacheKey) || null;
+  if (chapterContentCache.has(cacheKey)) {
+    return chapterContentCache.get(cacheKey)!;
+  }
+  try {
+    const localRaw = localStorage.getItem(`${CONTENT_STORAGE_PREFIX}${cacheKey}`);
+    if (localRaw) {
+      const parsed: ChapterContent = JSON.parse(localRaw);
+      if (parsed) {
+        chapterContentCache.set(cacheKey, parsed);
+        return parsed;
+      }
+    }
+  } catch {}
+  return null;
 }
 
 export async function preloadChapter(
@@ -208,6 +222,19 @@ export async function getChapterContent(
     return chapterContentCache.get(cacheKey)!;
   }
 
+  // 1. Check local persistent storage (survives offline and tab reload)
+  try {
+    const localRaw = localStorage.getItem(`${CONTENT_STORAGE_PREFIX}${cacheKey}`);
+    if (localRaw) {
+      const parsed: ChapterContent = JSON.parse(localRaw);
+      if (parsed && (parsed.text || parsed.cues)) {
+        chapterContentCache.set(cacheKey, parsed);
+        return parsed;
+      }
+    }
+  } catch {}
+
+  // 2. Fetch from network
   try {
     const url = voice
       ? `/api/books/${slug}/chapters/${chapterId}?voice=${encodeURIComponent(voice)}`
@@ -216,6 +243,9 @@ export async function getChapterContent(
     if (res.ok) {
       const data: ChapterContent = await res.json();
       chapterContentCache.set(cacheKey, data);
+      try {
+        localStorage.setItem(`${CONTENT_STORAGE_PREFIX}${cacheKey}`, JSON.stringify(data));
+      } catch {}
       return data;
     }
   } catch (err) {

@@ -5,6 +5,7 @@ import { Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward, Headphones, Co
 import type { ChapterCue } from "../data/api";
 import { useAuth } from "../context/AuthContext";
 import { useSleepTimer, type SleepTimerMode } from "../hooks/useSleepTimer";
+import { resolveAudioUrl, resolveAudioUrlSync } from "../data/audioPreloader";
 
 interface MiniPlayerProps {
   storyTitle: string;
@@ -51,6 +52,27 @@ export function MiniPlayer({
   const [speed, setSpeed] = useState(() => {
     return preferences.playbackSpeed || localStorage.getItem("webtruyen_audio_speed") || "1";
   });
+  const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(() => resolveAudioUrlSync(audioSrc));
+
+  useEffect(() => {
+    let active = true;
+    if (!audioSrc) {
+      setResolvedSrc(undefined);
+      return;
+    }
+    const syncUrl = resolveAudioUrlSync(audioSrc);
+    setResolvedSrc(syncUrl);
+
+    resolveAudioUrl(audioSrc).then((deviceUrl) => {
+      if (active && deviceUrl) {
+        setResolvedSrc(deviceUrl);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [audioSrc]);
 
   const stopPlayback = useCallback(() => {
     if (audioRef.current) {
@@ -225,7 +247,7 @@ export function MiniPlayer({
 
       <audio
         ref={audioRef}
-        src={audioSrc}
+        src={resolvedSrc || audioSrc}
         preload="auto"
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={(e) => {

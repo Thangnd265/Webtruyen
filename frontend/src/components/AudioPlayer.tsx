@@ -8,7 +8,7 @@ import { preloadChapter, type BackendChapter } from "../data/api";
 import { useAuth } from "../context/AuthContext";
 import { useSleepTimer, type SleepTimerMode } from "../hooks/useSleepTimer";
 import { savePlaybackProgress } from "../data/playbackProgress";
-import { preloadNextChapter } from "../data/audioPreloader";
+import { preloadNextChapter, resolveAudioUrl, resolveAudioUrlSync } from "../data/audioPreloader";
 
 export function AudioPlayer({
   storyPath,
@@ -50,6 +50,28 @@ export function AudioPlayer({
   });
   const [volume, setVolume] = useState(80);
   const [audioError, setAudioError] = useState(false);
+  const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(() => resolveAudioUrlSync(audioSrc));
+
+  useEffect(() => {
+    let active = true;
+    if (!audioSrc) {
+      setResolvedSrc(undefined);
+      return;
+    }
+    const syncUrl = resolveAudioUrlSync(audioSrc);
+    setResolvedSrc(syncUrl);
+
+    resolveAudioUrl(audioSrc).then((deviceUrl) => {
+      if (active && deviceUrl) {
+        setResolvedSrc(deviceUrl);
+      }
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [audioSrc]);
+
   const [autoNext, setAutoNext] = useState(() => {
     if (preferences.autoNext !== undefined) return preferences.autoNext;
     const saved = localStorage.getItem("webtruyen_auto_next");
@@ -336,7 +358,7 @@ export function AudioPlayer({
       {audioSrc && (
         <audio
           ref={audioRef}
-          src={audioSrc}
+          src={resolvedSrc || audioSrc}
           preload="auto"
           onTimeUpdate={handleTimeUpdate}
           onLoadedMetadata={(e) => {
