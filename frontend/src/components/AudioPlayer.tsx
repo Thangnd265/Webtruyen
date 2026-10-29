@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import { Icon } from "./Icon";
 import { AudioLoader } from "./AudioLoader";
 import { VinylTurntable } from "./VinylTurntable";
-import { Pause, Play, SkipBack, SkipForward, Volume2 } from "lucide-react";
+import { Pause, Play, SkipBack, SkipForward, Volume2, Timer } from "lucide-react";
 import { preloadChapter, type BackendChapter } from "../data/api";
 import { useAuth } from "../context/AuthContext";
+import { useSleepTimer, type SleepTimerMode } from "../hooks/useSleepTimer";
 
 export function AudioPlayer({
   storyPath,
@@ -162,6 +163,26 @@ export function AudioPlayer({
     },
     [token, storyPath, chapters, chapterIndex, storyTitle, coverUrl]
   );
+
+  const stopPlayback = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setPlaying(false);
+    if (audioRef.current) {
+      syncProgress(audioRef.current.currentTime, audioRef.current.duration || 0, true);
+    }
+  }, [syncProgress]);
+
+  const {
+    timerMode: sleepTimerMode,
+    badgeText: sleepTimerBadge,
+    setTimerMode: setSleepTimerMode,
+    checkChapterEnd,
+  } = useSleepTimer({
+    onTriggerStop: stopPlayback,
+    audioElementRef: audioRef,
+  });
 
   function togglePlay() {
     if (!audioRef.current || locked) return;
@@ -321,6 +342,9 @@ export function AudioPlayer({
             if (audioRef.current) {
               syncProgress(audioRef.current.duration || 0, audioRef.current.duration || 0, true);
             }
+            if (checkChapterEnd()) {
+              return;
+            }
             if (autoNext && chapterIndex < chapters.length - 1) {
               selectChapter(chapterIndex + 1, true);
             } else {
@@ -417,6 +441,30 @@ export function AudioPlayer({
           />
           <output>{volume}%</output>
         </label>
+        <div className="audio-timer-wrap">
+          <label className="audio-timer-label">
+            <Icon icon={Timer} size={16} /> Hẹn giờ{" "}
+            <select
+              disabled={locked}
+              value={sleepTimerMode}
+              onChange={(e) => setSleepTimerMode(e.target.value as SleepTimerMode)}
+              aria-label="Hẹn giờ tắt truyện"
+            >
+              <option value="off">Tắt</option>
+              <option value="15">15 phút</option>
+              <option value="30">30 phút</option>
+              <option value="45">45 phút</option>
+              <option value="60">60 phút</option>
+              <option value="90">90 phút</option>
+              <option value="chapter">Hết chương này</option>
+            </select>
+          </label>
+          {sleepTimerBadge && (
+            <span className="sleep-timer-badge" role="timer" aria-live="polite">
+              ⏱️ {sleepTimerBadge}
+            </span>
+          )}
+        </div>
         <label
           className="audio-auto-next"
           style={{

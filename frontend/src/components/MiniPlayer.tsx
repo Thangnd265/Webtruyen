@@ -1,9 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { Icon } from "./Icon";
-import { Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward, Headphones, Compass } from "lucide-react";
+import { Pause, Play, RotateCcw, RotateCw, SkipBack, SkipForward, Headphones, Compass, Timer } from "lucide-react";
 import type { ChapterCue } from "../data/api";
 import { useAuth } from "../context/AuthContext";
+import { useSleepTimer, type SleepTimerMode } from "../hooks/useSleepTimer";
 
 interface MiniPlayerProps {
   storyTitle: string;
@@ -49,6 +50,23 @@ export function MiniPlayer({
   const hasSeekedInitialRef = useRef(false);
   const [speed, setSpeed] = useState(() => {
     return preferences.playbackSpeed || localStorage.getItem("webtruyen_audio_speed") || "1";
+  });
+
+  const stopPlayback = useCallback(() => {
+    if (audioRef.current) {
+      audioRef.current.pause();
+    }
+    setPlaying(false);
+  }, []);
+
+  const {
+    timerMode: sleepTimerMode,
+    badgeText: sleepTimerBadge,
+    setTimerMode: setSleepTimerMode,
+    checkChapterEnd,
+  } = useSleepTimer({
+    onTriggerStop: stopPlayback,
+    audioElementRef: audioRef,
   });
 
   // Sync when remote preferences arrive
@@ -224,6 +242,9 @@ export function MiniPlayer({
         }}
         onEnded={() => {
           setPlaying(false);
+          if (checkChapterEnd()) {
+            return;
+          }
           onEnded?.();
         }}
       />
@@ -320,6 +341,28 @@ export function MiniPlayer({
           <option value="1.5">1.5×</option>
           <option value="2">2×</option>
         </select>
+
+        <div className="mini-timer-wrap" title="Hẹn giờ tắt audio">
+          <select
+            className={`mini-action-btn mini-timer-select ${sleepTimerMode !== "off" ? "active" : ""}`}
+            value={sleepTimerMode}
+            onChange={(e) => setSleepTimerMode(e.target.value as SleepTimerMode)}
+            aria-label="Hẹn giờ tắt audio"
+          >
+            <option value="off">⏱️ Hẹn giờ</option>
+            <option value="15">15 phút</option>
+            <option value="30">30 phút</option>
+            <option value="45">45 phút</option>
+            <option value="60">60 phút</option>
+            <option value="90">90 phút</option>
+            <option value="chapter">Hết chương</option>
+          </select>
+          {sleepTimerBadge && (
+            <span className="mini-timer-badge" role="timer">
+              {sleepTimerBadge}
+            </span>
+          )}
+        </div>
 
         <Link
           to={audioPageLink}
