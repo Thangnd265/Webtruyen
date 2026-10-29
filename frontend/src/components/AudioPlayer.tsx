@@ -16,6 +16,8 @@ import {
   Search,
   Headphones,
   BookOpen,
+  List,
+  X,
 } from "lucide-react";
 import { preloadChapter, type BackendChapter } from "../data/api";
 import { useAuth } from "../context/AuthContext";
@@ -119,6 +121,7 @@ export function AudioPlayer({
   };
 
   const [chapterSearch, setChapterSearch] = useState("");
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const activeChapterItemRef = useRef<HTMLButtonElement | null>(null);
 
   const filteredChapters = useMemo(() => {
@@ -132,10 +135,21 @@ export function AudioPlayer({
   }, [chapters, chapterSearch]);
 
   useEffect(() => {
-    if (activeChapterItemRef.current) {
+    if (!isDrawerOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setIsDrawerOpen(false);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isDrawerOpen]);
+
+  useEffect(() => {
+    if (isDrawerOpen && activeChapterItemRef.current) {
       activeChapterItemRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }
-  }, [chapterIndex]);
+  }, [isDrawerOpen, chapterIndex]);
 
   function seekRelative(delta: number) {
     if (!audioRef.current) return;
@@ -385,9 +399,9 @@ export function AudioPlayer({
   }
 
   return (
-    <div className="audio-theater-deck">
-      {/* LEFT COLUMN: THE AUDIO STAGE */}
-      <div className="audio-stage-left">
+    <div className="audio-focus-sanctuary">
+      {/* Centered Main Player Deck */}
+      <div className="audio-focus-deck">
         {/* Chapter Title Badge & Heading */}
         <div className="audio-chapter-meta">
           <div className="audio-eyebrow-row">
@@ -682,92 +696,132 @@ export function AudioPlayer({
           </label>
         </div>
 
-        {/* Read Mode Link */}
-        {docLink && (
-          <div className="audio-read-action">
-            <Link className="audio-read-btn" to={docLink}>
+        {/* Action Buttons Row: Drawer Toggle & Reader Link */}
+        <div className="audio-actions-row">
+          <button
+            type="button"
+            className={`action-btn-drawer ${isDrawerOpen ? "is-active" : ""}`}
+            onClick={() => setIsDrawerOpen(true)}
+            aria-expanded={isDrawerOpen}
+            aria-controls="chapter-drawer"
+            title="Mở danh sách toàn bộ các chương"
+          >
+            <Icon icon={List} size={18} />
+            <span>Danh sách chương</span>
+            <span className="action-btn-counter">
+              {chapterIndex + 1} / {chapters.length}
+            </span>
+          </button>
+
+          {docLink && (
+            <Link className="action-btn-reader" to={docLink} title="Chuyển sang bản chữ đọc đồng bộ Karaoke">
               <Icon icon={BookOpen} size={18} />
-              <span>Đọc chương này dạng chữ (Kèm Karaoke đồng bộ)</span>
+              <span>Đọc bản chữ & Karaoke</span>
             </Link>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      {/* RIGHT COLUMN: CHAPTER PLAYLIST SIDEBAR */}
-      <aside className="audio-stage-right" aria-label="Danh sách phát chương">
-        <div className="playlist-sidebar-card">
-          <div className="playlist-header">
-            <div className="playlist-header-title">
+      {/* Slide-Over Chapter Drawer Backdrop */}
+      <div
+        className={`chapter-drawer-backdrop ${isDrawerOpen ? "is-visible" : ""}`}
+        onClick={() => setIsDrawerOpen(false)}
+        aria-hidden={!isDrawerOpen}
+      />
+
+      {/* Slide-Over Chapter Drawer Panel */}
+      <aside
+        id="chapter-drawer"
+        className={`chapter-drawer-panel ${isDrawerOpen ? "is-open" : ""}`}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Danh sách chương truyện"
+      >
+        <div className="drawer-header">
+          <div className="drawer-title-row">
+            <div className="drawer-title-wrap">
+              <Icon icon={List} size={18} className="drawer-header-icon" />
               <h3>Danh sách chương</h3>
-              <span className="playlist-badge">{chapters.length} chương</span>
+              <span className="drawer-badge">{chapters.length} chương</span>
             </div>
-            <div className="playlist-search-wrap">
-              <Icon icon={Search} size={15} className="playlist-search-icon" />
-              <input
-                type="text"
-                className="playlist-search-input"
-                placeholder="Tìm số chương hoặc tên..."
-                value={chapterSearch}
-                onChange={(e) => setChapterSearch(e.target.value)}
-              />
-              {chapterSearch && (
-                <button
-                  type="button"
-                  className="playlist-search-clear"
-                  onClick={() => setChapterSearch("")}
-                  aria-label="Xóa tìm kiếm"
-                >
-                  ×
-                </button>
-              )}
-            </div>
+            <button
+              type="button"
+              className="drawer-close-btn"
+              onClick={() => setIsDrawerOpen(false)}
+              aria-label="Đóng danh sách chương"
+              title="Đóng"
+            >
+              <Icon icon={X} size={20} />
+            </button>
           </div>
 
-          <div className="playlist-items-scroll">
-            {filteredChapters.length === 0 ? (
-              <div className="playlist-empty">Không tìm thấy chương phù hợp</div>
-            ) : (
-              filteredChapters.map((ch) => {
-                const absIdx = chapters.findIndex((c) => c.id === ch.id);
-                const isCurrent = absIdx === chapterIndex;
-                return (
-                  <button
-                    key={ch.id || absIdx}
-                    ref={isCurrent ? activeChapterItemRef : null}
-                    type="button"
-                    className={`playlist-item-btn ${isCurrent ? "is-active" : ""}`}
-                    aria-current={isCurrent ? "true" : undefined}
-                    onClick={() => selectChapter(absIdx, true)}
-                  >
-                    <div className="playlist-item-left">
-                      {isCurrent ? (
-                        <div className="soundwave-equalizer" title="Đang phát" aria-hidden="true">
-                          <span className={`soundwave-bar ${playing && !buffering ? "is-animating" : ""}`} />
-                          <span className={`soundwave-bar ${playing && !buffering ? "is-animating" : ""}`} />
-                          <span className={`soundwave-bar ${playing && !buffering ? "is-animating" : ""}`} />
-                        </div>
-                      ) : (
-                        <span className="playlist-item-index">
-                          {ch.chapter_index !== undefined ? ch.chapter_index : absIdx + 1}
-                        </span>
-                      )}
-                      <span className="playlist-item-title" title={ch.title || `Chương ${absIdx + 1}`}>
-                        {ch.title || `Chương ${absIdx + 1}`}
-                      </span>
-                    </div>
-
-                    <div className="playlist-item-right">
-                      {ch.has_audio && (
-                        <span className="audio-badge-icon" title="Có âm thanh">
-                          <Icon icon={Headphones} size={14} />
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })
+          <div className="drawer-search-wrap">
+            <Icon icon={Search} size={15} className="drawer-search-icon" />
+            <input
+              type="text"
+              className="drawer-search-input"
+              placeholder="Tìm theo số chương hoặc tên..."
+              value={chapterSearch}
+              onChange={(e) => setChapterSearch(e.target.value)}
+            />
+            {chapterSearch && (
+              <button
+                type="button"
+                className="drawer-search-clear"
+                onClick={() => setChapterSearch("")}
+                aria-label="Xóa tìm kiếm"
+              >
+                ×
+              </button>
             )}
           </div>
+        </div>
+
+        <div className="drawer-items-scroll">
+          {filteredChapters.length === 0 ? (
+            <div className="drawer-empty">Không tìm thấy chương phù hợp</div>
+          ) : (
+            filteredChapters.map((ch) => {
+              const absIdx = chapters.findIndex((c) => c.id === ch.id);
+              const isCurrent = absIdx === chapterIndex;
+              return (
+                <button
+                  key={ch.id || absIdx}
+                  ref={isCurrent ? activeChapterItemRef : null}
+                  type="button"
+                  className={`drawer-item-btn ${isCurrent ? "is-active" : ""}`}
+                  aria-current={isCurrent ? "true" : undefined}
+                  onClick={() => selectChapter(absIdx, true)}
+                >
+                  <div className="drawer-item-left">
+                    {isCurrent ? (
+                      <div className="soundwave-equalizer" title="Đang phát" aria-hidden="true">
+                        <span className={`soundwave-bar ${playing && !buffering ? "is-animating" : ""}`} />
+                        <span className={`soundwave-bar ${playing && !buffering ? "is-animating" : ""}`} />
+                        <span className={`soundwave-bar ${playing && !buffering ? "is-animating" : ""}`} />
+                      </div>
+                    ) : (
+                      <span className="drawer-item-index">
+                        {ch.chapter_index !== undefined ? ch.chapter_index : absIdx + 1}
+                      </span>
+                    )}
+                    <span className="drawer-item-title" title={ch.title || `Chương ${absIdx + 1}`}>
+                      {ch.title || `Chương ${absIdx + 1}`}
+                    </span>
+                  </div>
+
+                  <div className="drawer-item-right">
+                    {isCurrent && <span className="drawer-playing-tag">Đang phát</span>}
+                    {ch.has_audio && (
+                      <span className="audio-badge-icon" title="Có âm thanh">
+                        <Icon icon={Headphones} size={14} />
+                      </span>
+                    )}
+                  </div>
+                </button>
+              );
+            })
+          )}
         </div>
       </aside>
     </div>
