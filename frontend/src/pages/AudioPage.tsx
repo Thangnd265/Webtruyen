@@ -188,53 +188,50 @@ export function AudioPage() {
   const docLink = `${path}/doc/${currentChapter ? currentChapter.id : activeIdx + 1}`;
 
   return (
-    <div className="audio-page">
-      <nav className="reading-breadcrumb" aria-label="Đường dẫn">
-        <Link to={path}>{story.title}</Link>
-        <span aria-hidden="true">/</span>
-        <span>Nghe truyện</span>
-      </nav>
+    <div className="audio-page-container">
+      {/* Immersive Ambient Glow from Story Cover */}
+      <div
+        className="audio-ambient-backdrop"
+        style={{ backgroundImage: `url("${story.cover}")` }}
+        aria-hidden="true"
+      />
 
-      <div className="audio-layout">
-        <div className="audio-art">
-          <img src={story.cover} alt={`Bìa truyện ${story.title}`} />
-        </div>
-        <div className="audio-content">
-          <p className="eyebrow">MÁY ĐĨA THAN AUDIO</p>
-          <h1>{chapterTitle}</h1>
-          <p>
-            {story.title} · {story.author}
-          </p>
+      {/* Top Header Bar */}
+      <header className="audio-theater-header">
+        <nav className="reading-breadcrumb" aria-label="Đường dẫn">
+          <Link to="/">Trang chủ</Link>
+          <span aria-hidden="true">/</span>
+          <Link to={path}>{story.title}</Link>
+          <span aria-hidden="true">/</span>
+          <span>Nghe audio</span>
+        </nav>
 
-          {content?.available_voices && content.available_voices.length > 0 && (
-            <div style={{ margin: "16px 0" }}>
-              <VoiceSelector
-                voices={content.available_voices}
-                currentVoice={content.current_voice || selectedVoice}
-                onSelectVoice={handleVoiceChange}
-              />
-            </div>
-          )}
-
-          <AudioPlayer
-            storyPath={path}
-            chapterIndex={activeIdx}
-            chapters={chapters}
-            audioSrc={audioSrc}
-            storyTitle={story.title}
-            coverUrl={story.cover}
-            initialAutoPlay={initialAutoPlay}
-            initialTime={resumeTime}
-            currentVoice={selectedVoice}
-          />
-
-          <div style={{ marginTop: "16px" }}>
-            <Link className="button" to={docLink}>
-              📖 Đọc chương này dạng chữ (Kèm Karaoke)
-            </Link>
+        {content?.available_voices && content.available_voices.length > 0 && (
+          <div className="audio-header-voice">
+            <VoiceSelector
+              voices={content.available_voices}
+              currentVoice={content.current_voice || selectedVoice}
+              onSelectVoice={handleVoiceChange}
+            />
           </div>
-        </div>
-      </div>
+        )}
+      </header>
+
+      {/* Main 2-Column Audio Player Theater */}
+      <AudioPlayer
+        storyPath={path}
+        chapterIndex={activeIdx}
+        chapters={chapters}
+        audioSrc={audioSrc}
+        storyTitle={story.title}
+        coverUrl={story.cover}
+        initialAutoPlay={initialAutoPlay}
+        initialTime={resumeTime}
+        currentVoice={selectedVoice}
+        chapterTitle={chapterTitle}
+        docLink={docLink}
+        author={story.author}
+      />
     </div>
   );
 }

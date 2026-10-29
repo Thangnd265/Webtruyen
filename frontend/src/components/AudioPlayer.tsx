@@ -1,9 +1,22 @@
-import { useEffect, useRef, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState, useCallback, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { Icon } from "./Icon";
 import { AudioLoader } from "./AudioLoader";
 import { VinylTurntable } from "./VinylTurntable";
-import { Pause, Play, SkipBack, SkipForward, Volume2, Timer } from "lucide-react";
+import {
+  Pause,
+  Play,
+  SkipBack,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  Timer,
+  RotateCcw,
+  RotateCw,
+  Search,
+  Headphones,
+  BookOpen,
+} from "lucide-react";
 import { preloadChapter, type BackendChapter } from "../data/api";
 import { useAuth } from "../context/AuthContext";
 import { useSleepTimer, type SleepTimerMode } from "../hooks/useSleepTimer";
@@ -21,6 +34,9 @@ export function AudioPlayer({
   initialAutoPlay = false,
   initialTime = 0,
   currentVoice,
+  chapterTitle = "",
+  docLink = "",
+  author = "",
 }: {
   storyPath: string;
   chapterIndex: number;
@@ -32,6 +48,9 @@ export function AudioPlayer({
   initialAutoPlay?: boolean;
   initialTime?: number;
   currentVoice?: string;
+  chapterTitle?: string;
+  docLink?: string;
+  author?: string;
 }) {
   const navigate = useNavigate();
   const audioRef = useRef<HTMLAudioElement | null>(null);
@@ -99,9 +118,31 @@ export function AudioPlayer({
     title: `Chương ${chapterIndex + 1}`,
   };
 
-  // Build playlist range centered around active chapter
-  const first = Math.min(Math.max(0, chapterIndex - 3), Math.max(0, totalChapters - 7));
-  const playlist = chapters.slice(first, first + 8);
+  const [chapterSearch, setChapterSearch] = useState("");
+  const activeChapterItemRef = useRef<HTMLButtonElement | null>(null);
+
+  const filteredChapters = useMemo(() => {
+    if (!chapterSearch.trim()) return chapters;
+    const q = chapterSearch.toLowerCase().trim();
+    return chapters.filter((c, i) => {
+      const titleMatch = (c.title || "").toLowerCase().includes(q);
+      const indexMatch = String(c.chapter_index !== undefined ? c.chapter_index : i + 1).includes(q);
+      return titleMatch || indexMatch;
+    });
+  }, [chapters, chapterSearch]);
+
+  useEffect(() => {
+    if (activeChapterItemRef.current) {
+      activeChapterItemRef.current.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, [chapterIndex]);
+
+  function seekRelative(delta: number) {
+    if (!audioRef.current) return;
+    const dur = audioRef.current.duration || duration || 0;
+    const next = Math.max(0, Math.min(dur, audioRef.current.currentTime + delta));
+    handleSeek(dur > 0 ? (next / dur) * 100 : 0);
+  }
 
   useEffect(() => {
     hasSeekedInitialRef.current = false;
@@ -344,178 +385,272 @@ export function AudioPlayer({
   }
 
   return (
-    <div className="audio-player">
-      {/* Hi-Fi Animated Vinyl Turntable (Máy đĩa than siêu thực) */}
-      <VinylTurntable
-        playing={playing && !buffering}
-        onTogglePlay={togglePlay}
-        coverUrl={coverUrl}
-        title={storyTitle || currentChapter.title}
-        progress={duration > 0 ? currentTime / duration : 0}
-        disabled={locked || !audioSrc}
-      />
+    <div className="audio-theater-deck">
+      {/* LEFT COLUMN: THE AUDIO STAGE */}
+      <div className="audio-stage-left">
+        {/* Chapter Title Badge & Heading */}
+        <div className="audio-chapter-meta">
+          <div className="audio-eyebrow-row">
+            <span className="audio-eyebrow">
+              {currentChapter.chapter_index !== undefined && currentChapter.chapter_index !== 0
+                ? `CHƯƠNG ${currentChapter.chapter_index}`
+                : "AUDIOBOOK"}
+            </span>
+            {storyTitle && <span className="audio-story-tag">{storyTitle}</span>}
+          </div>
+          <h1 className="audio-chapter-heading">
+            {chapterTitle || currentChapter.title || `Chương ${chapterIndex + 1}`}
+          </h1>
+          {author && (
+            <p className="audio-author-line">
+              Tác giả: <strong>{author}</strong>
+            </p>
+          )}
+        </div>
 
-      {audioSrc && (
-        <audio
-          ref={audioRef}
-          src={resolvedSrc || audioSrc}
-          preload="auto"
-          onTimeUpdate={handleTimeUpdate}
-          onLoadedMetadata={(e) => {
-            const el = e.currentTarget;
-            el.playbackRate = Number(speed);
-            const dur = el.duration || 0;
-            setDuration(dur);
-            if (!hasSeekedInitialRef.current && initialTime && initialTime > 0) {
-              try {
-                el.currentTime = initialTime;
-                hasSeekedInitialRef.current = true;
-                setCurrentTime(initialTime);
-                if (dur > 0) {
-                  setPosition(Math.round((initialTime / dur) * 100));
-                }
-              } catch (err) {}
-            }
-            handleTimeUpdate();
-          }}
-          onCanPlay={(e) => {
-            const el = e.currentTarget;
-            el.playbackRate = Number(speed);
-            if (!hasSeekedInitialRef.current && initialTime && initialTime > 0) {
-              try {
-                el.currentTime = initialTime;
-                hasSeekedInitialRef.current = true;
-                setCurrentTime(initialTime);
-                const dur = el.duration || 0;
-                if (dur > 0) {
-                  setPosition(Math.round((initialTime / dur) * 100));
-                }
-              } catch (err) {}
-            }
-            setBuffering(false);
-          }}
-          onPlay={(e) => {
-            e.currentTarget.playbackRate = Number(speed);
-          }}
-          onPlaying={(e) => {
-            e.currentTarget.playbackRate = Number(speed);
-            setBuffering(false);
-          }}
-          onWaiting={() => setBuffering(true)}
-          onEnded={() => {
-            setBuffering(false);
-            if (audioRef.current) {
-              syncProgress(audioRef.current.duration || 0, audioRef.current.duration || 0, true);
-            }
-            if (checkChapterEnd()) {
-              return;
-            }
-            if (autoNext && chapterIndex < chapters.length - 1) {
-              selectChapter(chapterIndex + 1, true);
-            } else {
-              setPlaying(false);
-            }
-          }}
-          onError={() => {
-            setAudioError(true);
-            setBuffering(false);
-          }}
-        />
-      )}
+        {/* Vinyl Turntable Plinth */}
+        <div className="turntable-stage-wrapper">
+          <VinylTurntable
+            playing={playing && !buffering}
+            onTogglePlay={togglePlay}
+            coverUrl={coverUrl}
+            title={storyTitle || currentChapter.title}
+            progress={duration > 0 ? currentTime / duration : 0}
+            disabled={locked || !audioSrc}
+          />
+        </div>
 
-      {buffering && !audioError && !locked && (
-        <AudioLoader compact text="Đang tải dữ liệu âm thanh..." />
-      )}
+        {/* Audio Element */}
+        {audioSrc && (
+          <audio
+            ref={audioRef}
+            src={resolvedSrc || audioSrc}
+            preload="auto"
+            onTimeUpdate={handleTimeUpdate}
+            onLoadedMetadata={(e) => {
+              const el = e.currentTarget;
+              el.playbackRate = Number(speed);
+              const dur = el.duration || 0;
+              setDuration(dur);
+              if (!hasSeekedInitialRef.current && initialTime && initialTime > 0) {
+                try {
+                  el.currentTime = initialTime;
+                  hasSeekedInitialRef.current = true;
+                  setCurrentTime(initialTime);
+                  if (dur > 0) {
+                    setPosition(Math.round((initialTime / dur) * 100));
+                  }
+                } catch (err) {}
+              }
+              handleTimeUpdate();
+            }}
+            onCanPlay={(e) => {
+              const el = e.currentTarget;
+              el.playbackRate = Number(speed);
+              if (!hasSeekedInitialRef.current && initialTime && initialTime > 0) {
+                try {
+                  el.currentTime = initialTime;
+                  hasSeekedInitialRef.current = true;
+                  setCurrentTime(initialTime);
+                  const dur = el.duration || 0;
+                  if (dur > 0) {
+                    setPosition(Math.round((initialTime / dur) * 100));
+                  }
+                } catch (err) {}
+              }
+              setBuffering(false);
+            }}
+            onPlay={(e) => {
+              e.currentTarget.playbackRate = Number(speed);
+            }}
+            onPlaying={(e) => {
+              e.currentTarget.playbackRate = Number(speed);
+              setBuffering(false);
+            }}
+            onWaiting={() => setBuffering(true)}
+            onEnded={() => {
+              setBuffering(false);
+              if (audioRef.current) {
+                syncProgress(audioRef.current.duration || 0, audioRef.current.duration || 0, true);
+              }
+              if (checkChapterEnd()) {
+                return;
+              }
+              if (autoNext && chapterIndex < chapters.length - 1) {
+                selectChapter(chapterIndex + 1, true);
+              } else {
+                setPlaying(false);
+              }
+            }}
+            onError={() => {
+              setAudioError(true);
+              setBuffering(false);
+            }}
+          />
+        )}
 
-      <p className="audio-state" role="status" aria-label="Trạng thái phát">
-        {locked
-          ? "Chương audio đang được khóa."
-          : audioError
-          ? "Chương này chưa có file âm thanh sẵn sàng trên server."
-          : playing
-          ? `Đang phát (${formatTime(currentTime)} / ${formatTime(duration)})`
-          : duration > 0
-          ? currentTime > 0
-            ? `Tiếp tục nghe từ ${formatTime(currentTime)} / ${formatTime(duration)}`
-            : `Sẵn sàng phát (${formatTime(duration)})`
-          : "Sẵn sàng nghe truyện"}
-      </p>
+        {buffering && !audioError && !locked && (
+          <AudioLoader compact text="Đang tải dữ liệu âm thanh..." />
+        )}
 
-      <div className="audio-player-controls">
-        <button
-          type="button"
-          aria-label="Chương trước"
-          disabled={chapterIndex === 0}
-          onClick={() => selectChapter(chapterIndex - 1, playing)}
-        >
-          <Icon icon={SkipBack} />
-        </button>
-        <button
-          type="button"
-          className="audio-play-button"
-          disabled={locked}
-          aria-label={playing ? "Tạm dừng" : "Phát"}
-          aria-pressed={playing && !locked}
-          onClick={togglePlay}
-        >
-          <Icon icon={playing && !locked ? Pause : Play} size={24} />
-        </button>
-        <button
-          type="button"
-          aria-label="Chương sau"
-          disabled={chapterIndex >= chapters.length - 1}
-          onClick={() => selectChapter(chapterIndex + 1, playing)}
-        >
-          <Icon icon={SkipForward} />
-        </button>
-      </div>
+        {/* State Indicator */}
+        <div className="audio-status-row" role="status" aria-label="Trạng thái phát">
+          <span className={`status-indicator-dot ${playing && !buffering ? "is-active" : ""}`} />
+          <span className="status-indicator-text">
+            {locked
+              ? "Chương audio đang được khóa."
+              : audioError
+              ? "Chương này chưa có file âm thanh sẵn sàng trên server."
+              : playing
+              ? `Đang phát (${formatTime(currentTime)} / ${formatTime(duration)})`
+              : duration > 0
+              ? currentTime > 0
+                ? `Tiếp tục nghe từ ${formatTime(currentTime)} / ${formatTime(duration)}`
+                : `Sẵn sàng phát (${formatTime(duration)})`
+              : "Sẵn sàng nghe truyện"}
+          </span>
+        </div>
 
-      <label className="audio-slider">
-        Tiến độ chương ({formatTime(currentTime)} / {formatTime(duration)})
-        <input
-          type="range"
-          min="0"
-          max="100"
-          disabled={locked || duration === 0}
-          value={position}
-          onChange={(e) => handleSeek(Number(e.target.value))}
-        />
-        <output>{position}%</output>
-      </label>
+        {/* Transport Controls Deck */}
+        <div className="audio-transport-deck">
+          <button
+            type="button"
+            className="transport-btn skip-btn"
+            aria-label="Chương trước"
+            title="Chương trước"
+            disabled={chapterIndex === 0}
+            onClick={() => selectChapter(chapterIndex - 1, playing)}
+          >
+            <Icon icon={SkipBack} size={20} />
+          </button>
 
-      <div className="audio-settings">
-        <label>
-          Tốc độ{" "}
-          <select disabled={locked} value={speed} onChange={(e) => handleSpeedChange(e.target.value)}>
-            <option value="0.75">0.75×</option>
-            <option value="1">1×</option>
-            <option value="1.25">1.25×</option>
-            <option value="1.5">1.5×</option>
-            <option value="2">2×</option>
-          </select>
-        </label>
-        <label>
-          <Icon icon={Volume2} /> Âm lượng{" "}
+          <button
+            type="button"
+            className="transport-btn seek-btn"
+            aria-label="Lùi lại 10 giây"
+            title="Lùi lại 10 giây"
+            disabled={locked || !audioSrc}
+            onClick={() => seekRelative(-10)}
+          >
+            <Icon icon={RotateCcw} size={18} />
+            <span className="seek-seconds">10</span>
+          </button>
+
+          <button
+            type="button"
+            className={`hero-play-button ${playing && !locked ? "is-playing" : ""}`}
+            disabled={locked}
+            aria-label={playing ? "Tạm dừng" : "Phát"}
+            aria-pressed={playing && !locked}
+            onClick={togglePlay}
+          >
+            <Icon icon={playing && !locked ? Pause : Play} size={28} />
+          </button>
+
+          <button
+            type="button"
+            className="transport-btn seek-btn"
+            aria-label="Tiến lên 10 giây"
+            title="Tiến lên 10 giây"
+            disabled={locked || !audioSrc}
+            onClick={() => seekRelative(10)}
+          >
+            <Icon icon={RotateCw} size={18} />
+            <span className="seek-seconds">10</span>
+          </button>
+
+          <button
+            type="button"
+            className="transport-btn skip-btn"
+            aria-label="Chương sau"
+            title="Chương sau"
+            disabled={chapterIndex >= chapters.length - 1}
+            onClick={() => selectChapter(chapterIndex + 1, playing)}
+          >
+            <Icon icon={SkipForward} size={20} />
+          </button>
+        </div>
+
+        {/* Progress Scrubber */}
+        <div className="audio-scrubber-container">
+          <div className="scrubber-time-row">
+            <span className="time-cur">{formatTime(currentTime)}</span>
+            <span className="time-percent">{position}%</span>
+            <span className="time-dur">{duration > 0 ? formatTime(duration) : "--:--"}</span>
+          </div>
           <input
             type="range"
+            className="audio-scrubber-slider"
             min="0"
             max="100"
-            disabled={locked}
-            value={volume}
-            onChange={(e) => handleVolumeChange(Number(e.target.value))}
+            step="0.1"
+            disabled={locked || duration === 0}
+            value={position}
+            onChange={(e) => handleSeek(Number(e.target.value))}
+            style={{
+              background: `linear-gradient(to right, var(--color-accent) ${position}%, rgba(255, 255, 255, 0.12) ${position}%)`,
+            }}
+            aria-label="Tiến độ phát chương"
           />
-          <output>{volume}%</output>
-        </label>
-        <div className="audio-timer-wrap">
-          <label className="audio-timer-label">
-            <Icon icon={Timer} size={16} /> Hẹn giờ{" "}
+        </div>
+
+        {/* Utility Controls Bar */}
+        <div className="audio-utility-bar">
+          {/* Speed Pills */}
+          <div className="utility-group utility-speed">
+            <span className="utility-caption">Tốc độ:</span>
+            <div className="speed-pill-group">
+              {["0.75", "1", "1.25", "1.5", "2"].map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  className={`speed-pill-btn ${speed === s ? "is-active" : ""}`}
+                  onClick={() => handleSpeedChange(s)}
+                  disabled={locked}
+                >
+                  {s}×
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Volume Control */}
+          <div className="utility-group utility-volume">
+            <button
+              type="button"
+              className="volume-icon-btn"
+              onClick={() => handleVolumeChange(volume > 0 ? 0 : 80)}
+              title={volume > 0 ? "Tắt tiếng" : "Bật tiếng"}
+            >
+              <Icon icon={volume === 0 ? VolumeX : Volume2} size={18} />
+            </button>
+            <input
+              type="range"
+              min="0"
+              max="100"
+              disabled={locked}
+              value={volume}
+              onChange={(e) => handleVolumeChange(Number(e.target.value))}
+              className="volume-slider-input"
+              style={{
+                background: `linear-gradient(to right, var(--color-accent) ${volume}%, rgba(255, 255, 255, 0.12) ${volume}%)`,
+              }}
+              aria-label="Âm lượng"
+            />
+            <span className="volume-val">{volume}%</span>
+          </div>
+
+          {/* Sleep Timer */}
+          <div className="utility-group utility-timer">
+            <Icon icon={Timer} size={16} />
             <select
               disabled={locked}
               value={sleepTimerMode}
               onChange={(e) => setSleepTimerMode(e.target.value as SleepTimerMode)}
               aria-label="Hẹn giờ tắt truyện"
+              className="timer-select-dropdown"
             >
-              <option value="off">Tắt</option>
+              <option value="off">Hẹn giờ: Tắt</option>
               <option value="15">15 phút</option>
               <option value="30">30 phút</option>
               <option value="45">45 phút</option>
@@ -523,65 +658,118 @@ export function AudioPlayer({
               <option value="90">90 phút</option>
               <option value="chapter">Hết chương này</option>
             </select>
+            {sleepTimerBadge && (
+              <span className="sleep-timer-badge" role="timer" aria-live="polite">
+                ⏱️ {sleepTimerBadge}
+              </span>
+            )}
+          </div>
+
+          {/* Auto Next */}
+          <label className="utility-group utility-autonext" title="Tự động phát chương tiếp theo khi nghe hết">
+            <input
+              type="checkbox"
+              checked={autoNext}
+              onChange={(e) => {
+                const val = e.target.checked;
+                setAutoNext(val);
+                localStorage.setItem("webtruyen_auto_next", String(val));
+                updatePreferences({ autoNext: val });
+              }}
+              className="autonext-checkbox"
+            />
+            <span>Tự chuyển chương</span>
           </label>
-          {sleepTimerBadge && (
-            <span className="sleep-timer-badge" role="timer" aria-live="polite">
-              ⏱️ {sleepTimerBadge}
-            </span>
-          )}
         </div>
-        <label
-          className="audio-auto-next"
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "6px",
-            cursor: "pointer",
-            userSelect: "none",
-            marginLeft: "auto",
-          }}
-          title="Tự động phát chương tiếp theo khi nghe hết"
-        >
-          <input
-            type="checkbox"
-            checked={autoNext}
-            onChange={(e) => {
-              const val = e.target.checked;
-              setAutoNext(val);
-              localStorage.setItem("webtruyen_auto_next", String(val));
-              updatePreferences({ autoNext: val });
-            }}
-            style={{
-              accentColor: "var(--brand, #6366f1)",
-              width: "16px",
-              height: "16px",
-              cursor: "pointer",
-            }}
-          />
-          <span style={{ fontSize: "12px", fontWeight: 500 }}>Tự chuyển chương</span>
-        </label>
+
+        {/* Read Mode Link */}
+        {docLink && (
+          <div className="audio-read-action">
+            <Link className="audio-read-btn" to={docLink}>
+              <Icon icon={BookOpen} size={18} />
+              <span>Đọc chương này dạng chữ (Kèm Karaoke đồng bộ)</span>
+            </Link>
+          </div>
+        )}
       </div>
 
-      <section className="audio-playlist" aria-label="Danh sách phát">
-        <h2>Danh sách phát chương</h2>
-        <ol>
-          {playlist.map((ch, relIdx) => {
-            const absIdx = first + relIdx;
-            const isCurrent = absIdx === chapterIndex;
-            return (
-              <li key={ch.id || absIdx}>
+      {/* RIGHT COLUMN: CHAPTER PLAYLIST SIDEBAR */}
+      <aside className="audio-stage-right" aria-label="Danh sách phát chương">
+        <div className="playlist-sidebar-card">
+          <div className="playlist-header">
+            <div className="playlist-header-title">
+              <h3>Danh sách chương</h3>
+              <span className="playlist-badge">{chapters.length} chương</span>
+            </div>
+            <div className="playlist-search-wrap">
+              <Icon icon={Search} size={15} className="playlist-search-icon" />
+              <input
+                type="text"
+                className="playlist-search-input"
+                placeholder="Tìm số chương hoặc tên..."
+                value={chapterSearch}
+                onChange={(e) => setChapterSearch(e.target.value)}
+              />
+              {chapterSearch && (
                 <button
                   type="button"
-                  aria-current={isCurrent ? "true" : undefined}
-                  onClick={() => selectChapter(absIdx, true)}
+                  className="playlist-search-clear"
+                  onClick={() => setChapterSearch("")}
+                  aria-label="Xóa tìm kiếm"
                 >
-                  {ch.title || `Chương ${absIdx + 1}`}
+                  ×
                 </button>
-              </li>
-            );
-          })}
-        </ol>
-      </section>
+              )}
+            </div>
+          </div>
+
+          <div className="playlist-items-scroll">
+            {filteredChapters.length === 0 ? (
+              <div className="playlist-empty">Không tìm thấy chương phù hợp</div>
+            ) : (
+              filteredChapters.map((ch) => {
+                const absIdx = chapters.findIndex((c) => c.id === ch.id);
+                const isCurrent = absIdx === chapterIndex;
+                return (
+                  <button
+                    key={ch.id || absIdx}
+                    ref={isCurrent ? activeChapterItemRef : null}
+                    type="button"
+                    className={`playlist-item-btn ${isCurrent ? "is-active" : ""}`}
+                    aria-current={isCurrent ? "true" : undefined}
+                    onClick={() => selectChapter(absIdx, true)}
+                  >
+                    <div className="playlist-item-left">
+                      {isCurrent ? (
+                        <div className="soundwave-equalizer" title="Đang phát" aria-hidden="true">
+                          <span className={`soundwave-bar ${playing && !buffering ? "is-animating" : ""}`} />
+                          <span className={`soundwave-bar ${playing && !buffering ? "is-animating" : ""}`} />
+                          <span className={`soundwave-bar ${playing && !buffering ? "is-animating" : ""}`} />
+                        </div>
+                      ) : (
+                        <span className="playlist-item-index">
+                          {ch.chapter_index !== undefined ? ch.chapter_index : absIdx + 1}
+                        </span>
+                      )}
+                      <span className="playlist-item-title" title={ch.title || `Chương ${absIdx + 1}`}>
+                        {ch.title || `Chương ${absIdx + 1}`}
+                      </span>
+                    </div>
+
+                    <div className="playlist-item-right">
+                      {ch.has_audio && (
+                        <span className="audio-badge-icon" title="Có âm thanh">
+                          <Icon icon={Headphones} size={14} />
+                        </span>
+                      )}
+                    </div>
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </aside>
     </div>
   );
 }
