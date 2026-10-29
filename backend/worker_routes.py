@@ -151,7 +151,31 @@ def report_progress(payload: ProgressPayload):
     with queue_manager._lock:
         job = queue_manager._current_job
         if not job or job.book_slug != payload.book_slug:
-            return {"status": "ok", "cancelled": True}
+            # Check DB to recover job if server restarted during rendering
+            recovered = False
+            try:
+                with get_db() as conn:
+                    row = conn.execute(
+                        "SELECT title, voice, status FROM admin_books WHERE slug = ?",
+                        (payload.book_slug,),
+                    ).fetchone()
+                    if row and row["status"] == "rendering":
+                        job = JobProgress(
+                            payload.book_slug,
+                            row["title"] or payload.book_slug,
+                            row["voice"] or "OmniVoice - Cố Thương",
+                            payload.current_chapter,
+                            payload.total_chapters,
+                        )
+                        job.status = "running"
+                        queue_manager._current_job = job
+                        recovered = True
+                        logger.info(f"🔄 Đã tự động khôi phục render job '{payload.book_slug}' sau khi server restart.")
+            except Exception as e:
+                logger.warning(f"Error checking DB for job recovery: {e}")
+
+            if not recovered:
+                return {"status": "ok", "cancelled": True}
 
         if job.cancelled:
             return {"status": "ok", "cancelled": True}
@@ -241,7 +265,31 @@ def report_complete(payload: CompletePayload):
     with queue_manager._lock:
         job = queue_manager._current_job
         if not job or job.book_slug != payload.book_slug:
-            return {"status": "ignored"}
+            # Server restarted before complete arrived, finalize state directly in DB
+            try:
+                with get_db() as conn:
+                    row = conn.execute(
+                        "SELECT title FROM admin_books WHERE slug = ?", (payload.book_slug,)
+                    ).fetchone()
+                    title = row["title"] if row else payload.book_slug
+                    if payload.success:
+                        queue_manager.add_log(
+                            f"🎉 GPU Worker đã hoàn thành xuất sắc render '{title}' ({payload.chapters_done} chương)!"
+                        )
+                        conn.execute(
+                            "UPDATE admin_books SET status = 'idle', current_rendered_chapter = MAX(current_rendered_chapter, ?), updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+                            (payload.chapters_done, payload.book_slug),
+                        )
+                    else:
+                        conn.execute(
+                            "UPDATE admin_books SET status = 'idle', updated_at = CURRENT_TIMESTAMP WHERE slug = ?",
+                            (payload.book_slug,),
+                        )
+                from main import clear_api_caches
+                clear_api_caches(payload.book_slug)
+            except Exception as e:
+                logger.error(f"Error handling orphan completion: {e}")
+            return {"status": "ok"}
 
         if payload.success:
             job.percent = 100

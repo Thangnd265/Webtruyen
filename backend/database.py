@@ -265,6 +265,17 @@ def sync_disk_books_to_sql(audiobooks_dir: Path, local_data_dir: Optional[Path] 
                             if total_chapters == 0:
                                 conn.execute("UPDATE admin_books SET total_chapters = ? WHERE slug = ?", (len(unique_chapters), slug))
 
+                            # Keep current_rendered_chapter synced with actual disk audio chapters
+                            max_audio = conn.execute(
+                                "SELECT MAX(chapter_index) FROM book_chapters WHERE book_slug = ? AND has_audio = 1",
+                                (slug,),
+                            ).fetchone()
+                            if max_audio and max_audio[0] is not None:
+                                conn.execute(
+                                    "UPDATE admin_books SET current_rendered_chapter = MAX(COALESCE(current_rendered_chapter, 0), ?) WHERE slug = ?",
+                                    (max_audio[0], slug),
+                                )
+
             except Exception:
                 pass
 

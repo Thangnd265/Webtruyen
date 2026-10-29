@@ -296,18 +296,59 @@ class UpdateBookRequest(BaseModel):
 
 @router.get("/books")
 def list_admin_books():
-    """Returns all books directly from SQLite database for instantaneous sub-millisecond response."""
+    """Returns all books directly from SQLite database with live, accurate rendered chapter counts."""
     with get_db() as conn:
-        db_rows = conn.execute("SELECT * FROM admin_books ORDER BY created_at DESC").fetchall()
+        db_rows = conn.execute(
+            """
+            SELECT 
+                b.*,
+                COALESCE(c.rendered_count, 0) as actual_rendered_count,
+                COALESCE(c.max_rendered_index, 0) as max_rendered_index
+            FROM admin_books b
+            LEFT JOIN (
+                SELECT 
+                    book_slug, 
+                    COUNT(*) as rendered_count,
+                    MAX(chapter_index) as max_rendered_index
+                FROM book_chapters 
+                WHERE has_audio = 1 
+                GROUP BY book_slug
+            ) c ON b.slug = c.book_slug
+            ORDER BY b.created_at DESC
+            """
+        ).fetchall()
         books = []
+        sync_needed = []
         for r in db_rows:
             b = dict(r)
-            b["rendered_chapters"] = b.get("current_rendered_chapter", 0)
+            actual_count = b.get("actual_rendered_count", 0)
+            max_idx = b.get("max_rendered_index", 0)
+            curr_ch = b.get("current_rendered_chapter", 0)
+
+            # Accurate rendered count reflects the true number of audio chapters available
+            rendered_chapters = max(actual_count, curr_ch, max_idx)
+            b["rendered_chapters"] = rendered_chapters
+
+            # Auto-align current_rendered_chapter to highest rendered chapter
+            if max_idx > curr_ch:
+                b["current_rendered_chapter"] = max_idx
+                sync_needed.append((max_idx, b["slug"]))
+
             if not b.get("cover_url"):
                 b["cover_url"] = f"/api/books/{b['slug']}/cover"
             if not b.get("banner_url"):
                 b["banner_url"] = f"/api/books/{b['slug']}/banner"
             books.append(b)
+
+        if sync_needed:
+            try:
+                conn.executemany(
+                    "UPDATE admin_books SET current_rendered_chapter = ? WHERE slug = ?",
+                    sync_needed,
+                )
+            except Exception:
+                pass
+
         return books
 
 
