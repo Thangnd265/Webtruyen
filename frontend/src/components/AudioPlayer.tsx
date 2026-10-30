@@ -71,27 +71,54 @@ export function AudioPlayer({
   });
   const [volume, setVolume] = useState(80);
   const [audioError, setAudioError] = useState(false);
-  const [resolvedSrc, setResolvedSrc] = useState<string | undefined>(() => resolveAudioUrlSync(audioSrc));
+  const [deviceSrc, setDeviceSrc] = useState<string | undefined>(undefined);
+  const syncSrc = useMemo(() => resolveAudioUrlSync(audioSrc) || audioSrc, [audioSrc]);
 
   useEffect(() => {
     let active = true;
     if (!audioSrc) {
-      setResolvedSrc(undefined);
+      setDeviceSrc(undefined);
       return;
     }
-    const syncUrl = resolveAudioUrlSync(audioSrc);
-    setResolvedSrc(syncUrl);
-
+    setDeviceSrc(undefined);
     resolveAudioUrl(audioSrc).then((deviceUrl) => {
-      if (active && deviceUrl) {
-        setResolvedSrc(deviceUrl);
+      if (active && deviceUrl && deviceUrl !== syncSrc) {
+        setDeviceSrc(deviceUrl);
       }
     });
 
     return () => {
       active = false;
     };
-  }, [audioSrc]);
+  }, [audioSrc, syncSrc]);
+
+  const activeSrc = deviceSrc || syncSrc;
+  const shouldAutoPlayRef = useRef<boolean>(initialAutoPlay);
+
+  const attemptAutoPlay = useCallback(
+    (el?: HTMLAudioElement | null) => {
+      const audio = el || audioRef.current;
+      if (!audio || !shouldAutoPlayRef.current || locked) return;
+      shouldAutoPlayRef.current = false;
+      setBuffering(true);
+      audio.playbackRate = Number(speed);
+      audio
+        .play()
+        .then(() => {
+          if (audioRef.current) {
+            audioRef.current.playbackRate = Number(speed);
+          }
+          setPlaying(true);
+          setBuffering(false);
+        })
+        .catch((err) => {
+          console.warn("AutoPlay blocked or deferred:", err);
+          setBuffering(false);
+          setPlaying(false);
+        });
+    },
+    [speed, locked]
+  );
 
   const [autoNext, setAutoNext] = useState(() => {
     if (preferences.autoNext !== undefined) return preferences.autoNext;
@@ -165,56 +192,34 @@ export function AudioPlayer({
     setCurrentTime(initSec);
     setPosition(0);
     setAudioError(false);
+
     if (audioRef.current) {
       audioRef.current.playbackRate = Number(speed);
       audioRef.current.volume = volume / 100;
-      if (initSec > 0) {
-        try {
-          audioRef.current.currentTime = initSec;
-          hasSeekedInitialRef.current = true;
-        } catch (err) {}
-      }
+      try {
+        audioRef.current.currentTime = initSec;
+        hasSeekedInitialRef.current = initSec > 0;
+      } catch (err) {}
     }
 
     if (initialAutoPlay && audioSrc && !locked) {
+      shouldAutoPlayRef.current = true;
       setBuffering(true);
       const audio = audioRef.current;
       if (audio) {
-        const startPlay = () => {
-          if (!hasSeekedInitialRef.current && initSec > 0) {
-            try {
-              audio.currentTime = initSec;
-              hasSeekedInitialRef.current = true;
-            } catch (err) {
-              console.warn("Could not seek initial time in startPlay:", err);
-            }
-          }
-          audio.playbackRate = Number(speed);
-          audio
-            .play()
-            .then(() => {
-              if (audioRef.current) {
-                audioRef.current.playbackRate = Number(speed);
-              }
-              setPlaying(true);
-              setBuffering(false);
-            })
-            .catch((err) => {
-              console.warn("AutoPlay blocked or deferred:", err);
-              setBuffering(false);
-            });
-        };
-        if (audio.readyState >= 2) {
-          startPlay();
-        } else {
-          audio.addEventListener("canplay", startPlay, { once: true });
+        // If element is already loaded with this exact active source
+        const currentSrc = audio.currentSrc || audio.src;
+        const matches = currentSrc && (currentSrc.endsWith(audioSrc) || currentSrc === activeSrc);
+        if (matches && audio.readyState >= 2) {
+          attemptAutoPlay(audio);
         }
       }
     } else {
+      shouldAutoPlayRef.current = false;
       setPlaying(false);
       setBuffering(false);
     }
-  }, [audioSrc, chapterIndex, initialAutoPlay, initialTime, speed]);
+  }, [activeSrc, audioSrc, chapterIndex, initialAutoPlay, initialTime, speed, locked, attemptAutoPlay]);
 
   // Ensure late-arriving initialTime (e.g. from async API history) properly seeks the audio
   useEffect(() => {
@@ -438,7 +443,7 @@ export function AudioPlayer({
         {audioSrc && (
           <audio
             ref={audioRef}
-            src={resolvedSrc || audioSrc}
+            src={activeSrc}
             preload="auto"
             onTimeUpdate={handleTimeUpdate}
             onLoadedMetadata={(e) => {
@@ -457,6 +462,9 @@ export function AudioPlayer({
                 } catch (err) {}
               }
               handleTimeUpdate();
+              if (el.readyState >= 2) {
+                attemptAutoPlay(el);
+              }
             }}
             onCanPlay={(e) => {
               const el = e.currentTarget;
@@ -473,6 +481,7 @@ export function AudioPlayer({
                 } catch (err) {}
               }
               setBuffering(false);
+              attemptAutoPlay(el);
             }}
             onPlay={(e) => {
               e.currentTarget.playbackRate = Number(speed);

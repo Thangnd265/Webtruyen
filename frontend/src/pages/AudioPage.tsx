@@ -48,6 +48,9 @@ export function AudioPage() {
       setResumeTime(stateResumeTime);
       return;
     }
+    // Reset to 0 when changing chapters so it doesn't leak the previous chapter's time
+    setResumeTime(0);
+
     if (!slug || chapters.length === 0) return;
     const currentCh = chapters[activeIdx];
     if (!currentCh) return;
@@ -125,6 +128,8 @@ export function AudioPage() {
             setSelectedVoice(cached.current_voice);
           }
           setLoading(false);
+        } else {
+          setContent(null);
         }
         getChapterContent(slug, targetChapter.id, selectedVoice || undefined).then((cData) => {
           if (!active) return;
@@ -174,8 +179,14 @@ export function AudioPage() {
 
   const path = `/truyen/${story.slug}`;
   const currentChapter = chapters[activeIdx];
+  const isMatchingContent = Boolean(
+    content &&
+      currentChapter &&
+      (content.id === currentChapter.id ||
+        (currentChapter.chapter_index !== undefined && content.chapter_index === currentChapter.chapter_index))
+  );
   const chapterTitle =
-    content?.title ||
+    (isMatchingContent && content?.title) ||
     currentChapter?.title ||
     (currentChapter?.chapter_index === 0
       ? "Giới Thiệu"
@@ -183,7 +194,7 @@ export function AudioPage() {
       ? `Chương ${currentChapter.chapter_index}`
       : `Chương ${activeIdx + 1}`);
   const audioSrc =
-    content?.audio_url ||
+    (isMatchingContent && content?.audio_url) ||
     (currentChapter ? `/api/books/${story.slug}/audio/${currentChapter.id}` : undefined);
   const docLink = `${path}/doc/${currentChapter ? currentChapter.id : activeIdx + 1}`;
 
