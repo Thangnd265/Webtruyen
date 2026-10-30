@@ -21,13 +21,13 @@ describe("AutoPlay Chapter Advance Logic", () => {
     const currentChapter = { id: "ch2", title: "Chương 2", chapter_index: 2 };
     
     // Simulate stale content from chapter 1 while chapter 2 is loading
-    const staleContent = { id: "ch1", title: "Chương 1", chapter_index: 1, audio_url: "/api/books/test/audio/ch1" };
+    const staleContent = { chapter_id: "ch1", title: "Chương 1", chapter_index: 1, audio_url: "/api/books/test/audio/ch1" };
 
     const isMatchingContent = Boolean(
       staleContent &&
       currentChapter &&
-      (staleContent.id === currentChapter.id ||
-        (currentChapter.chapter_index !== undefined && staleContent.chapter_index === currentChapter.chapter_index))
+      (staleContent.chapter_id === currentChapter.id ||
+        (currentChapter.chapter_index !== undefined && staleContent.chapter_id === String(currentChapter.chapter_index)))
     );
 
     expect(isMatchingContent).toBe(false);

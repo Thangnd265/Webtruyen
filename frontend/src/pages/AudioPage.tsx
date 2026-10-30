@@ -182,8 +182,8 @@ export function AudioPage() {
   const isMatchingContent = Boolean(
     content &&
       currentChapter &&
-      (content.id === currentChapter.id ||
-        (currentChapter.chapter_index !== undefined && content.chapter_index === currentChapter.chapter_index))
+      (content.chapter_id === currentChapter.id ||
+        (currentChapter.chapter_index !== undefined && content.chapter_id === String(currentChapter.chapter_index)))
   );
   const chapterTitle =
     (isMatchingContent && content?.title) ||
