@@ -747,6 +747,7 @@ export function AudioPlayer({
         aria-label="Danh sách chương truyện"
       >
         <div className="drawer-header">
+          <div className="drawer-drag-pill" aria-hidden="true" />
           <div className="drawer-title-row">
             <div className="drawer-title-wrap">
               <Icon icon={List} size={18} className="drawer-header-icon" />
@@ -831,6 +832,19 @@ export function AudioPlayer({
               );
             })
           )}
+        </div>
+
+        {/* Mobile Sticky Bottom Close Bar */}
+        <div className="drawer-bottom-bar">
+          <button
+            type="button"
+            className="drawer-bottom-close-btn"
+            onClick={() => setIsDrawerOpen(false)}
+            aria-label="Đóng danh sách chương"
+          >
+            <Icon icon={X} size={18} />
+            <span>Đóng danh sách</span>
+          </button>
         </div>
       </aside>
     </div>
